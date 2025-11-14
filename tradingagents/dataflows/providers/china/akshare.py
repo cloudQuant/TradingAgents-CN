@@ -213,7 +213,16 @@ class AKShareProvider(BaseStockDataProvider):
         try:
             # 方法1: 尝试获取个股详细信息（包含行业、地区等详细信息）
             def fetch_individual_info():
-                return self.ak.stock_individual_info_em(symbol=code)
+                s = str(code).strip()
+                if s.startswith('6'):
+                    ak_sym = f"sh{s}"
+                elif s.startswith(('0', '3', '2')):
+                    ak_sym = f"sz{s}"
+                elif s.startswith(('8', '4')):
+                    ak_sym = f"bj{s}"
+                else:
+                    ak_sym = s
+                return self.ak.stock_individual_info_em(symbol=ak_sym)
 
             try:
                 stock_info = await asyncio.to_thread(fetch_individual_info)

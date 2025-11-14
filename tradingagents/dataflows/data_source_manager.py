@@ -6,6 +6,9 @@
 
 import os
 import time
+import asyncio
+import threading
+
 from typing import Dict, List, Optional, Any
 from enum import Enum
 import warnings
@@ -1028,6 +1031,28 @@ class DataSourceManager:
 
         return out
 
+    def _run_coro_safely(self, coro):
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                result_box = {}
+                err_box = {}
+                def runner():
+                    try:
+                        result_box['v'] = asyncio.run(coro)
+                    except Exception as e:
+                        err_box['e'] = e
+                t = threading.Thread(target=runner, daemon=True)
+                t.start()
+                t.join()
+                if 'e' in err_box:
+                    raise err_box['e']
+                return result_box.get('v')
+            else:
+                return loop.run_until_complete(coro)
+        except RuntimeError:
+            return asyncio.run(coro)
+
     def get_stock_data(self, symbol: str, start_date: str = None, end_date: str = None, period: str = "daily") -> str:
         """
         获取股票数据的统一接口，支持多周期数据
@@ -1119,9 +1144,14 @@ class DataSourceManager:
 
                 # 数据质量异常时也尝试降级到其他数据源
                 fallback_result = self._try_fallback_sources(symbol, start_date, end_date)
-                if fallback_result and "❌" not in fallback_result and "错误" not in fallback_result:
+                if isinstance(fallback_result, tuple):
+                    fallback_result_str, _fallback_source = fallback_result
+                else:
+                    fallback_result_str, _fallback_source = fallback_result, None
+
+                if fallback_result_str and "❌" not in fallback_result_str and "错误" not in fallback_result_str:
                     logger.info(f"✅ [数据来源: 备用数据源] 降级成功获取数据: {symbol}")
-                    return fallback_result
+                    return fallback_result_str
                 else:
                     logger.error(f"❌ [数据来源: 所有数据源失败] 所有数据源都无法获取有效数据: {symbol}")
                     return result  # 返回原始结果（包含错误信息）
@@ -1138,7 +1168,12 @@ class DataSourceManager:
                             'error': str(e),
                             'event_type': 'data_fetch_exception'
                         }, exc_info=True)
-            return self._try_fallback_sources(symbol, start_date, end_date)
+            fb = self._try_fallback_sources(symbol, start_date, end_date)
+            if isinstance(fb, tuple):
+                fb_str, _fb_source = fb
+            else:
+                fb_str, _fb_source = fb, None
+            return fb_str
 
     def _get_mongodb_data(self, symbol: str, start_date: str, end_date: str, period: str = "daily") -> tuple[str, str | None]:
         """
@@ -1211,7 +1246,7 @@ class DataSourceManager:
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
 
-                    stock_info = loop.run_until_complete(provider.get_stock_basic_info(symbol))
+                    stock_info = self._run_coro_safely(provider.get_stock_basic_info(symbol))
                     stock_name = stock_info.get('name', f'股票{symbol}') if stock_info else f'股票{symbol}'
                 else:
                     stock_name = f'股票{symbol}'
@@ -1239,14 +1274,14 @@ class DataSourceManager:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
-            data = loop.run_until_complete(provider.get_historical_data(symbol, start_date, end_date))
+            data = self._run_coro_safely(provider.get_historical_data(symbol, start_date, end_date))
 
             if data is not None and not data.empty:
                 # 保存到缓存
                 self._save_to_cache(symbol, data, start_date, end_date)
 
                 # 获取股票基本信息（异步）
-                stock_info = loop.run_until_complete(provider.get_stock_basic_info(symbol))
+                stock_info = self._run_coro_safely(provider.get_stock_basic_info(symbol))
                 stock_name = stock_info.get('name', f'股票{symbol}') if stock_info else f'股票{symbol}'
 
                 # 格式化返回
@@ -1294,14 +1329,14 @@ class DataSourceManager:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
-            data = loop.run_until_complete(provider.get_historical_data(symbol, start_date, end_date, period))
+            data = self._run_coro_safely(provider.get_historical_data(symbol, start_date, end_date, period))
 
             duration = time.time() - start_time
 
             if data is not None and not data.empty:
                 # 🔧 修复：使用统一的格式化方法，包含技术指标计算
                 # 获取股票基本信息
-                stock_info = loop.run_until_complete(provider.get_stock_basic_info(symbol))
+                stock_info = self._run_coro_safely(provider.get_stock_basic_info(symbol))
                 stock_name = stock_info.get('name', f'股票{symbol}') if stock_info else f'股票{symbol}'
 
                 # 调用统一的格式化方法（包含技术指标计算）
@@ -1338,12 +1373,12 @@ class DataSourceManager:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        data = loop.run_until_complete(provider.get_historical_data(symbol, start_date, end_date, period))
+        data = self._run_coro_safely(provider.get_historical_data(symbol, start_date, end_date, period))
 
         if data is not None and not data.empty:
             # 🔧 修复：使用统一的格式化方法，包含技术指标计算
             # 获取股票基本信息
-            stock_info = loop.run_until_complete(provider.get_stock_basic_info(symbol))
+            stock_info = self._run_coro_safely(provider.get_stock_basic_info(symbol))
             stock_name = stock_info.get('name', f'股票{symbol}') if stock_info else f'股票{symbol}'
 
             # 调用统一的格式化方法（包含技术指标计算）
@@ -2162,17 +2197,20 @@ def get_china_stock_data_unified(symbol: str, start_date: str, end_date: str) ->
     manager = get_data_source_manager()
     logger.info(f"🔍 [股票代码追踪] 调用 manager.get_stock_data，传入参数: symbol='{symbol}', start_date='{start_date}', end_date='{end_date}'")
     result = manager.get_stock_data(symbol, start_date, end_date)
-    # 分析返回结果的详细信息
-    if result:
-        lines = result.split('\n')
+    if isinstance(result, tuple):
+        result_str = result[0]
+    else:
+        result_str = result
+    if result_str:
+        lines = result_str.split('\n')
         data_lines = [line for line in lines if '2025-' in line and symbol in line]
-        logger.info(f"🔍 [股票代码追踪] 返回结果统计: 总行数={len(lines)}, 数据行数={len(data_lines)}, 结果长度={len(result)}字符")
-        logger.info(f"🔍 [股票代码追踪] 返回结果前500字符: {result[:500]}")
+        logger.info(f"🔍 [股票代码追踪] 返回结果统计: 总行数={len(lines)}, 数据行数={len(data_lines)}, 结果长度={len(result_str)}字符")
+        logger.info(f"🔍 [股票代码追踪] 返回结果前500字符: {result_str[:500]}")
         if len(data_lines) > 0:
             logger.info(f"🔍 [股票代码追踪] 数据行示例: 第1行='{data_lines[0][:100]}', 最后1行='{data_lines[-1][:100]}'")
     else:
         logger.info(f"🔍 [股票代码追踪] 返回结果: None")
-    return result
+    return result_str
 
 
 def get_china_stock_info_unified(symbol: str) -> Dict:
