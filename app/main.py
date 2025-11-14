@@ -36,6 +36,8 @@ from app.routers import multi_market_stocks as multi_market_stocks_router
 from app.routers import notifications as notifications_router
 from app.routers import websocket_notifications as websocket_notifications_router
 from app.routers import scheduler as scheduler_router
+from app.routers import bonds as bonds_router
+
 from app.services.basics_sync_service import get_basics_sync_service
 from app.services.multi_source_basics_sync_service import MultiSourceBasicsSyncService
 from app.services.scheduler_service import set_scheduler_instance
@@ -68,6 +70,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from app.services.quotes_ingestion_service import QuotesIngestionService
 from app.routers import paper as paper_router
+from app.worker.bonds_sync_service import BondSyncService
 
 
 def get_version() -> str:
@@ -567,6 +570,365 @@ async def lifespan(app: FastAPI):
         else:
             logger.info(f"📰 新闻数据同步已配置: {settings.NEWS_SYNC_CRON}")
 
+        # ==================== 债券同步任务 ====================
+        logger.info("🔄 配置债券同步任务...")
+
+        # 债券基础信息列表同步（每日，优先执行）
+        async def run_bonds_basic_list_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_basic_list()
+                logger.info(
+                    f"✅ 债券基础信息列表同步完成: saved={res.get('saved')} count={res.get('count')}"
+                )
+            except Exception as e:
+                logger.error(f"❌ 债券基础信息列表同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_basic_list_sync,
+            CronTrigger.from_crontab(settings.BONDS_BASIC_LIST_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_basic_list_sync",
+            name="债券基础信息同步 - 代码、名称、类别等（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_BASIC_LIST_SYNC_ENABLED):
+            scheduler.pause_job("bonds_basic_list_sync")
+            logger.info(f"⏸️ 债券基础信息列表同步已添加但暂停: {settings.BONDS_BASIC_LIST_SYNC_CRON}")
+        else:
+            logger.info(f"📋 债券基础信息列表同步已配置: {settings.BONDS_BASIC_LIST_SYNC_CRON}")
+
+        async def run_bonds_yield_curve_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_yield_curve()
+                logger.info(
+                    f"✅ 债券收益率曲线同步完成: saved={res.get('saved')} rows={res.get('rows')}"
+                )
+            except Exception as e:
+                logger.error(f"❌ 债券收益率曲线同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_yield_curve_sync,
+            CronTrigger.from_crontab(settings.BONDS_YIELD_CURVE_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_yield_curve_sync",
+            name="国债收益率曲线同步 - 多期限收益率数据（AKShare）",
+        )
+        if not settings.BONDS_SYNC_ENABLED:
+            scheduler.pause_job("bonds_yield_curve_sync")
+            logger.info(f"⏸️ 债券收益率曲线同步已添加但暂停: {settings.BONDS_YIELD_CURVE_SYNC_CRON}")
+        else:
+            logger.info(f"📈 债券收益率曲线同步已配置: {settings.BONDS_YIELD_CURVE_SYNC_CRON}")
+
+        # 可选：债券历史日线同步（默认关闭）
+        async def run_bonds_history_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+                provider = AKShareBondProvider()
+                items = await provider.get_symbol_list()
+                codes = [it.get("code") for it in items if it.get("code")][:100]
+                from datetime import datetime, timedelta
+                end = datetime.now().strftime("%Y-%m-%d")
+                start = (datetime.now() - timedelta(days=settings.BONDS_INIT_BACKFILL_DAYS)).strftime("%Y-%m-%d")
+                res = await svc.sync_bond_history(codes, start, end)
+                logger.info(
+                    f"✅ 债券历史同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}"
+                )
+            except Exception as e:
+                logger.error(f"❌ 债券历史同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_history_sync,
+            CronTrigger.from_crontab(settings.BONDS_HISTORY_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_history_sync",
+            name="债券历史行情同步 - 日线价格数据（AKShare）",
+        )
+        if not settings.BONDS_HISTORY_SYNC_ENABLED:
+            scheduler.pause_job("bonds_history_sync")
+            logger.info(f"⏸️ 债券历史同步已添加但暂停: {settings.BONDS_HISTORY_SYNC_CRON}")
+
+        # 债券现货快照（EOD）
+        async def run_bonds_spot_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_spot_quotes()
+                logger.info(f"✅ 债券现货快照同步完成: {res}")
+            except Exception as e:
+                logger.error(f"❌ 债券现货快照同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_spot_sync,
+            CronTrigger.from_crontab(settings.BONDS_SPOT_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_spot_sync",
+            name="债券现货报价同步 - 可转债和全部债券实时报价（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_SPOT_SYNC_ENABLED):
+            scheduler.pause_job("bonds_spot_sync")
+            logger.info(f"⏸️ 债券现货快照同步已添加但暂停: {settings.BONDS_SPOT_SYNC_CRON}")
+
+        # 债券指数（日度）
+        async def run_bonds_indices_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_indices()
+                logger.info(f"✅ 债券指数同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
+            except Exception as e:
+                logger.error(f"❌ 债券指数同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_indices_sync,
+            CronTrigger.from_crontab(settings.BONDS_INDICES_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_indices_sync",
+            name="债券指数同步 - 中债综合指数等（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_INDICES_SYNC_ENABLED):
+            scheduler.pause_job("bonds_indices_sync")
+            logger.info(f"⏸️ 债券指数同步已添加但暂停: {settings.BONDS_INDICES_SYNC_CRON}")
+
+        # 美国国债收益率（日度）
+        async def run_bonds_us_yield_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_us_yields()
+                logger.info(f"✅ 美国国债收益率同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ 美国国债收益率同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_us_yield_sync,
+            CronTrigger.from_crontab(settings.BONDS_US_YIELD_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_us_yield_sync",
+            name="美国国债收益率同步 - 多期限收益率数据（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_US_YIELD_SYNC_ENABLED):
+            scheduler.pause_job("bonds_us_yield_sync")
+            logger.info(f"⏸️ 美国国债收益率同步已添加但暂停: {settings.BONDS_US_YIELD_SYNC_CRON}")
+
+        # 可转债档案（周度）
+        async def run_bonds_cb_profiles_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_cb_profiles(limit=300)
+                logger.info(f"✅ 可转债档案同步完成: saved={res.get('saved')} count={res.get('count')}")
+            except Exception as e:
+                logger.error(f"❌ 可转债档案同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_cb_profiles_sync,
+            CronTrigger.from_crontab(settings.BONDS_CB_PROFILES_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_cb_profiles_sync",
+            name="可转债档案同步 - 详细档案信息（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CB_PROFILES_SYNC_ENABLED):
+            scheduler.pause_job("bonds_cb_profiles_sync")
+            logger.info(f"⏸️ 可转债档案同步已添加但暂停: {settings.BONDS_CB_PROFILES_SYNC_CRON}")
+
+        # 债券回购（周度）
+        async def run_bonds_buybacks_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_buybacks()
+                logger.info(f"✅ 债券回购同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
+            except Exception as e:
+                logger.error(f"❌ 债券回购同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_buybacks_sync,
+            CronTrigger.from_crontab(settings.BONDS_BUYBACKS_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_buybacks_sync",
+            name="债券回购公告同步 - 上交所和深交所回购数据（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_BUYBACKS_SYNC_ENABLED):
+            scheduler.pause_job("bonds_buybacks_sync")
+            logger.info(f"⏸️ 债券回购同步已添加但暂停: {settings.BONDS_BUYBACKS_SYNC_CRON}")
+
+        async def run_bonds_curve_map_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_yield_curve_map()
+                logger.info(f"✅ 债券曲线映射同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ 债券曲线映射同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_curve_map_sync,
+            CronTrigger.from_crontab(settings.BONDS_CURVE_MAP_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_curve_map_sync",
+            name="收益率曲线映射同步 - 收益率曲线可视化数据（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CURVE_MAP_SYNC_ENABLED):
+            scheduler.pause_job("bonds_curve_map_sync")
+
+        async def run_bonds_cninfo_issues_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_cninfo_issues()
+                logger.info(f"✅ 债券发行公告同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 债券发行公告同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_cninfo_issues_sync,
+            CronTrigger.from_crontab(settings.BONDS_CNINFO_ISSUES_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_cninfo_issues_sync",
+            name="债券发行公告同步 - 公司债、地方债、国债等发行信息（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CNINFO_ISSUES_SYNC_ENABLED):
+            scheduler.pause_job("bonds_cninfo_issues_sync")
+
+        async def run_bonds_cb_events_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_cb_events_and_valuation()
+                logger.info(f"✅ 可转债事件/估值同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 可转债事件/估值同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_cb_events_sync,
+            CronTrigger.from_crontab(settings.BONDS_CB_EVENTS_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_cb_events_sync",
+            name="可转债事件同步 - 调整、赎回、估值、对比等（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CB_EVENTS_SYNC_ENABLED):
+            scheduler.pause_job("bonds_cb_events_sync")
+
+        async def run_bonds_spot_detail_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_spot_quote_and_deals()
+                logger.info(f"✅ 债券现货报价/成交明细同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 债券现货报价/成交明细同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_spot_detail_sync,
+            CronTrigger.from_crontab(settings.BONDS_SPOT_DETAIL_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_spot_detail_sync",
+            name="债券现货明细同步 - 报价明细和成交明细（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_SPOT_DETAIL_SYNC_ENABLED):
+            scheduler.pause_job("bonds_spot_detail_sync")
+
+        async def run_bonds_sse_summary_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_sse_summaries()
+                logger.info(f"✅ 上交所成交/资金摘要同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 上交所成交/资金摘要同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_sse_summary_sync,
+            CronTrigger.from_crontab(settings.BONDS_SSE_SUMMARY_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_sse_summary_sync",
+            name="上交所债券摘要同步 - 成交摘要和资金摘要（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_SSE_SUMMARY_SYNC_ENABLED):
+            scheduler.pause_job("bonds_sse_summary_sync")
+
+        async def run_bonds_nafmii_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_nafmii()
+                logger.info(f"✅ NAFMII 银行间债务同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ NAFMII 银行间债务同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_nafmii_sync,
+            CronTrigger.from_crontab(settings.BONDS_NAFMII_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_nafmii_sync",
+            name="银行间市场债务同步 - NAFMII债务融资工具（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_NAFMII_SYNC_ENABLED):
+            scheduler.pause_job("bonds_nafmii_sync")
+
+        async def run_bonds_info_cm_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_info_cm()
+                logger.info(f"✅ 中债信息cm同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ 中债信息cm同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_info_cm_sync,
+            CronTrigger.from_crontab(settings.BONDS_INFO_CM_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_info_cm_sync",
+            name="中债信息同步 - 中债估值和评级信息（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_INFO_CM_SYNC_ENABLED):
+            scheduler.pause_job("bonds_info_cm_sync")
+
+        async def run_bonds_buybacks_hist_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_buybacks_history()
+                logger.info(f"✅ 回购历史同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ 回购历史同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_buybacks_hist_sync,
+            CronTrigger.from_crontab(settings.BONDS_BUYBACKS_HIST_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_buybacks_hist_sync",
+            name="债券回购历史同步 - 历史回购记录（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_BUYBACKS_HIST_SYNC_ENABLED):
+            scheduler.pause_job("bonds_buybacks_hist_sync")
+
+        async def run_bonds_cb_lists_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_cb_lists()
+                logger.info(f"✅ 可转债列表同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 可转债列表同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_cb_lists_sync,
+            CronTrigger.from_crontab(settings.BONDS_CB_LISTS_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_cb_lists_sync",
+            name="可转债列表同步 - 集思录和东方财富列表（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CB_LISTS_SYNC_ENABLED):
+            scheduler.pause_job("bonds_cb_lists_sync")
+
+        async def run_bonds_info_cm_queries_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_info_cm_queries()
+                logger.info(f"✅ 中债信息查询/详情同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 中债信息查询/详情同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_info_cm_queries_sync,
+            CronTrigger.from_crontab(settings.BONDS_INFO_CM_QUERIES_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_info_cm_queries_sync",
+            name="中债信息详情同步 - 查询结果和详细信息（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_INFO_CM_QUERIES_SYNC_ENABLED):
+            scheduler.pause_job("bonds_info_cm_queries_sync")
+
         scheduler.start()
 
         # 设置调度器实例到服务中，以便API可以管理任务
@@ -692,6 +1054,7 @@ app.include_router(stocks_router.router, prefix="/api", tags=["stocks"])
 app.include_router(multi_market_stocks_router.router, prefix="/api", tags=["multi-market"])
 app.include_router(stock_data_router.router, tags=["stock-data"])
 app.include_router(stock_sync_router.router, tags=["stock-sync"])
+app.include_router(bonds_router.router)
 app.include_router(tags.router, prefix="/api", tags=["tags"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(model_capabilities.router, tags=["model-capabilities"])

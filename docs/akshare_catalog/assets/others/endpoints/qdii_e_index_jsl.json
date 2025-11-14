@@ -1,0 +1,17 @@
+{
+  "asset_class": "others",
+  "source": "akshare",
+  "endpoint_name": "qdii_e_index_jsl",
+  "title": "qdii_e_index_jsl",
+  "category": [],
+  "doc_url": "https://akshare.akfamily.xyz/_sources/data/qdii/qdii.md.txt",
+  "description": "",
+  "parameters": [],
+  "return_schema": {},
+  "examples": [],
+  "tags": [],
+  "last_crawled": "2025-11-14T04:58:58Z",
+  "version_hint": null,
+  "notes": null,
+  "raw_html_file": "raw_html\\_sources_data_qdii_qdii.md.txt.html"
+}

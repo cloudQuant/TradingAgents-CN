@@ -21,6 +21,8 @@ from pymongo import UpdateOne
 from app.core.database import get_mongo_db
 from app.services.basics_sync import add_financial_metrics as _add_financial_metrics_util
 
+from zoneinfo import ZoneInfo
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +155,35 @@ class MultiSourceBasicsSyncService:
                 logger.info("Multi-source stock basics sync already running; skip start")
                 return await self.get_status()
             self._running = True
+
+        if not force:
+            db_check = get_mongo_db()
+            try:
+                status_doc = await db_check[STATUS_COLLECTION].find_one({"job": JOB_KEY})
+                if status_doc:
+                    finished_at = status_doc.get("finished_at")
+                    status_val = status_doc.get("status")
+                    if finished_at and status_val in ("success", "success_with_errors"):
+                        try:
+                            tz = ZoneInfo(settings.TIMEZONE)
+                            today_str = datetime.now(tz).date().isoformat()
+                        except Exception:
+                            today_str = datetime.now().date().isoformat()
+                        if isinstance(finished_at, str):
+                            finished_date = finished_at.split("T")[0]
+                        else:
+                            try:
+                                finished_date = finished_at.date().isoformat()
+                            except Exception:
+                                finished_date = ""
+                        if finished_date == today_str:
+                            status_doc.pop("_id", None)
+                            async with self._lock:
+                                self._running = False
+                            logger.info("Stock basics already updated today; skip run")
+                            return status_doc
+            except Exception:
+                pass
 
         db = get_mongo_db()
         stats = SyncStats()

@@ -22,6 +22,37 @@ const routes: RouteRecordRaw[] = [
     redirect: '/dashboard'
   },
   {
+    path: '/bonds',
+    name: 'Bonds',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    meta: {
+      title: '债券分析',
+      icon: 'Tickets',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: '',
+        name: 'BondsHome',
+        component: () => import('@/views/Bonds/index.vue'),
+        meta: {
+          title: '债券分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'yield-curve',
+        name: 'BondsYieldCurve',
+        component: () => import('@/views/Bonds/YieldCurve.vue'),
+        meta: {
+          title: '收益率曲线',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/layouts/BasicLayout.vue'),

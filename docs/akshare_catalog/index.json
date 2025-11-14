@@ -1,0 +1,23 @@
+{
+  "base_url": "https://akshare.akfamily.xyz/data/index.html",
+  "generated_at": "2025-11-14T04:59:01Z",
+  "page_count": 60,
+  "endpoint_count": 1125,
+  "asset_class_counts": {
+    "others": 557,
+    "equity_hk": 32,
+    "equity_us": 8,
+    "equity_cn": 24,
+    "futures_cn": 64,
+    "bond_cn": 42,
+    "options_cn": 74,
+    "forex": 8,
+    "fund_cn": 77,
+    "index_cn": 11,
+    "macro": 225,
+    "crypto": 3
+  },
+  "include_raw_html": true,
+  "depth": 2,
+  "max_pages": 1500
+}

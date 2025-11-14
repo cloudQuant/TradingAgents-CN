@@ -22,6 +22,15 @@
       <el-menu-item index="/reports">分析报告</el-menu-item>
     </el-sub-menu>
 
+    <el-sub-menu index="/bonds">
+      <template #title>
+        <el-icon><Tickets /></el-icon>
+        <span>债券分析</span>
+      </template>
+      <el-menu-item index="/bonds">概览</el-menu-item>
+      <el-menu-item index="/bonds/yield-curve">收益率曲线</el-menu-item>
+    </el-sub-menu>
+
     <el-menu-item index="/tasks">
       <el-icon><List /></el-icon>
       <template #title>任务中心</template>
@@ -100,6 +109,7 @@ import { useAppStore } from '@/stores/app'
 import {
   Odometer,
   TrendCharts,
+  Tickets,
   Search,
   Star,
   List,

@@ -1,6 +1,7 @@
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Optional
 import time
 import os
+import asyncio
 from datetime import datetime
 
 # 导入新闻模块（支持新旧路径）
@@ -203,6 +204,9 @@ except ImportError as e:
     yf = None
     YF_AVAILABLE = False
 from tradingagents.config.config_manager import config_manager
+from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+from tradingagents.utils.instrument_validator import normalize_bond_code
+from .data_source_manager import get_data_source_manager
 
 # 获取数据目录
 DATA_DIR = config_manager.get_data_dir()
@@ -648,6 +652,64 @@ def get_reddit_company_news(
             news_str += f"### {post['title']}\n\n{post['content']}\n\n"
 
     return f"##{ticker} News Reddit, from {before} to {curr_date}:\n\n{news_str}"
+
+
+# ==================== 债券统一接口（BOND_CN） ====================
+
+def _run_coro_safely(coro):
+    """Run an async coroutine from sync context safely using a worker thread when needed."""
+    try:
+        # If no running loop, run directly
+        asyncio.get_running_loop()
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(asyncio.run, coro)
+            return fut.result()
+    except RuntimeError:
+        # No running loop
+        return asyncio.run(coro)
+
+
+def get_cn_bond_data_unified(code: str, start_date: str, end_date: str, period: str = "daily") -> str:
+    """获取中国债券历史数据（统一接口，经由 DataSourceManager 路由）。"""
+    try:
+        manager = get_data_source_manager()
+        return manager.get_bond_data(code, start_date, end_date, period)
+    except Exception as e:
+        logger.error(f"❌ 债券历史数据获取失败: {e}")
+        return f"❌ 获取债券 {code} 历史数据失败: {e}"
+
+
+def get_cn_bond_info_unified(code: str) -> Dict:
+    """获取中国债券（可转债）基础信息统一接口。"""
+    try:
+        provider = AKShareBondProvider()
+        info = _run_coro_safely(provider.get_basic_info(code))
+        if not isinstance(info, dict) or info.get('error'):
+            err = info.get('error') if isinstance(info, dict) else 'unknown'
+            return {"code": code, "error": f"bond_basic_info_unavailable: {err}"}
+        return info
+    except Exception as e:
+        logger.error(f"❌ 债券基本信息获取失败: {e}")
+        return {"code": code, "error": str(e)}
+
+
+def get_cn_bond_yield_curve_unified(start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
+    """
+    获取中国债券收益率曲线（期限点展开）统一接口，返回字符串报表。
+    """
+    try:
+        provider = AKShareBondProvider()
+        df = _run_coro_safely(provider.get_yield_curve(start_date=start_date, end_date=end_date))
+        if df is None or getattr(df, 'empty', True):
+            rng = f"{start_date or '-∞'} 到 {end_date or '+∞'}"
+            return f"⚠️ 无法获取收益率曲线数据 ({rng})"
+        preview = df.to_string(index=False)
+        title = f"## 中国债券收益率曲线 ({start_date or '-∞'} 到 {end_date or '+∞'})"
+        return f"{title}\n" + preview
+    except Exception as e:
+        logger.error(f"❌ 收益率曲线获取失败: {e}")
+        return f"❌ 获取收益率曲线失败: {e}"
 
 
 def get_stock_stats_indicators_window(

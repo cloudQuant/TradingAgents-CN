@@ -224,6 +224,75 @@ class Settings(BaseSettings):
     AKSHARE_INIT_BATCH_SIZE: int = Field(default=100, ge=10, le=1000, description="初始化批处理大小")
     AKSHARE_INIT_AUTO_START: bool = Field(default=False, description="应用启动时自动检查并初始化数据")
 
+    # ==================== 债券（BOND_CN）同步配置 ====================
+    BONDS_SYNC_ENABLED: bool = Field(default=True, description="启用债券同步任务")
+    
+    # 债券基础信息列表同步（每日，优先执行）
+    BONDS_BASIC_LIST_SYNC_ENABLED: bool = Field(default=True, description="启用债券基础信息列表同步（日度）")
+    BONDS_BASIC_LIST_SYNC_CRON: str = Field(default="0 1 * * *", description="债券基础信息列表同步CRON（每日01:00）")
+    
+    BONDS_YIELD_CURVE_SYNC_CRON: str = Field(default="0 18 * * 1-5", description="收益率曲线同步CRON表达式（工作日18:00）")
+    BONDS_HISTORY_SYNC_ENABLED: bool = Field(default=False, description="启用债券历史日线同步任务（按需开启）")
+    BONDS_HISTORY_SYNC_CRON: str = Field(default="30 18 * * 1-5", description="债券历史日线同步CRON表达式（工作日18:30）")
+    BONDS_INIT_BACKFILL_DAYS: int = Field(default=365, ge=1, le=3650, description="债券初始化回填天数")
+    BONDS_INIT_AUTO_START: bool = Field(default=False, description="应用启动时自动回填债券数据")
+
+    # 新增债券同步任务：现货、指数、美国收益率、可转债档案、回购
+    BONDS_SPOT_SYNC_ENABLED: bool = Field(default=True, description="启用债券现货快照同步（EOD）")
+    BONDS_SPOT_SYNC_CRON: str = Field(default="10 18 * * 1-5", description="债券现货快照同步CRON（工作日18:10）")
+
+    BONDS_INDICES_SYNC_ENABLED: bool = Field(default=True, description="启用债券指数同步（日度）")
+    BONDS_INDICES_SYNC_CRON: str = Field(default="20 18 * * 1-5", description="债券指数同步CRON（工作日18:20）")
+
+    BONDS_US_YIELD_SYNC_ENABLED: bool = Field(default=True, description="启用美国国债收益率同步（日度）")
+    BONDS_US_YIELD_SYNC_CRON: str = Field(default="30 18 * * 1-5", description="美国国债收益率同步CRON（工作日18:30）")
+
+    BONDS_CB_PROFILES_SYNC_ENABLED: bool = Field(default=True, description="启用可转债档案同步（周度）")
+    BONDS_CB_PROFILES_SYNC_CRON: str = Field(default="0 3 * * 0", description="可转债档案同步CRON（周日03:00）")
+
+    BONDS_BUYBACKS_SYNC_ENABLED: bool = Field(default=True, description="启用债券回购数据同步（周度）")
+    BONDS_BUYBACKS_SYNC_CRON: str = Field(default="0 4 * * 0", description="债券回购数据同步CRON（周日04:00）")
+
+    # 发行公告（cninfo）
+    BONDS_CNINFO_ISSUES_SYNC_ENABLED: bool = Field(default=True, description="启用债券发行公告同步（周度）")
+    BONDS_CNINFO_ISSUES_SYNC_CRON: str = Field(default="0 2 * * 0", description="债券发行公告同步CRON（周日02:00）")
+
+    # 可转债事件与估值（JSL/Sina）
+    BONDS_CB_EVENTS_SYNC_ENABLED: bool = Field(default=True, description="启用可转债事件/估值同步（日度）")
+    BONDS_CB_EVENTS_SYNC_CRON: str = Field(default="0 19 * * 1-5", description="可转债事件/估值同步CRON（工作日19:00）")
+
+    # 现货报价与成交明细
+    BONDS_SPOT_DETAIL_SYNC_ENABLED: bool = Field(default=True, description="启用现货报价与成交明细同步（EOD）")
+    BONDS_SPOT_DETAIL_SYNC_CRON: str = Field(default="40 18 * * 1-5", description="现货报价与成交明细同步CRON（工作日18:40）")
+
+    # 上交所成交/资金摘要
+    BONDS_SSE_SUMMARY_SYNC_ENABLED: bool = Field(default=True, description="启用上交所成交/资金摘要同步（EOD）")
+    BONDS_SSE_SUMMARY_SYNC_CRON: str = Field(default="50 18 * * 1-5", description="上交所成交/资金摘要同步CRON（工作日18:50）")
+
+    # 银行间 NAFMII
+    BONDS_NAFMII_SYNC_ENABLED: bool = Field(default=True, description="启用NAFMII银行间债务同步（周度）")
+    BONDS_NAFMII_SYNC_CRON: str = Field(default="30 2 * * 0", description="NAFMII银行间债务同步CRON（周日02:30）")
+
+    # 中债信息（cm）
+    BONDS_INFO_CM_SYNC_ENABLED: bool = Field(default=True, description="启用中债信息cm同步（周度）")
+    BONDS_INFO_CM_SYNC_CRON: str = Field(default="30 3 * * 0", description="中债信息cm同步CRON（周日03:30）")
+
+    # 收益率曲线映射
+    BONDS_CURVE_MAP_SYNC_ENABLED: bool = Field(default=True, description="启用收益率曲线映射同步（日度）")
+    BONDS_CURVE_MAP_SYNC_CRON: str = Field(default="5 18 * * 1-5", description="收益率曲线映射同步CRON（工作日18:05）")
+
+    # 回购历史
+    BONDS_BUYBACKS_HIST_SYNC_ENABLED: bool = Field(default=True, description="启用回购历史同步（周度）")
+    BONDS_BUYBACKS_HIST_SYNC_CRON: str = Field(default="10 4 * * 0", description="回购历史同步CRON（周日04:10）")
+
+    # 可转债列表（JSL/EM）
+    BONDS_CB_LISTS_SYNC_ENABLED: bool = Field(default=True, description="启用可转债列表同步（周度）")
+    BONDS_CB_LISTS_SYNC_CRON: str = Field(default="45 3 * * 0", description="可转债列表同步CRON（周日03:45）")
+
+    # 中债信息查询/详情（cm_query/detail）
+    BONDS_INFO_CM_QUERIES_SYNC_ENABLED: bool = Field(default=True, description="启用中债信息查询/详情同步（周度）")
+    BONDS_INFO_CM_QUERIES_SYNC_CRON: str = Field(default="0 4 * * 0", description="中债信息查询/详情同步CRON（周日04:00）")
+
     # ==================== 分析师数据获取配置 ====================
 
     # 市场分析师数据范围配置
@@ -275,6 +344,8 @@ class Settings(BaseSettings):
     NEWS_SYNC_CRON: str = Field(default="0 */2 * * *")  # 每2小时
     NEWS_SYNC_HOURS_BACK: int = Field(default=24)
     NEWS_SYNC_MAX_PER_SOURCE: int = Field(default=50)
+    NEWS_SYNC_SOURCES: str = Field(default="tushare,akshare", description="新闻同步使用的数据源，逗号分隔（默认不含realtime）")
+    NEWS_SYNC_DISABLE_INTRADAY: bool = Field(default=True, description="是否禁止在盘中抓取新闻（工作日 09:30-11:30, 13:00-15:00）")
 
     @property
     def is_production(self) -> bool:

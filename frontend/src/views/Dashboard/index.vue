@@ -52,6 +52,17 @@
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
 
+            <div class="action-item" @click="goToBonds">
+              <div class="action-icon">
+                <el-icon><Tickets /></el-icon>
+              </div>
+              <div class="action-content">
+                <h3>债券分析</h3>
+                <p>查看可转债与收益率曲线</p>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
             <div class="action-item" @click="goToScreening">
               <div class="action-icon">
                 <el-icon><Search /></el-icon>
@@ -280,6 +291,7 @@ import {
   Search,
   Document,
   Files,
+  Tickets,
   List,
   ArrowRight,
   InfoFilled,
@@ -343,6 +355,10 @@ const goToSingleAnalysis = () => {
 
 const goToBatchAnalysis = () => {
   router.push('/analysis/batch')
+}
+
+const goToBonds = () => {
+  router.push('/bonds')
 }
 
 const goToScreening = () => {

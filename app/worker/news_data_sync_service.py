@@ -5,10 +5,12 @@
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 from dataclasses import dataclass, field
 
 from app.services.news_data_service import get_news_data_service
+from app.core.config import settings
+from zoneinfo import ZoneInfo
 from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 from tradingagents.dataflows.providers.china.akshare import get_akshare_provider
 from tradingagents.dataflows.news.realtime_news import RealtimeNewsAggregator
@@ -106,12 +108,32 @@ class NewsDataSyncService:
             同步统计信息
         """
         stats = NewsSyncStats()
+
+        # 盘中时间段保护：工作日 09:30-11:30 与 13:00-15:00 跳过
+        try:
+            if settings.NEWS_SYNC_DISABLE_INTRADAY:
+                tz = ZoneInfo(settings.TIMEZONE)
+                now = datetime.now(tz)
+                if now.weekday() < 5:  # 周一=0 ... 周五=4
+                    t = now.time()
+                    in_morning = dt_time(9, 30) <= t <= dt_time(11, 30)
+                    in_afternoon = dt_time(13, 0) <= t <= dt_time(15, 0)
+                    if in_morning or in_afternoon:
+                        self.logger.info("⏸️ NEWS_SYNC_DISABLE_INTRADAY=True，交易时段内跳过新闻抓取")
+                        stats.end_time = datetime.utcnow()
+                        return stats
+        except Exception as e:
+            self.logger.debug(f"intraday guard check failed (ignored): {e}")
         
         try:
             self.logger.info(f"📰 开始同步股票新闻: {symbol}")
             
             if data_sources is None:
-                data_sources = ["tushare", "akshare", "realtime"]
+                conf = (settings.NEWS_SYNC_SOURCES or "").strip()
+                if conf:
+                    data_sources = [s.strip() for s in conf.split(",") if s.strip()]
+                else:
+                    data_sources = ["tushare", "akshare"]
             
             news_service = await self._get_news_service()
             all_news = []
@@ -448,12 +470,32 @@ class NewsDataSyncService:
             同步统计信息
         """
         stats = NewsSyncStats()
+
+        # 盘中时间段保护：工作日 09:30-11:30 与 13:00-15:00 跳过
+        try:
+            if settings.NEWS_SYNC_DISABLE_INTRADAY:
+                tz = ZoneInfo(settings.TIMEZONE)
+                now = datetime.now(tz)
+                if now.weekday() < 5:  # 周一=0 ... 周五=4
+                    t = now.time()
+                    in_morning = dt_time(9, 30) <= t <= dt_time(11, 30)
+                    in_afternoon = dt_time(13, 0) <= t <= dt_time(15, 0)
+                    if in_morning or in_afternoon:
+                        self.logger.info("⏸️ NEWS_SYNC_DISABLE_INTRADAY=True，交易时段内跳过市场新闻抓取")
+                        stats.end_time = datetime.utcnow()
+                        return stats
+        except Exception as e:
+            self.logger.debug(f"intraday guard check failed (ignored): {e}")
         
         try:
             self.logger.info("📰 开始同步市场新闻...")
             
             if data_sources is None:
-                data_sources = ["realtime"]
+                conf = (settings.NEWS_SYNC_SOURCES or "").strip()
+                if conf:
+                    data_sources = [s.strip() for s in conf.split(",") if s.strip()]
+                else:
+                    data_sources = ["tushare", "akshare"]
             
             news_service = await self._get_news_service()
             all_news = []

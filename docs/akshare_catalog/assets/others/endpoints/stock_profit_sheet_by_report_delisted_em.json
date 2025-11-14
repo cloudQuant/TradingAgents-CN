@@ -1,0 +1,17 @@
+{
+  "asset_class": "others",
+  "source": "akshare",
+  "endpoint_name": "stock_profit_sheet_by_report_delisted_em",
+  "title": "stock_profit_sheet_by_report_delisted_em",
+  "category": [],
+  "doc_url": "https://akshare.akfamily.xyz/_sources/data/stock/stock.md.txt",
+  "description": "",
+  "parameters": [],
+  "return_schema": {},
+  "examples": [],
+  "tags": [],
+  "last_crawled": "2025-11-14T04:58:58Z",
+  "version_hint": null,
+  "notes": null,
+  "raw_html_file": "raw_html\\_sources_data_stock_stock.md.txt.html"
+}

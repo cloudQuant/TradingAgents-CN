@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AKShare Endpoint Metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "asset_class", "source", "endpoint_name", "title", "doc_url", "last_crawled"
+  ],
+  "properties": {
+    "asset_class": { "type": "string" },
+    "source": { "type": "string", "enum": ["akshare"] },
+    "endpoint_name": { "type": "string" },
+    "title": { "type": "string" },
+    "category": { "type": "array", "items": { "type": "string" } },
+    "doc_url": { "type": "string", "format": "uri" },
+    "description": { "type": "string" },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "required": { "type": ["boolean", "null"] },
+          "default": { "type": ["string", "number", "boolean", "null"] },
+          "choices": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "return_schema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "examples": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "last_crawled": { "type": "string", "format": "date-time" },
+    "version_hint": { "type": ["string", "null"] },
+    "notes": { "type": ["string", "null"] },
+    "raw_html_file": { "type": ["string", "null"] }
+  }
+}

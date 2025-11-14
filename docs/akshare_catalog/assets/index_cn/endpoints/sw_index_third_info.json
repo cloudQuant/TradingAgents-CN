@@ -1,0 +1,24 @@
+{
+  "asset_class": "index_cn",
+  "source": "akshare",
+  "endpoint_name": "sw_index_third_info",
+  "title": "AKShare 指数数据 — AKShare 1.17.83 文档",
+  "category": [
+    "AKShare",
+    "AKShare 项目概览",
+    "AKShare 安装指导",
+    "AKShare 数据字典",
+    "AKShare 股票数据",
+    "AKShare 期货数据"
+  ],
+  "doc_url": "https://akshare.akfamily.xyz/data/index/index.html",
+  "description": "接口: stock_zh_index_spot_em",
+  "parameters": [],
+  "return_schema": {},
+  "examples": [],
+  "tags": [],
+  "last_crawled": "2025-11-14T04:58:55Z",
+  "version_hint": null,
+  "notes": null,
+  "raw_html_file": "raw_html\\data_index_index.html.html"
+}

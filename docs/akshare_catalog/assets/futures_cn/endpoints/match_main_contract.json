@@ -1,0 +1,561 @@
+{
+  "asset_class": "futures_cn",
+  "source": "akshare",
+  "endpoint_name": "match_main_contract",
+  "title": "AKShare 期货数据 — AKShare 1.17.83 文档",
+  "category": [
+    "AKShare",
+    "AKShare 项目概览",
+    "AKShare 安装指导",
+    "AKShare 数据字典",
+    "AKShare 股票数据",
+    "AKShare 期货数据"
+  ],
+  "doc_url": "https://akshare.akfamily.xyz/data/futures/futures.html",
+  "description": "主要提供金融期货和商品期货相关的数据",
+  "parameters": [
+    {
+      "name": "0",
+      "type": "V0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "PVC连续"
+    },
+    {
+      "name": "1",
+      "type": "P0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "棕榈油连续"
+    },
+    {
+      "name": "2",
+      "type": "B0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "豆二连续"
+    },
+    {
+      "name": "3",
+      "type": "M0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "豆粕连续"
+    },
+    {
+      "name": "4",
+      "type": "I0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "铁矿石连续"
+    },
+    {
+      "name": "5",
+      "type": "JD0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "鸡蛋连续"
+    },
+    {
+      "name": "6",
+      "type": "L0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "塑料连续"
+    },
+    {
+      "name": "7",
+      "type": "PP0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "聚丙烯连续"
+    },
+    {
+      "name": "8",
+      "type": "FB0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "纤维板连续"
+    },
+    {
+      "name": "9",
+      "type": "BB0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "胶合板连续"
+    },
+    {
+      "name": "10",
+      "type": "Y0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "豆油连续"
+    },
+    {
+      "name": "11",
+      "type": "C0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "玉米连续"
+    },
+    {
+      "name": "12",
+      "type": "A0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "豆一连续"
+    },
+    {
+      "name": "13",
+      "type": "J0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "焦炭连续"
+    },
+    {
+      "name": "14",
+      "type": "JM0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "焦煤连续"
+    },
+    {
+      "name": "15",
+      "type": "CS0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "淀粉连续"
+    },
+    {
+      "name": "16",
+      "type": "EG0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "乙二醇连续"
+    },
+    {
+      "name": "17",
+      "type": "RR0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "粳米连续"
+    },
+    {
+      "name": "18",
+      "type": "EB0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "苯乙烯连续"
+    },
+    {
+      "name": "19",
+      "type": "LH0",
+      "required": null,
+      "default": "dce",
+      "choices": [],
+      "description": "生猪连续"
+    },
+    {
+      "name": "20",
+      "type": "TA0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "PTA连续"
+    },
+    {
+      "name": "21",
+      "type": "OI0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "菜油连续"
+    },
+    {
+      "name": "22",
+      "type": "RS0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "菜籽连续"
+    },
+    {
+      "name": "23",
+      "type": "RM0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "菜粕连续"
+    },
+    {
+      "name": "24",
+      "type": "ZC0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "动力煤连续"
+    },
+    {
+      "name": "25",
+      "type": "WH0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "强麦连续"
+    },
+    {
+      "name": "26",
+      "type": "JR0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "粳稻连续"
+    },
+    {
+      "name": "27",
+      "type": "SR0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "白糖连续"
+    },
+    {
+      "name": "28",
+      "type": "CF0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "棉花连续"
+    },
+    {
+      "name": "29",
+      "type": "RI0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "早籼稻连续"
+    },
+    {
+      "name": "30",
+      "type": "MA0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "甲醇连续"
+    },
+    {
+      "name": "31",
+      "type": "FG0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "玻璃连续"
+    },
+    {
+      "name": "32",
+      "type": "LR0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "晚籼稻连续"
+    },
+    {
+      "name": "33",
+      "type": "SF0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "硅铁连续"
+    },
+    {
+      "name": "34",
+      "type": "SM0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "锰硅连续"
+    },
+    {
+      "name": "35",
+      "type": "CY0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "棉纱连续"
+    },
+    {
+      "name": "36",
+      "type": "AP0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "苹果连续"
+    },
+    {
+      "name": "37",
+      "type": "CJ0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "红枣连续"
+    },
+    {
+      "name": "38",
+      "type": "UR0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "尿素连续"
+    },
+    {
+      "name": "39",
+      "type": "SA0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "纯碱连续"
+    },
+    {
+      "name": "40",
+      "type": "PF0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "短纤连续"
+    },
+    {
+      "name": "41",
+      "type": "PK0",
+      "required": null,
+      "default": "czce",
+      "choices": [],
+      "description": "花生连续"
+    },
+    {
+      "name": "42",
+      "type": "FU0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "燃料油连续"
+    },
+    {
+      "name": "43",
+      "type": "SC0",
+      "required": null,
+      "default": "ine",
+      "choices": [],
+      "description": "上海原油连续"
+    },
+    {
+      "name": "44",
+      "type": "AL0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "铝连续"
+    },
+    {
+      "name": "45",
+      "type": "RU0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "天然橡胶连续"
+    },
+    {
+      "name": "46",
+      "type": "ZN0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "沪锌连续"
+    },
+    {
+      "name": "47",
+      "type": "CU0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "铜连续"
+    },
+    {
+      "name": "48",
+      "type": "AU0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "黄金连续"
+    },
+    {
+      "name": "49",
+      "type": "RB0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "螺纹钢连续"
+    },
+    {
+      "name": "50",
+      "type": "WR0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "线材连续"
+    },
+    {
+      "name": "51",
+      "type": "PB0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "铅连续"
+    },
+    {
+      "name": "52",
+      "type": "AG0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "白银连续"
+    },
+    {
+      "name": "53",
+      "type": "BU0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "沥青连续"
+    },
+    {
+      "name": "54",
+      "type": "HC0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "热轧卷板连续"
+    },
+    {
+      "name": "55",
+      "type": "SN0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "锡连续"
+    },
+    {
+      "name": "56",
+      "type": "NI0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "镍连续"
+    },
+    {
+      "name": "57",
+      "type": "SP0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "纸浆连续"
+    },
+    {
+      "name": "58",
+      "type": "NR0",
+      "required": null,
+      "default": "ine",
+      "choices": [],
+      "description": "20号胶连续"
+    },
+    {
+      "name": "59",
+      "type": "SS0",
+      "required": null,
+      "default": "shfe",
+      "choices": [],
+      "description": "不锈钢连续"
+    },
+    {
+      "name": "60",
+      "type": "LU0",
+      "required": null,
+      "default": "ine",
+      "choices": [],
+      "description": "低硫燃料油连续"
+    },
+    {
+      "name": "61",
+      "type": "BC0",
+      "required": null,
+      "default": "ine",
+      "choices": [],
+      "description": "国际铜连续"
+    },
+    {
+      "name": "62",
+      "type": "IF0",
+      "required": null,
+      "default": "cffex",
+      "choices": [],
+      "description": "沪深300指数期货连续"
+    },
+    {
+      "name": "63",
+      "type": "TF0",
+      "required": null,
+      "default": "cffex",
+      "choices": [],
+      "description": "5年期国债期货连续"
+    },
+    {
+      "name": "64",
+      "type": "IH0",
+      "required": null,
+      "default": "cffex",
+      "choices": [],
+      "description": "上证50指数期货连续"
+    },
+    {
+      "name": "65",
+      "type": "IC0",
+      "required": null,
+      "default": "cffex",
+      "choices": [],
+      "description": "中证500指数期货连续"
+    },
+    {
+      "name": "66",
+      "type": "TS0",
+      "required": null,
+      "default": "cffex",
+      "choices": [],
+      "description": "2年期国债期货连续"
+    }
+  ],
+  "return_schema": {},
+  "examples": [],
+  "tags": [],
+  "last_crawled": "2025-11-14T04:58:53Z",
+  "version_hint": null,
+  "notes": null,
+  "raw_html_file": "raw_html\\data_futures_futures.html.html"
+}

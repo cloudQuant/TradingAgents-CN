@@ -26,6 +26,8 @@ logger = setup_dataflow_logging()
 
 # 导入统一数据源编码
 from tradingagents.constants import DataSourceCode
+from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+from tradingagents.utils.instrument_validator import normalize_bond_code
 
 
 class ChinaDataSource(Enum):
@@ -1175,6 +1177,104 @@ class DataSourceManager:
                 fb_str, _fb_source = fb, None
             return fb_str
 
+    def get_bond_data(self, code: str, start_date: str = None, end_date: str = None, period: str = "daily") -> str:
+        """
+        获取中国债券（以可转债为主）历史数据的统一入口。
+        当前版本以 AKShare 为主路径，后续可接入 Mongo 缓存与降级。
+        """
+        try:
+            start_time = time.time()
+            norm = normalize_bond_code(code)
+            code_std = norm.get("code_std") or code
+            # 1) 优先尝试 MongoDB（若启用）
+            if self.use_mongodb_cache:
+                try:
+                    mongo_result = self._get_mongodb_bond_data(code_std, start_date, end_date, period)
+                    if isinstance(mongo_result, tuple):
+                        mongo_str, _src = mongo_result
+                    else:
+                        mongo_str, _src = mongo_result, None
+                    if mongo_str and "❌" not in mongo_str:
+                        return mongo_str
+                except Exception:
+                    pass
+
+            # 2) 主数据源（当前：AKShare）
+            provider = AKShareBondProvider()
+            df = self._run_coro_safely(provider.get_historical_data(code, start_date, end_date, period))
+            if df is None or getattr(df, 'empty', True):
+                return f"❌ 无法获取债券{code_std}的{period}数据"
+
+            # 获取名称（尽力而为）
+            bond_name = f"债券{code_std}"
+            try:
+                info = self._run_coro_safely(provider.get_basic_info(code))
+                if isinstance(info, dict) and not info.get('error'):
+                    rows = info.get('data') or []
+                    if rows and isinstance(rows, list):
+                        row0 = rows[0]
+                        for key in ("债券名称", "可转债名称", "名称", "name"):
+                            if key in row0 and row0[key]:
+                                bond_name = str(row0[key])
+                                break
+            except Exception:
+                pass
+
+            # 缓存（若启用）
+            try:
+                self._save_to_cache(code_std, df, start_date, end_date)
+            except Exception:
+                pass
+
+            result = self._format_stock_data_response(df, code_std, bond_name, start_date, end_date)
+            duration = time.time() - start_time
+            logger.info(f"✅ [债券] 成功获取数据: {code_std}, 耗时={duration:.2f}s, 行数={len(df)}")
+            return result
+        except Exception as e:
+            logger.error(f"❌ [债券] 获取数据失败: {code}, 错误: {e}")
+            return f"❌ 获取债券{code}数据失败: {e}"
+
+    def _get_mongodb_bond_data(self, code_std: str, start_date: str, end_date: str, period: str = "daily") -> tuple[str, str | None]:
+        """从MongoDB获取债券历史数据，返回格式化字符串与来源标识。"""
+        try:
+            from app.core.database import get_mongo_db_sync
+            db = get_mongo_db_sync()
+            col_daily = db.get_collection("bond_daily")
+            col_basic = db.get_collection("bond_basic_info")
+
+            q: Dict[str, Any] = {"code": code_std}
+            if start_date:
+                q.setdefault("date", {})["$gte"] = start_date
+            if end_date:
+                q.setdefault("date", {})["$lte"] = end_date
+
+            cur = col_daily.find(q, {"_id": 0})
+            rows = list(cur)
+            if not rows:
+                return (f"❌ MongoDB中无债券{code_std}数据", None)
+
+            df = pd.DataFrame(rows)
+            if "date" in df.columns:
+                try:
+                    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+                except Exception:
+                    pass
+
+            # 名称
+            bond_name = f"债券{code_std}"
+            doc = col_basic.find_one({"code": code_std}, {"_id": 0})
+            if doc:
+                for key in ("name", "债券名称", "可转债名称"):
+                    if key in doc and doc[key]:
+                        bond_name = str(doc[key])
+                        break
+
+            result = self._format_stock_data_response(df, code_std, bond_name, start_date, end_date)
+            return (result, "mongodb")
+        except Exception as e:
+            logger.debug(f"_get_mongodb_bond_data error: {e}")
+            return (f"❌ MongoDB债券数据读取失败: {e}", None)
+
     def _get_mongodb_data(self, symbol: str, start_date: str, end_date: str, period: str = "daily") -> tuple[str, str | None]:
         """
         从MongoDB获取多周期数据 - 包含技术指标计算
@@ -2211,6 +2311,15 @@ def get_china_stock_data_unified(symbol: str, start_date: str, end_date: str) ->
     else:
         logger.info(f"🔍 [股票代码追踪] 返回结果: None")
     return result_str
+
+
+def get_cn_bond_data_unified(symbol: str, start_date: str, end_date: str, period: str = "daily") -> str:
+    """
+    统一的中国债券数据获取接口（字符串输出）。
+    使用 DataSourceManager 路由（当前以 AKShare 为主路径）。
+    """
+    manager = get_data_source_manager()
+    return manager.get_bond_data(symbol, start_date, end_date, period)
 
 
 def get_china_stock_info_unified(symbol: str) -> Dict:
