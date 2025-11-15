@@ -27,7 +27,8 @@
         <el-icon><Tickets /></el-icon>
         <span>债券分析</span>
       </template>
-      <el-menu-item index="/bonds">概览</el-menu-item>
+      <el-menu-item index="/bonds/overview">概览</el-menu-item>
+      <el-menu-item index="/bonds/analysis">债券分析</el-menu-item>
       <el-menu-item index="/bonds/yield-curve">收益率曲线</el-menu-item>
     </el-sub-menu>
 

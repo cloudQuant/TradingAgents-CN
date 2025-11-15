@@ -929,6 +929,85 @@ async def lifespan(app: FastAPI):
         if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_INFO_CM_QUERIES_SYNC_ENABLED):
             scheduler.pause_job("bonds_info_cm_queries_sync")
 
+        # 收盘收益率曲线同步（日度）
+        async def run_bonds_close_return_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                # 同步主要收益率曲线：国债
+                res = await svc.sync_close_return(symbol="国债", period="1")
+                logger.info(f"✅ 收盘收益率曲线同步完成: saved={res.get('saved')} rows={res.get('rows')}")
+            except Exception as e:
+                logger.error(f"❌ 收盘收益率曲线同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_close_return_sync,
+            CronTrigger.from_crontab(settings.BONDS_CLOSE_RETURN_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_close_return_sync",
+            name="收盘收益率曲线同步 - 国债等收益率曲线（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_CLOSE_RETURN_SYNC_ENABLED):
+            scheduler.pause_job("bonds_close_return_sync")
+
+        # 可转债详情信息同步（周度）
+        async def run_bonds_cov_info_details_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                res = await svc.sync_cov_info_details(limit=100)
+                logger.info(f"✅ 可转债详情信息同步完成: total_saved={res.get('total_saved')}")
+            except Exception as e:
+                logger.error(f"❌ 可转债详情信息同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_cov_info_details_sync,
+            CronTrigger.from_crontab(settings.BONDS_COV_INFO_DETAILS_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_cov_info_details_sync",
+            name="可转债详情信息同步 - 东方财富和同花顺详情（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_COV_INFO_DETAILS_SYNC_ENABLED):
+            scheduler.pause_job("bonds_cov_info_details_sync")
+
+        # 分钟数据同步（交易时段高频）
+        async def run_bonds_minute_data_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                # 获取最近活跃的可转债代码（可选：从数据库查询最近有成交的债券）
+                res = await svc.sync_bond_minute_data(codes=None, period="1", pre_minute=False)
+                logger.info(f"✅ 分钟数据同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
+            except Exception as e:
+                logger.error(f"❌ 分钟数据同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_minute_data_sync,
+            CronTrigger.from_crontab(settings.BONDS_MINUTE_DATA_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_minute_data_sync",
+            name="分钟数据同步 - 可转债分时行情（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_MINUTE_DATA_SYNC_ENABLED):
+            scheduler.pause_job("bonds_minute_data_sync")
+
+        # 盘前分时数据同步（交易日前）
+        async def run_bonds_pre_minute_sync():
+            try:
+                svc = BondSyncService()
+                await svc.ensure_indexes()
+                # 获取最近活跃的可转债代码
+                res = await svc.sync_bond_minute_data(codes=None, period="1", pre_minute=True)
+                logger.info(f"✅ 盘前分时数据同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
+            except Exception as e:
+                logger.error(f"❌ 盘前分时数据同步失败: {e}", exc_info=True)
+
+        scheduler.add_job(
+            run_bonds_pre_minute_sync,
+            CronTrigger.from_crontab(settings.BONDS_PRE_MINUTE_SYNC_CRON, timezone=settings.TIMEZONE),
+            id="bonds_pre_minute_sync",
+            name="盘前分时数据同步 - 可转债盘前分时行情（AKShare）",
+        )
+        if not (settings.BONDS_SYNC_ENABLED and settings.BONDS_PRE_MINUTE_SYNC_ENABLED):
+            scheduler.pause_job("bonds_pre_minute_sync")
+
         scheduler.start()
 
         # 设置调度器实例到服务中，以便API可以管理任务

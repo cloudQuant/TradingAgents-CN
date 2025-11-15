@@ -235,6 +235,11 @@ class AKShareBondProvider:
             try:
                 df = await asyncio.to_thread(ak.bond_zh_hs_cov_daily, sym)
                 if not isinstance(df, pd.DataFrame) or df.empty:
+                    try:
+                        df = await asyncio.to_thread(ak.bond_zh_hs_daily, sym)
+                    except Exception:
+                        df = pd.DataFrame()
+                if not isinstance(df, pd.DataFrame) or df.empty:
                     continue
                 df = self._standardize_hist(df)
                 if start_date:
@@ -281,29 +286,106 @@ class AKShareBondProvider:
             df = await asyncio.to_thread(ak.bond_china_yield)
             if not isinstance(df, pd.DataFrame) or df.empty:
                 return pd.DataFrame()
-            # 标准化
+            
+            # 标准化列名
+            rename_map = {}
+            curve_name_col = None
             if "日期" in df.columns:
-                df.rename(columns={"日期": "date"}, inplace=True)
-            # 展平不同期限列到 (date, tenor, yield)
-            melt_cols = [c for c in df.columns if c != "date"]
-            mdf = df.melt(id_vars=["date"], value_vars=melt_cols, var_name="tenor", value_name="yield")
-            mdf["date"] = pd.to_datetime(mdf["date"]).dt.strftime("%Y-%m-%d")
+                rename_map["日期"] = "date"
+            if "曲线名称" in df.columns:
+                curve_name_col = "曲线名称"
+                rename_map["曲线名称"] = "curve_name"
+            if rename_map:
+                df.rename(columns=rename_map, inplace=True)
+            
+            # 确定 ID 变量（用于 melt 操作）
+            id_vars = ["date"]
+            if curve_name_col and "curve_name" in df.columns:
+                id_vars.append("curve_name")
+            
+            # 展平不同期限列到 (date, curve_name?, tenor, yield)
+            # 排除日期和曲线名称列，只保留期限列（数值列）
+            exclude_cols = set(id_vars)
+            # 只保留数值类型的列作为期限列（排除曲线名称等文本列）
+            melt_cols = []
+            for col in df.columns:
+                if col not in exclude_cols:
+                    # 跳过明显是文本类型的列（如列名包含"名称"、"名称"等）
+                    if any(keyword in str(col) for keyword in ["名称", "name", "名称", "type", "类型"]):
+                        continue
+                    # 检查列是否主要是数值类型
+                    if df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                        melt_cols.append(col)
+                    # 或者列包含 NaN，但大部分是数值（至少80%是数值）
+                    else:
+                        numeric_count = df[col].apply(lambda x: pd.isna(x) or isinstance(x, (int, float)) or (hasattr(x, '__float__') and not isinstance(x, str))).sum()
+                        if numeric_count > len(df) * 0.8:
+                            melt_cols.append(col)
+            
+            if not melt_cols:
+                logger.warning("⚠️ [收益率曲线] 未找到有效的期限列")
+                return pd.DataFrame()
+            
+            # 执行 melt 操作
+            mdf = df.melt(id_vars=id_vars, value_vars=melt_cols, var_name="tenor", value_name="yield")
+            
+            # 格式化日期
+            if "date" in mdf.columns:
+                mdf["date"] = pd.to_datetime(mdf["date"]).dt.strftime("%Y-%m-%d")
+            
+            # 过滤日期范围
             if start_date:
                 mdf = mdf[mdf["date"] >= start_date]
             if end_date:
                 mdf = mdf[mdf["date"] <= end_date]
+            
             return mdf.reset_index(drop=True)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"bond_china_yield failed: {e}")
             # 尝试 close_return 作为回退
             try:
                 df2 = await asyncio.to_thread(ak.bond_china_close_return)
                 if not isinstance(df2, pd.DataFrame) or df2.empty:
                     return pd.DataFrame()
+                
+                # 标准化列名
+                rename_map = {}
+                curve_name_col = None
                 if "日期" in df2.columns:
-                    df2.rename(columns={"日期": "date"}, inplace=True)
-                melt_cols = [c for c in df2.columns if c != "date"]
-                mdf2 = df2.melt(id_vars=["date"], value_vars=melt_cols, var_name="tenor", value_name="yield")
-                mdf2["date"] = pd.to_datetime(mdf2["date"]).dt.strftime("%Y-%m-%d")
+                    rename_map["日期"] = "date"
+                if "曲线名称" in df2.columns:
+                    curve_name_col = "曲线名称"
+                    rename_map["曲线名称"] = "curve_name"
+                if rename_map:
+                    df2.rename(columns=rename_map, inplace=True)
+                
+                # 确定 ID 变量
+                id_vars = ["date"]
+                if curve_name_col and "curve_name" in df2.columns:
+                    id_vars.append("curve_name")
+                
+                # 展平不同期限列
+                exclude_cols = set(id_vars)
+                melt_cols = []
+                for col in df2.columns:
+                    if col not in exclude_cols:
+                        # 跳过明显是文本类型的列
+                        if any(keyword in str(col) for keyword in ["名称", "name", "名称", "type", "类型"]):
+                            continue
+                        if df2[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            melt_cols.append(col)
+                        else:
+                            numeric_count = df2[col].apply(lambda x: pd.isna(x) or isinstance(x, (int, float)) or (hasattr(x, '__float__') and not isinstance(x, str))).sum()
+                            if numeric_count > len(df2) * 0.8:
+                                melt_cols.append(col)
+                
+                if not melt_cols:
+                    logger.warning("⚠️ [收益率曲线] 未找到有效的期限列（close_return）")
+                    return pd.DataFrame()
+                
+                mdf2 = df2.melt(id_vars=id_vars, value_vars=melt_cols, var_name="tenor", value_name="yield")
+                if "date" in mdf2.columns:
+                    mdf2["date"] = pd.to_datetime(mdf2["date"]).dt.strftime("%Y-%m-%d")
                 if start_date:
                     mdf2 = mdf2[mdf2["date"] >= start_date]
                 if end_date:

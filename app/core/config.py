@@ -293,6 +293,22 @@ class Settings(BaseSettings):
     BONDS_INFO_CM_QUERIES_SYNC_ENABLED: bool = Field(default=True, description="启用中债信息查询/详情同步（周度）")
     BONDS_INFO_CM_QUERIES_SYNC_CRON: str = Field(default="0 4 * * 0", description="中债信息查询/详情同步CRON（周日04:00）")
 
+    # 收盘收益率曲线（close_return）
+    BONDS_CLOSE_RETURN_SYNC_ENABLED: bool = Field(default=True, description="启用收盘收益率曲线同步（日度）")
+    BONDS_CLOSE_RETURN_SYNC_CRON: str = Field(default="15 18 * * 1-5", description="收盘收益率曲线同步CRON（工作日18:15）")
+
+    # 可转债详情信息（东方财富和同花顺）
+    BONDS_COV_INFO_DETAILS_SYNC_ENABLED: bool = Field(default=True, description="启用可转债详情信息同步（周度）")
+    BONDS_COV_INFO_DETAILS_SYNC_CRON: str = Field(default="20 3 * * 0", description="可转债详情信息同步CRON（周日03:20）")
+
+    # 分钟数据（分时行情）
+    BONDS_MINUTE_DATA_SYNC_ENABLED: bool = Field(default=True, description="启用分钟数据同步（交易时段高频）")
+    BONDS_MINUTE_DATA_SYNC_CRON: str = Field(default="*/5 9-15 * * 1-5", description="分钟数据同步CRON（工作日9:00-15:00，每5分钟）")
+    
+    # 盘前分时数据
+    BONDS_PRE_MINUTE_SYNC_ENABLED: bool = Field(default=True, description="启用盘前分时数据同步（交易日前）")
+    BONDS_PRE_MINUTE_SYNC_CRON: str = Field(default="15 9 * * 1-5", description="盘前分时数据同步CRON（工作日09:15）")
+
     # ==================== 分析师数据获取配置 ====================
 
     # 市场分析师数据范围配置

@@ -43,6 +43,88 @@ class BondSyncService:
             "end": end_date,
         }
 
+    async def sync_close_return(self, symbol: str = "国债", period: str = "1", start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict:
+        """同步收盘收益率曲线历史数据
+        
+        Args:
+            symbol: 曲线名称，如"国债"、"政策性金融债(进出口行)"等
+            period: 期限间隔，"0.1", "0.5", "1"
+            start_date: 开始日期 (YYYYMMDD格式)
+            end_date: 结束日期 (YYYYMMDD格式)
+        """
+        await self.ensure_indexes()
+        try:
+            try:
+                import akshare as ak  # type: ignore
+            except Exception:
+                return {"success": False, "error": "akshare_not_available"}
+            
+            # 如果没有提供日期，使用最近1个月的数据
+            from datetime import datetime, timedelta
+            if not end_date:
+                end_date = datetime.now().strftime("%Y%m%d")
+            if not start_date:
+                # 默认获取最近1个月的数据
+                start = datetime.now() - timedelta(days=30)
+                start_date = start.strftime("%Y%m%d")
+            
+            df = await asyncio.to_thread(ak.bond_china_close_return, symbol=symbol, period=period, start_date=start_date, end_date=end_date)
+            if not isinstance(df, pd.DataFrame) or df.empty:
+                return {"success": True, "saved": 0, "rows": 0}
+            
+            # 转换格式以匹配yield_curve_daily集合
+            # bond_china_close_return返回的格式: 日期, 期限, 到期收益率, 即期收益率, 远期收益率
+            # 需要转换为: date, tenor, yield, curve_name
+            if "日期" in df.columns:
+                df = df.rename(columns={"日期": "date"})
+            if "期限" in df.columns:
+                df = df.rename(columns={"期限": "tenor"})
+            
+            # 处理收益率列
+            mdf_list = []
+            for _, r in df.iterrows():
+                date_val = r.get("date")
+                tenor_val = r.get("tenor")
+                
+                # 到期收益率
+                if "到期收益率" in r and not pd.isna(r.get("到期收益率")):
+                    mdf_list.append({
+                        "date": pd.to_datetime(date_val).strftime("%Y-%m-%d") if date_val else None,
+                        "tenor": str(tenor_val) if tenor_val else None,
+                        "yield": float(r.get("到期收益率")),
+                        "curve_name": symbol,
+                        "yield_type": "到期收益率",
+                        "source": "akshare",
+                    })
+                # 即期收益率
+                if "即期收益率" in r and not pd.isna(r.get("即期收益率")):
+                    mdf_list.append({
+                        "date": pd.to_datetime(date_val).strftime("%Y-%m-%d") if date_val else None,
+                        "tenor": str(tenor_val) if tenor_val else None,
+                        "yield": float(r.get("即期收益率")),
+                        "curve_name": symbol,
+                        "yield_type": "即期收益率",
+                        "source": "akshare",
+                    })
+            
+            if not mdf_list:
+                return {"success": True, "saved": 0, "rows": 0}
+            
+            mdf = pd.DataFrame(mdf_list)
+            saved = await self._svc.save_yield_curve(mdf)
+            
+            return {
+                "success": True,
+                "saved": saved,
+                "rows": len(mdf),
+                "symbol": symbol,
+                "period": period,
+                "start": start_date,
+                "end": end_date,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     async def sync_bond_history(self, codes: Iterable[str], start_date: str, end_date: str) -> dict:
         await self.ensure_indexes()
         total_saved = 0
@@ -492,6 +574,174 @@ class BondSyncService:
                 results.append({"endpoint": "bond_info_detail_cm", "error": "fetch_failed"})
 
             return {"success": True, "total_saved": total_saved, "items": results}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def sync_cov_info_details(self, limit: int = 50) -> dict:
+        """同步可转债详情信息（东方财富和同花顺）。批量、受限速。"""
+        await self.ensure_indexes()
+        try:
+            try:
+                import akshare as ak  # type: ignore
+            except Exception:
+                return {"success": False, "error": "akshare_not_available"}
+            
+            # 获取可转债列表
+            items = await self._provider.get_symbol_list()
+            codes = [it.get("code") for it in items if it.get("code") and it.get("category") == "convertible"][:limit]
+            
+            total_saved = 0
+            results = []
+            
+            for code in codes:
+                try:
+                    norm = normalize_bond_code(code)
+                    cands = [f"sh{norm['digits']}", f"sz{norm['digits']}", norm['digits']]
+                    
+                    # 尝试 bond_zh_cov_info (东方财富)
+                    df1 = None
+                    for sym in cands:
+                        try:
+                            df1 = await asyncio.to_thread(ak.bond_zh_cov_info, symbol=sym, indicator="基本信息")
+                            if isinstance(df1, pd.DataFrame) and not df1.empty:
+                                break
+                        except Exception:
+                            continue
+                    
+                    if df1 is not None and not df1.empty:
+                        # 转换为字典并保存到bond_cb_profiles
+                        rec = {"code": norm.get("code_std") or code, "source": "akshare", "provider": "eastmoney", "endpoint": "bond_zh_cov_info"}
+                        if isinstance(df1, pd.DataFrame):
+                            # 如果是单行DataFrame，转换为字典
+                            if len(df1) == 1:
+                                rec.update(df1.iloc[0].to_dict())
+                            else:
+                                rec["raw"] = df1.to_dict(orient="records")
+                        saved1 = await self._svc.save_cb_profiles([rec])
+                        total_saved += saved1
+                        results.append({"code": code, "provider": "eastmoney", "saved": saved1})
+                    
+                    # 限流：避免请求过快
+                    await asyncio.sleep(0.2)
+                    
+                except Exception as e:
+                    continue
+            
+            # 获取同花顺可转债信息（所有数据一次性获取）
+            try:
+                df_ths = await asyncio.to_thread(ak.bond_zh_cov_info_ths)
+                if isinstance(df_ths, pd.DataFrame) and not df_ths.empty:
+                    # 转换为字典列表并保存
+                    profiles_ths = []
+                    for _, r in df_ths.iterrows():
+                        row_dict = r.to_dict()
+                        code_col = None
+                        for col in ["债券代码", "code", "代码"]:
+                            if col in row_dict and row_dict.get(col):
+                                code_col = col
+                                break
+                        if code_col:
+                            raw_code = str(row_dict[code_col]).strip()
+                            norm = normalize_bond_code(raw_code)
+                            code_std = norm.get("code_std") or raw_code
+                            rec = {"code": code_std, "source": "akshare", "provider": "ths", "endpoint": "bond_zh_cov_info_ths"}
+                            rec.update(row_dict)
+                            profiles_ths.append(rec)
+                    
+                    if profiles_ths:
+                        saved_ths = await self._svc.save_cb_profiles(profiles_ths)
+                        total_saved += saved_ths
+                        results.append({"provider": "ths", "saved": saved_ths, "count": len(profiles_ths)})
+            except Exception:
+                pass
+            
+            return {"success": True, "total_saved": total_saved, "items": results}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def sync_bond_minute_data(self, codes: Optional[List[str]] = None, period: str = "1", pre_minute: bool = False) -> dict:
+        """同步债券分钟数据
+        
+        Args:
+            codes: 债券代码列表，如果为None则获取所有可转债
+            period: 数据周期，"1", "5", "15", "30", "60"
+            pre_minute: 是否获取盘前分时数据
+        """
+        await self.ensure_indexes()
+        try:
+            try:
+                import akshare as ak  # type: ignore
+            except Exception:
+                return {"success": False, "error": "akshare_not_available"}
+            
+            # 如果没有提供代码，获取可转债列表
+            if codes is None:
+                items = await self._provider.get_symbol_list()
+                codes = [it.get("code") for it in items if it.get("category") == "convertible"][:50]  # 限制数量，避免超时
+            
+            total_saved = 0
+            total_rows = 0
+            results = []
+            
+            for code in codes:
+                try:
+                    norm = normalize_bond_code(code)
+                    code_std = norm.get("code_std") or code
+                    cands = [f"sh{norm['digits']}", f"sz{norm['digits']}", norm['digits']]
+                    
+                    df = None
+                    for sym in cands:
+                        try:
+                            if pre_minute:
+                                # 盘前分时数据
+                                df = await asyncio.to_thread(ak.bond_zh_hs_cov_pre_min, symbol=sym)
+                            else:
+                                # 普通分时数据
+                                from datetime import datetime, timedelta
+                                end = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                start = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+                                df = await asyncio.to_thread(
+                                    ak.bond_zh_hs_cov_min,
+                                    symbol=sym,
+                                    period=period,
+                                    adjust='',
+                                    start_date=start,
+                                    end_date=end
+                                )
+                            
+                            if isinstance(df, pd.DataFrame) and not df.empty:
+                                break
+                        except Exception:
+                            continue
+                    
+                    if df is not None and not df.empty:
+                        saved = await self._svc.save_bond_minute_quotes(code_std, df, period=period)
+                        rows = len(df)
+                        total_saved += saved
+                        total_rows += rows
+                        results.append({
+                            "code": code_std,
+                            "saved": saved,
+                            "rows": rows,
+                            "period": period,
+                            "pre_minute": pre_minute,
+                        })
+                    
+                    # 限流：避免请求过快
+                    await asyncio.sleep(0.2)
+                    
+                except Exception as e:
+                    results.append({"code": code, "error": str(e)})
+                    continue
+            
+            return {
+                "success": True,
+                "total_saved": total_saved,
+                "total_rows": total_rows,
+                "items": results,
+                "period": period,
+                "pre_minute": pre_minute,
+            }
         except Exception as e:
             return {"success": False, "error": str(e)}
 

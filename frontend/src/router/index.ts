@@ -25,6 +25,7 @@ const routes: RouteRecordRaw[] = [
     path: '/bonds',
     name: 'Bonds',
     component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/bonds/overview',
     meta: {
       title: '债券分析',
       icon: 'Tickets',
@@ -33,9 +34,18 @@ const routes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         name: 'BondsHome',
         component: () => import('@/views/Bonds/index.vue'),
+        meta: {
+          title: '债券分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'analysis',
+        name: 'BondAnalysis',
+        component: () => import('@/views/Bonds/BondAnalysis.vue'),
         meta: {
           title: '债券分析',
           requiresAuth: true
@@ -49,6 +59,19 @@ const routes: RouteRecordRaw[] = [
           title: '收益率曲线',
           requiresAuth: true
         }
+      },
+      {
+        path: 'collections/:collectionName',
+        name: 'BondCollection',
+        component: () => import('@/views/Bonds/Collection.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '',
+        redirect: { name: 'BondsHome' }
       }
     ]
   },
@@ -455,8 +478,13 @@ router.afterEach((to, from) => {
 // 路由错误处理
 router.onError((error) => {
   console.error('路由错误:', error)
+  console.error('错误详情:', {
+    message: error.message,
+    stack: error.stack,
+    name: error.name
+  })
   NProgress.done()
-  ElMessage.error('页面加载失败，请重试')
+  ElMessage.error(`页面加载失败: ${error.message || '未知错误'}，请检查控制台`)
 })
 
 export default router
