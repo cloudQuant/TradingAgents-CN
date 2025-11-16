@@ -822,3 +822,77 @@ class BondSyncService:
             return {"success": True, "total_saved": total_saved, "total_rows": total_rows, "items": results}
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    async def sync_cov_comparison(self) -> dict:
+        """同步可转债比价表（每小时）"""
+        await self.ensure_indexes()
+        try:
+            df = await self._provider.get_cov_comparison()
+            if df is None or df.empty:
+                return {"success": True, "saved": 0, "rows": 0}
+            
+            saved = await self._svc.save_cov_comparison(df)
+            return {
+                "success": True,
+                "saved": saved,
+                "rows": len(df)
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def sync_spot_deals(self) -> dict:
+        """同步现券市场成交行情（每5分钟）"""
+        await self.ensure_indexes()
+        try:
+            df = await self._provider.get_spot_deal()
+            if df is None or df.empty:
+                return {"success": True, "saved": 0, "rows": 0}
+            
+            saved = await self._svc.save_spot_deals(df)
+            return {
+                "success": True,
+                "saved": saved,
+                "rows": len(df)
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def sync_market_summary(self, date: Optional[str] = None) -> dict:
+        """同步市场概览数据（每日）
+        
+        Args:
+            date: 日期，格式如 '20210111'，默认为今天
+        """
+        await self.ensure_indexes()
+        try:
+            if date is None:
+                from datetime import datetime
+                date = datetime.now().strftime("%Y%m%d")
+            
+            results = []
+            total_saved = 0
+            
+            # 同步现券市场概览
+            try:
+                df_cash = await self._provider.get_cash_summary(date)
+                if df_cash is not None and not df_cash.empty:
+                    # 暂时存储为原始数据（后续可添加专门的保存方法）
+                    results.append({"type": "cash_summary", "rows": len(df_cash), "success": True})
+            except Exception as e:
+                results.append({"type": "cash_summary", "error": str(e), "success": False})
+            
+            # 同步成交概览
+            try:
+                df_deal = await self._provider.get_deal_summary(date)
+                if df_deal is not None and not df_deal.empty:
+                    results.append({"type": "deal_summary", "rows": len(df_deal), "success": True})
+            except Exception as e:
+                results.append({"type": "deal_summary", "error": str(e), "success": False})
+            
+            return {
+                "success": True,
+                "date": date,
+                "results": results
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}

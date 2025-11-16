@@ -140,5 +140,157 @@ export const bondsApi = {
     recommendation: string
   }>> {
     return ApiClient.get(`/api/bonds/analysis/${encodeURIComponent(taskId)}/result`)
+  },
+
+  // 刷新集合数据（返回task_id）
+  async refreshCollectionData(
+    collectionName: string,
+    params?: {
+      start_date?: string
+      end_date?: string
+      date?: string
+    }
+  ): Promise<ApiResponse<{
+    task_id: string
+    message: string
+  }>> {
+    const response = await ApiClient.post(`/api/bonds/collections/${encodeURIComponent(collectionName)}/refresh`, undefined, { params })
+    return response
+  },
+
+  // 查询刷新任务状态
+  async getRefreshTaskStatus(taskId: string): Promise<ApiResponse<{
+    task_id: string
+    task_type: string
+    description: string
+    status: string
+    progress: number
+    total: number
+    message: string
+    created_at: string
+    started_at: string | null
+    completed_at: string | null
+    result: any
+    error: string | null
+  }>> {
+    return ApiClient.get(`/api/bonds/collections/refresh/task/${taskId}`)
+  },
+
+  // ==================== 可转债专项功能 ====================
+
+  /**
+   * 获取可转债比价表
+   */
+  async getConvertibleComparison(params?: {
+    page?: number
+    page_size?: number
+    sort_by?: string
+    sort_dir?: 'asc' | 'desc'
+    min_premium?: number
+    max_premium?: number
+  }): Promise<ApiResponse<{
+    total: number
+    page: number
+    page_size: number
+    items: Array<{
+      code: string
+      name: string
+      price?: number
+      change_pct?: number
+      stock_code: string
+      stock_name: string
+      stock_price?: number
+      stock_change_pct?: number
+      convert_price?: number
+      convert_value?: number
+      convert_premium_rate?: number
+      pure_debt_premium_rate?: number
+      put_trigger_price?: number
+      redeem_trigger_price?: number
+      maturity_redeem_price?: number
+      pure_debt_value?: number
+      start_convert_date?: string
+      list_date?: string
+      apply_date?: string
+      timestamp?: string
+    }>
+  }>> {
+    return ApiClient.get('/api/bonds/convertible/comparison', params)
+  },
+
+  /**
+   * 同步可转债比价数据
+   */
+  async syncConvertibleComparison(): Promise<ApiResponse<{
+    saved: number
+    total: number
+    message: string
+  }>> {
+    return ApiClient.post('/api/bonds/convertible/comparison/sync')
+  },
+
+  /**
+   * 获取可转债价值分析历史数据
+   */
+  async getConvertibleValueAnalysis(
+    code: string,
+    params?: {
+      start_date?: string
+      end_date?: string
+    }
+  ): Promise<ApiResponse<{
+    code: string
+    data: Array<{
+      date: string
+      close_price?: number
+      pure_debt_value?: number
+      convert_value?: number
+      pure_debt_premium_rate?: number
+      convert_premium_rate?: number
+    }>
+  }>> {
+    return ApiClient.get(`/api/bonds/convertible/${encodeURIComponent(code)}/value-analysis`, params)
+  },
+
+  /**
+   * 同步指定可转债的价值分析数据
+   */
+  async syncConvertibleValueAnalysis(code: string): Promise<ApiResponse<{
+    saved: number
+    total: number
+    message: string
+  }>> {
+    return ApiClient.post(`/api/bonds/convertible/${encodeURIComponent(code)}/value-analysis/sync`)
+  },
+
+  /**
+   * 获取现券市场成交行情
+   */
+  async getSpotDeals(): Promise<ApiResponse<{
+    total: number
+    items: Array<any>
+  }>> {
+    return ApiClient.get('/api/bonds/market/spot-deals')
+  },
+
+  /**
+   * 获取现券市场做市报价
+   */
+  async getSpotQuotes(): Promise<ApiResponse<{
+    total: number
+    items: Array<any>
+  }>> {
+    return ApiClient.get('/api/bonds/market/spot-quotes')
+  },
+
+  /**
+   * 清空集合数据
+   */
+  async clearCollectionData(collectionName: string): Promise<ApiResponse<{
+    deleted_count: number
+    collection_name: string
+    message: string
+  }>> {
+    return ApiClient.delete(`/api/bonds/collections/${encodeURIComponent(collectionName)}/clear`)
   }
 }

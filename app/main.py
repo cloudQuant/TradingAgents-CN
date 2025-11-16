@@ -37,6 +37,11 @@ from app.routers import notifications as notifications_router
 from app.routers import websocket_notifications as websocket_notifications_router
 from app.routers import scheduler as scheduler_router
 from app.routers import bonds as bonds_router
+from app.routers import funds as funds_router
+from app.routers import futures as futures_router
+from app.routers import options as options_router
+from app.routers import currencies as currencies_router
+from app.routers import cryptos as cryptos_router
 
 from app.services.basics_sync_service import get_basics_sync_service
 from app.services.multi_source_basics_sync_service import MultiSourceBasicsSyncService
@@ -1134,6 +1139,11 @@ app.include_router(multi_market_stocks_router.router, prefix="/api", tags=["mult
 app.include_router(stock_data_router.router, tags=["stock-data"])
 app.include_router(stock_sync_router.router, tags=["stock-sync"])
 app.include_router(bonds_router.router)
+app.include_router(funds_router.router)
+app.include_router(futures_router.router)
+app.include_router(options_router.router)
+app.include_router(currencies_router.router)
+app.include_router(cryptos_router.router)
 app.include_router(tags.router, prefix="/api", tags=["tags"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(model_capabilities.router, tags=["model-capabilities"])

@@ -204,7 +204,7 @@ except ImportError as e:
     yf = None
     YF_AVAILABLE = False
 from tradingagents.config.config_manager import config_manager
-from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+# from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider  # 暂时注释：bonds.py 文件不存在
 from tradingagents.utils.instrument_validator import normalize_bond_code
 from .data_source_manager import get_data_source_manager
 

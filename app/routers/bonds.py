@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import hashlib
 import logging
 import uuid
+import asyncio
 from fastapi.responses import JSONResponse
 
 from app.routers.auth_db import get_current_user
@@ -17,6 +18,9 @@ from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
 from tradingagents.utils.instrument_validator import normalize_bond_code
 from app.core.database import get_mongo_db
 from app.services.bond_data_service import BondDataService
+from app.services.bond_analysis_service import BondAnalysisService
+from app.services.collection_refresh_service import CollectionRefreshService
+from app.utils.task_manager import get_task_manager
 
 router = APIRouter(prefix="/api/bonds", tags=["bonds"])
 logger = logging.getLogger("webapi")  # 使用与其他路由一致的日志器
@@ -24,6 +28,13 @@ logger = logging.getLogger("webapi")  # 使用与其他路由一致的日志器
 # 简单的内存缓存，用于减少数据库查询
 _bond_list_cache = {}
 _cache_ttl_seconds = 300  # 5分钟缓存
+
+# 数据初始化锁，防止并发请求时重复从AKShare获取数据
+_init_lock = asyncio.Lock()
+_init_in_progress = False
+_init_completed = False
+_init_timestamp = None  # 初始化完成时间戳
+_init_timeout_seconds = 3600  # 1小时后允许重新初始化
 
 def _get_cache_key(q: Optional[str], category: Optional[str], exchange: Optional[str], 
                    only_not_matured: bool, page: int, page_size: int, 
@@ -41,6 +52,15 @@ def _is_cache_valid(cache_entry: dict) -> bool:
         return False
     age = (datetime.now() - cache_time).total_seconds()
     return age < _cache_ttl_seconds
+
+
+def _is_init_expired() -> bool:
+    """检查初始化是否已过期（超时后允许重新初始化）"""
+    global _init_timestamp
+    if _init_timestamp is None:
+        return True  # 从未初始化
+    age = (datetime.now() - _init_timestamp).total_seconds()
+    return age >= _init_timeout_seconds
 
 
 @router.get("/list")
@@ -117,31 +137,88 @@ async def list_bonds(
 
         # 如果数据库中没有数据，才从 AKShare 获取并保存
         if total == 0:
-            logger.warning(f"⚠️ [债券列表] 数据库为空 (total=0)，将从 AKShare 获取数据并保存到数据库 (category={category})")
-            try:
-                provider = AKShareBondProvider()
-                fetched = await provider.get_symbol_list()
-                if fetched:
-                    logger.info(f"📡 [债券列表] 从 AKShare 获取到 {len(fetched)} 条债券数据，正在保存到数据库...")
-                    saved_count = await svc.save_basic_list(fetched)
-                    logger.info(f"💾 [债券列表] 已保存 {saved_count} 条债券数据到数据库")
-                    # 重新查询数据库
-                    try:
-                        result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
-                    except TypeError:
-                        # 兼容老版本未支持排序参数的方法签名
+            global _init_in_progress, _init_completed, _init_timestamp
+            
+            # 检查初始化是否已完成且未过期
+            if _init_completed and not _is_init_expired():
+                logger.info(f"✅ [债券列表] 初始化已完成，但category={category}无数据，返回空结果")
+            elif _init_completed and _is_init_expired():
+                # 初始化已过期，允许重新初始化
+                logger.warning(f"⚠️ [债券列表] 初始化已过期（超过{_init_timeout_seconds}秒），将重新初始化")
+                _init_completed = False
+                _init_timestamp = None
+            
+            # 如果未初始化或已过期，执行初始化
+            if not _init_completed:
+                # 使用锁防止并发初始化
+                async with _init_lock:
+                    # 双重检查：其他请求可能已经完成初始化
+                    if _init_completed:
+                        logger.info(f"🔄 [债券列表] 其他请求已完成初始化，重新查询数据库")
                         try:
-                            result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
+                            result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
                         except TypeError:
-                            # 兼容更老版本未支持exchange参数的方法签名
-                            result = await svc.query_basic_list(q=q, category=category, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
-                    total = int(result.get("total") or 0)
-                    items = list(result.get("items") or [])
-                    logger.info(f"✅ [债券列表] 保存后重新查询数据库: total={total}, items={len(items)}")
-                else:
-                    logger.warning(f"⚠️ [债券列表] 从 AKShare 获取数据为空")
-            except Exception as e:
-                logger.error(f"❌ [债券列表] 从 AKShare 获取数据失败: {e}", exc_info=True)
+                            try:
+                                result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
+                            except TypeError:
+                                result = await svc.query_basic_list(q=q, category=category, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
+                        total = int(result.get("total") or 0)
+                        items = list(result.get("items") or [])
+                    else:
+                        # 第一个请求执行初始化
+                        logger.warning(f"⚠️ [债券列表] 数据库为空 (total=0)，开始从 AKShare 获取数据 (category={category})")
+                        _init_in_progress = True
+                        
+                        try:
+                            provider = AKShareBondProvider()
+                            fetched = await provider.get_symbol_list()
+                            if fetched:
+                                logger.info(f"📡 [债券列表] 从 AKShare 获取到 {len(fetched)} 条债券数据，正在保存到数据库...")
+                                # 记录前几条数据的category值
+                                for i, item in enumerate(fetched[:3]):
+                                    logger.info(f"🔍 [债券列表] AKShare数据样本 {i+1}: code={item.get('code')}, category={item.get('category')}, name={item.get('name')}")
+                                
+                                saved_count = await svc.save_basic_list(fetched)
+                                logger.info(f"💾 [债券列表] 已保存 {saved_count} 条债券数据到数据库")
+                                
+                                # 验证：先不带category条件查询，看看数据是否存在
+                                try:
+                                    test_result = await svc.query_basic_list(q=None, category=None, exchange=exchange, only_not_matured=False, page=1, page_size=5, sort_by=None, sort_dir="asc")
+                                    logger.info(f"🔍 [债券列表] 验证查询（无category过滤）: total={test_result.get('total', 0)}, items={len(test_result.get('items', []))}")
+                                    if test_result.get('items'):
+                                        sample = test_result['items'][0]
+                                        logger.info(f"🔍 [债券列表] 数据库样本数据: code={sample.get('code')}, category={sample.get('category')}, name={sample.get('name')}")
+                                except Exception as test_err:
+                                    logger.error(f"❌ [债券列表] 验证查询失败: {test_err}")
+                                
+                                # 标记初始化完成，记录时间戳
+                                _init_completed = True
+                                _init_timestamp = datetime.now()
+                                logger.info(f"✅ [债券列表] 数据初始化完成，时间戳: {_init_timestamp}")
+                                
+                                # 重新查询数据库
+                                try:
+                                    result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
+                                except TypeError:
+                                    # 兼容老版本未支持排序参数的方法签名
+                                    try:
+                                        result = await svc.query_basic_list(q=q, category=category, exchange=exchange, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
+                                    except TypeError:
+                                        # 兼容更老版本未支持exchange参数的方法签名
+                                        result = await svc.query_basic_list(q=q, category=category, only_not_matured=only_not_matured, page=page, page_size=page_size)  # type: ignore
+                                total = int(result.get("total") or 0)
+                                items = list(result.get("items") or [])
+                                logger.info(f"✅ [债券列表] 保存后重新查询数据库: total={total}, items={len(items)}")
+                            else:
+                                logger.warning(f"⚠️ [债券列表] 从 AKShare 获取数据为空")
+                                _init_completed = True  # 即使为空也标记完成，避免重复尝试
+                                _init_timestamp = datetime.now()  # 记录时间戳，超时后可重试
+                        except Exception as e:
+                            logger.error(f"❌ [债券列表] 从 AKShare 获取数据失败: {e}", exc_info=True)
+                            _init_completed = True  # 失败也标记完成，避免无限重试
+                            _init_timestamp = datetime.now()  # 记录时间戳，超时后可重试
+                        finally:
+                            _init_in_progress = False
         else:
             logger.info(f"✅ [债券列表] 从数据库获取 {total} 条债券数据 (category={category}, page={page}, items={len(items)})")
 
@@ -549,6 +626,13 @@ async def list_bond_collections(
     """获取所有债券相关数据集合列表及其说明"""
     collections = [
         {
+            "name": "bond_info_cm",
+            "display_name": "债券信息查询",
+            "description": "中国外汇交易中心债券信息查询，支持按债券名称、代码、发行人、债券类型、付息方式、发行年份、承销商、评级等条件查询",
+            "route": "/bonds/collections/bond_info_cm",
+            "fields": ["code", "债券简称", "债券代码", "发行人/受托机构", "债券类型", "发行日期", "最新债项评级", "查询代码"],
+        },
+        {
             "name": "bond_basic_info",
             "display_name": "债券基础信息",
             "description": "债券的基础信息，包括代码、名称、类别、发行人、息票率、上市日期、到期日等",
@@ -687,13 +771,6 @@ async def list_bond_collections(
             "description": "银行间市场非金融企业债务融资工具注册信息，包括债券名称、品种、金额、注册通知书文号等",
             "route": "/bonds/collections/bond_nafmii_debts",
             "fields": ["code", "债券名称", "品种", "金额", "注册通知书文号", "更新日期", "项目状态"],
-        },
-        {
-            "name": "bond_info_cm",
-            "display_name": "中债信息",
-            "description": "中国外汇交易中心债券信息，包括债券查询结果和详细信息",
-            "route": "/bonds/collections/bond_info_cm",
-            "fields": ["code", "endpoint", "债券简称", "债券代码", "发行人/受托机构", "债券类型"],
         },
         {
             "name": "bond_cov_list",
@@ -869,6 +946,16 @@ async def get_collection_data(
                         "type": field_type,
                         "example": str(value)[:50] if value is not None else None,
                     })
+        
+        # 对于 bond_info_cm 集合，将元数据字段（code, endpoint, source）移到最后
+        if collection_name == "bond_info_cm" and fields_info:
+            # 元数据字段列表
+            meta_fields = ["code", "endpoint", "source"]
+            # 分离元数据字段和业务字段
+            business_fields = [f for f in fields_info if f["name"] not in meta_fields]
+            meta_field_objs = [f for f in fields_info if f["name"] in meta_fields]
+            # 重新组合：业务字段在前，元数据字段在后
+            fields_info = business_fields + meta_field_objs
         
         return {
             "success": True,
@@ -1135,19 +1222,488 @@ async def get_bond_analysis_result(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{code}/history/sync")
-async def sync_bond_history_to_db(
-    code: str,
-    start: str = Query(..., description="开始日期 YYYY-MM-DD"),
-    end: str = Query(..., description="结束日期 YYYY-MM-DD"),
+@router.post("/collections/{collection_name}/refresh")
+async def refresh_collection_data(
+    collection_name: str,
+    background_tasks: BackgroundTasks,
+    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD（可选，仅适用于某些集合）"),
+    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD（可选，仅适用于某些集合）"),
+    date: Optional[str] = Query(None, description="指定日期 YYYY-MM-DD（可选，用于单日期集合）"),
+    # bond_info_cm 特定参数
+    bond_name: Optional[str] = Query(None, description="债券名称（bond_info_cm专用）"),
+    bond_code: Optional[str] = Query(None, description="债券代码（bond_info_cm专用）"),
+    bond_issue: Optional[str] = Query(None, description="发行人（bond_info_cm专用）"),
+    bond_type: Optional[str] = Query(None, description="债券类型（bond_info_cm专用）"),
+    coupon_type: Optional[str] = Query(None, description="付息方式（bond_info_cm专用）"),
+    issue_year: Optional[str] = Query(None, description="发行年份（bond_info_cm专用）"),
+    underwriter: Optional[str] = Query(None, description="承销商（bond_info_cm专用）"),
+    grade: Optional[str] = Query(None, description="评级（bond_info_cm专用）"),
     current_user: dict = Depends(get_current_user),
 ):
-    provider = AKShareBondProvider()
-    df = await provider.get_historical_data(code, start, end, period="daily")
-    db = get_mongo_db()
-    svc = BondDataService(db)
-    await svc.ensure_indexes()
-    norm = normalize_bond_code(code)
-    code_std = norm.get("code_std") or code
-    saved = await svc.save_bond_daily(code_std, df)
-    return {"success": True, "data": {"saved": saved, "rows": 0 if df is None else len(df)}}
+    """从AKShare更新指定集合的数据（异步执行，支持进度查询）
+    
+    支持的参数因集合而异：
+    - bond_info_cm: 支持 bond_name, bond_code, bond_issue, bond_type, coupon_type, issue_year, underwriter, grade
+    - yield_curve_daily, bond_daily: 支持 start_date, end_date
+    - bond_cash_summary, bond_deal_summary: 支持 date
+    """
+    try:
+        logger.info(f"🔄 创建集合更新任务: {collection_name}")
+        
+        db = get_mongo_db()
+        svc = BondDataService(db)
+        refresh_service = CollectionRefreshService(svc)
+        task_manager = get_task_manager()
+        
+        # 准备参数字典
+        params = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "date": date,
+            "bond_name": bond_name,
+            "bond_code": bond_code,
+            "bond_issue": bond_issue,
+            "bond_type": bond_type,
+            "coupon_type": coupon_type,
+            "issue_year": issue_year,
+            "underwriter": underwriter,
+            "grade": grade,
+        }
+        
+        # 创建任务
+        task_id = task_manager.create_task(
+            task_type=f"refresh_{collection_name}",
+            description=f"更新集合: {collection_name}"
+        )
+        
+        # 在后台异步执行刷新任务
+        async def do_refresh():
+            await refresh_service.refresh_collection(
+                collection_name, task_id, params
+            )
+        
+        background_tasks.add_task(do_refresh)
+        
+        # 立即返回任务ID，前端可以用此ID查询进度
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"任务已创建，请使用 task_id 查询进度"
+            }
+        }
+    
+    except Exception as e:
+        error_msg = f"创建更新任务失败: {str(e)}"
+        logger.error(f"❌ {error_msg}", exc_info=True)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+
+@router.get("/collections/refresh/task/{task_id}")
+async def get_refresh_task_status(
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """查询数据刷新任务的进度"""
+    try:
+        task_manager = get_task_manager()
+        task = task_manager.get_task(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+        
+        return {"success": True, "data": task}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 查询任务状态失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/collections/{collection_name}/clear")
+async def clear_collection_data(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """清空集合数据
+    
+    删除指定集合中的所有数据，此操作不可恢复
+    """
+    try:
+        logger.info(f"⚠️  [清空集合] 收到清空请求: collection={collection_name}, user={current_user.get('username')}")
+        
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+        
+        # 检查集合是否存在
+        if collection_name not in await db.list_collection_names():
+            raise HTTPException(status_code=404, detail=f"集合 {collection_name} 不存在")
+        
+        # 清空集合数据
+        collection = db[collection_name]
+        result = await collection.delete_many({})
+        deleted_count = result.deleted_count
+        
+        logger.info(f"✅ [清空集合] 成功清空 {collection_name}，删除了 {deleted_count} 条记录")
+        
+        return {
+            "success": True,
+            "data": {
+                "collection_name": collection_name,
+                "deleted_count": deleted_count,
+                "message": f"成功清空集合 {collection_name}，删除了 {deleted_count} 条记录"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 清空集合失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 可转债专项功能 ====================
+
+@router.get("/convertible/comparison")
+async def get_convertible_comparison(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(50, ge=1, le=200, description="每页数量"),
+    q: Optional[str] = Query(None, description="搜索关键词（代码或名称）"),
+    sort_by: Optional[str] = Query(None, description="排序字段"),
+    sort_dir: str = Query("asc", description="排序方向：asc/desc"),
+    min_premium: Optional[float] = Query(None, description="最小转股溢价率"),
+    max_premium: Optional[float] = Query(None, description="最大转股溢价率"),
+    current_user: dict = Depends(get_current_user),
+):
+    """获取可转债比价表
+    
+    返回可转债的实时比价数据，包括转股价、转股价值、溢价率等核心指标
+    支持关键词搜索、溢价率范围过滤、排序和分页
+    """
+    try:
+        logger.info(f"🔍 [可转债比价] 收到请求: page={page}, page_size={page_size}, q={q}, "
+                   f"premium_range=[{min_premium}, {max_premium}]")
+        
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+        
+        svc = BondDataService(db)
+        
+        # 查询数据（在数据库层过滤，性能更好）
+        result = await svc.query_cov_comparison(
+            q=q,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+            min_premium=min_premium,
+            max_premium=max_premium
+        )
+        
+        logger.info(f"✅ [可转债比价] 返回 {len(result.get('items', []))}/{result.get('total', 0)} 条数据")
+        
+        return {
+            "success": True,
+            "data": {
+                "total": result.get("total", 0),
+                "page": page,
+                "page_size": page_size,
+                "items": result.get("items", [])
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [可转债比价] 查询失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/convertible/comparison/sync")
+async def sync_convertible_comparison(
+    current_user: dict = Depends(get_current_user),
+):
+    """同步可转债比价数据
+    
+    从AKShare获取最新的可转债比价表数据并保存到数据库
+    """
+    try:
+        logger.info(f"🔄 [可转债比价同步] 开始同步数据")
+        
+        from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+        
+        provider = AKShareBondProvider()
+        df = await provider.get_cov_comparison()
+        
+        if df is None or df.empty:
+            logger.warning("⚠️ [可转债比价同步] 未获取到数据")
+            raise HTTPException(status_code=404, detail="未获取到数据")
+        
+        logger.info(f"📡 [可转债比价同步] 获取到 {len(df)} 条数据")
+        
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+        
+        svc = BondDataService(db)
+        saved = await svc.save_cov_comparison(df)
+        
+        logger.info(f"✅ [可转债比价同步] 成功保存 {saved} 条数据")
+        
+        return {
+            "success": True,
+            "data": {
+                "saved": saved,
+                "total": len(df),
+                "message": f"成功同步 {saved} 条可转债比价数据"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [可转债比价同步] 失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/convertible/{code}/value-analysis")
+async def get_convertible_value_analysis(
+    code: str,
+    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
+    current_user: dict = Depends(get_current_user),
+):
+    """获取可转债价值分析历史数据
+    
+    返回指定可转债的历史价值分析数据，包括纯债价值、转股价值、溢价率走势等
+    """
+    try:
+        logger.info(f"🔍 [可转债价值分析] 查询 {code}")
+        
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+        
+        svc = BondDataService(db)
+        
+        # 查询数据库
+        result = await svc.query_cov_value_analysis(
+            code=code,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # 如果数据库没有数据，尝试从AKShare获取
+        if not result.get("data"):
+            logger.info(f"📡 [可转债价值分析] 数据库无数据，从AKShare获取")
+            
+            from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+            provider = AKShareBondProvider()
+            df = await provider.get_cov_value_analysis(code)
+            
+            if df is not None and not df.empty:
+                # 保存到数据库
+                saved = await svc.save_cov_value_analysis(code, df)
+                logger.info(f"💾 [可转债价值分析] 保存 {saved} 条数据")
+                
+                # 重新查询
+                result = await svc.query_cov_value_analysis(
+                    code=code,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+        
+        logger.info(f"✅ [可转债价值分析] 返回 {len(result.get('data', []))} 条数据")
+        
+        return {
+            "success": True,
+            "data": result
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [可转债价值分析] 查询失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/convertible/{code}/value-analysis/sync")
+async def sync_convertible_value_analysis(
+    code: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """同步指定可转债的价值分析数据"""
+    try:
+        logger.info(f"🔄 [价值分析同步] 同步 {code}")
+        
+        from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+        
+        provider = AKShareBondProvider()
+        df = await provider.get_cov_value_analysis(code)
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail="未获取到数据")
+        
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+        
+        svc = BondDataService(db)
+        saved = await svc.save_cov_value_analysis(code, df)
+        
+        logger.info(f"✅ [价值分析同步] 保存 {saved} 条数据")
+        
+        return {
+            "success": True,
+            "data": {
+                "saved": saved,
+                "total": len(df),
+                "message": f"成功同步 {saved} 条价值分析数据"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [价值分析同步] 失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market/spot-deals")
+async def get_spot_deals(
+    current_user: dict = Depends(get_current_user),
+):
+    """获取现券市场成交行情
+    
+    返回银行间现券市场的实时成交数据
+    """
+    try:
+        logger.info(f"🔍 [现券成交] 查询成交行情")
+        
+        from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+        
+        provider = AKShareBondProvider()
+        df = await provider.get_spot_deal()
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail="未获取到数据")
+        
+        # 转换为字典列表
+        items = df.to_dict(orient="records")
+        
+        # 清理NaN值
+        import math
+        for item in items:
+            for key, value in list(item.items()):
+                if isinstance(value, float) and math.isnan(value):
+                    item[key] = None
+        
+        logger.info(f"✅ [现券成交] 返回 {len(items)} 条数据")
+        
+        return {
+            "success": True,
+            "data": {
+                "total": len(items),
+                "items": items
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [现券成交] 查询失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market/spot-quotes")
+async def get_spot_quotes(
+    current_user: dict = Depends(get_current_user),
+):
+    """获取现券市场做市报价
+    
+    返回银行间现券市场的做市商报价数据
+    """
+    try:
+        logger.info(f"🔍 [现券报价] 查询做市报价")
+        
+        from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
+        
+        provider = AKShareBondProvider()
+        df = await provider.get_spot_quote()
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail="未获取到数据")
+        
+        # 转换为字典列表
+        items = df.to_dict(orient="records")
+        
+        # 清理NaN值
+        import math
+        for item in items:
+            for key, value in list(item.items()):
+                if isinstance(value, float) and math.isnan(value):
+                    item[key] = None
+        
+        logger.info(f"✅ [现券报价] 返回 {len(items)} 条数据")
+        
+        return {
+            "success": True,
+            "data": {
+                "total": len(items),
+                "items": items
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ [现券报价] 查询失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/admin/reset-init")
+async def reset_initialization(
+    current_user: dict = Depends(get_current_user),
+):
+    """管理端点：重置债券数据初始化状态
+    
+    当数据初始化出现问题时，可以通过此端点手动重置初始化状态，
+    允许系统重新从AKShare获取数据。
+    
+    注意：仅管理员应该使用此端点
+    """
+    global _init_completed, _init_timestamp, _init_in_progress
+    
+    try:
+        logger.warning(f"⚠️ [管理] 用户 {current_user.get('username')} 请求重置初始化状态")
+        
+        old_status = {
+            "completed": _init_completed,
+            "timestamp": _init_timestamp.isoformat() if _init_timestamp else None,
+            "in_progress": _init_in_progress
+        }
+        
+        # 重置状态
+        _init_completed = False
+        _init_timestamp = None
+        # 不重置 _init_in_progress，避免干扰正在进行的初始化
+        
+        logger.info(f"✅ [管理] 初始化状态已重置")
+        
+        return {
+            "success": True,
+            "message": "初始化状态已重置，下次查询将重新获取数据",
+            "old_status": old_status,
+            "new_status": {
+                "completed": _init_completed,
+                "timestamp": None,
+                "in_progress": _init_in_progress
+            }
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ [管理] 重置初始化状态失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

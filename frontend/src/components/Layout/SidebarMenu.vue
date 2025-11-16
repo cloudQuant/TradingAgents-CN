@@ -25,11 +25,62 @@
     <el-sub-menu index="/bonds">
       <template #title>
         <el-icon><Tickets /></el-icon>
-        <span>债券分析</span>
+        <span>债券投研</span>
       </template>
       <el-menu-item index="/bonds/overview">概览</el-menu-item>
+      <el-menu-item index="/bonds/collections">数据集合</el-menu-item>
       <el-menu-item index="/bonds/analysis">债券分析</el-menu-item>
       <el-menu-item index="/bonds/yield-curve">收益率曲线</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="/funds">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>基金投研</span>
+      </template>
+      <el-menu-item index="/funds/overview">概览</el-menu-item>
+      <el-menu-item index="/funds/collections">数据集合</el-menu-item>
+      <el-menu-item index="/funds/analysis">基金分析</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="/futures">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>期货投研</span>
+      </template>
+      <el-menu-item index="/futures/overview">概览</el-menu-item>
+      <el-menu-item index="/futures/collections">数据集合</el-menu-item>
+      <el-menu-item index="/futures/analysis">期货分析</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="/options">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>期权投研</span>
+      </template>
+      <el-menu-item index="/options/overview">概览</el-menu-item>
+      <el-menu-item index="/options/collections">数据集合</el-menu-item>
+      <el-menu-item index="/options/analysis">期权分析</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="/currencies">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>外汇投研</span>
+      </template>
+      <el-menu-item index="/currencies/overview">概览</el-menu-item>
+      <el-menu-item index="/currencies/collections">数据集合</el-menu-item>
+      <el-menu-item index="/currencies/analysis">外汇分析</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="/cryptos">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>Crypto投研</span>
+      </template>
+      <el-menu-item index="/cryptos/overview">概览</el-menu-item>
+      <el-menu-item index="/cryptos/collections">数据集合</el-menu-item>
+      <el-menu-item index="/cryptos/analysis">数字货币分析</el-menu-item>
     </el-sub-menu>
 
     <el-menu-item index="/tasks">

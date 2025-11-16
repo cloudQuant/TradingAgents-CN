@@ -61,11 +61,29 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'convertible',
+        name: 'BondsConvertible',
+        component: () => import('@/views/Bonds/Convertible.vue'),
+        meta: {
+          title: '可转债分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections',
+        name: 'BondCollections',
+        component: () => import('@/views/Bonds/Collections.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true
+        }
+      },
+      {
         path: 'collections/:collectionName',
         name: 'BondCollection',
         component: () => import('@/views/Bonds/Collection.vue'),
         meta: {
-          title: '数据集合',
+          title: '数据集合详情',
           requiresAuth: true
         }
       },
@@ -73,6 +91,167 @@ const routes: RouteRecordRaw[] = [
         path: '',
         redirect: { name: 'BondsHome' }
       }
+    ]
+  },
+  {
+    path: '/funds',
+    name: 'Funds',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/funds/overview',
+    meta: {
+      title: '基金投研',
+      icon: 'TrendCharts',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: 'overview',
+        name: 'FundsHome',
+        component: () => import('@/views/Funds/index.vue'),
+        meta: {
+          title: '基金概览',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections',
+        name: 'FundCollections',
+        component: () => import('@/views/Funds/Collections.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'analysis',
+        name: 'FundAnalysis',
+        component: () => import('@/views/Funds/FundAnalysis.vue'),
+        meta: {
+          title: '基金分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '',
+        redirect: { name: 'FundsHome' }
+      }
+    ]
+  },
+  {
+    path: '/futures',
+    name: 'Futures',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/futures/overview',
+    meta: {
+      title: '期货投研',
+      icon: 'TrendCharts',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: 'overview',
+        name: 'FuturesHome',
+        component: () => import('@/views/Futures/index.vue'),
+        meta: {
+          title: '期货概览',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections',
+        name: 'FuturesCollections',
+        component: () => import('@/views/Futures/Collections.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'analysis',
+        name: 'FuturesAnalysis',
+        component: () => import('@/views/Futures/FuturesAnalysis.vue'),
+        meta: {
+          title: '期货分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '',
+        redirect: { name: 'FuturesHome' }
+      }
+    ]
+  },
+  {
+    path: '/options',
+    name: 'Options',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/options/overview',
+    meta: {
+      title: '期权投研',
+      icon: 'TrendCharts',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: 'overview',
+        name: 'OptionsHome',
+        component: () => import('@/views/Options/index.vue'),
+        meta: {
+          title: '期权概览',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections',
+        name: 'OptionsCollections',
+        component: () => import('@/views/Options/Collections.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'analysis',
+        name: 'OptionsAnalysis',
+        component: () => import('@/views/Options/OptionsAnalysis.vue'),
+        meta: {
+          title: '期权分析',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '',
+        redirect: { name: 'OptionsHome' }
+      }
+    ]
+  },
+  {
+    path: '/currencies',
+    name: 'Currencies',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/currencies/overview',
+    meta: { title: '外汇投研', icon: 'TrendCharts', requiresAuth: true, transition: 'slide-up' },
+    children: [
+      { path: 'overview', name: 'CurrenciesHome', component: () => import('@/views/Currencies/index.vue'), meta: { title: '外汇概览', requiresAuth: true } },
+      { path: 'collections', name: 'CurrenciesCollections', component: () => import('@/views/Currencies/Collections.vue'), meta: { title: '数据集合', requiresAuth: true } },
+      { path: 'analysis', name: 'CurrenciesAnalysis', component: () => import('@/views/Currencies/CurrenciesAnalysis.vue'), meta: { title: '外汇分析', requiresAuth: true } },
+      { path: '', redirect: { name: 'CurrenciesHome' } }
+    ]
+  },
+  {
+    path: '/cryptos',
+    name: 'Cryptos',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/cryptos/overview',
+    meta: { title: '数字货币投研', icon: 'TrendCharts', requiresAuth: true, transition: 'slide-up' },
+    children: [
+      { path: 'overview', name: 'CryptosHome', component: () => import('@/views/Cryptos/index.vue'), meta: { title: '数字货币概览', requiresAuth: true } },
+      { path: 'collections', name: 'CryptosCollections', component: () => import('@/views/Cryptos/Collections.vue'), meta: { title: '数据集合', requiresAuth: true } },
+      { path: 'analysis', name: 'CryptosAnalysis', component: () => import('@/views/Cryptos/CryptosAnalysis.vue'), meta: { title: '数字货币分析', requiresAuth: true } },
+      { path: '', redirect: { name: 'CryptosHome' } }
     ]
   },
   {

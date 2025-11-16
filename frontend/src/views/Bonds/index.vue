@@ -315,66 +315,12 @@
         <el-button type="primary" @click="viewBondHistory(selectedBondCode)">查看历史数据</el-button>
       </template>
     </el-dialog>
-
-    <!-- 数据集合链接 -->
-    <el-card shadow="hover" class="collections-card">
-      <template #header>
-        <div class="card-header">
-          <span>数据集合</span>
-          <span class="collections-count">共 {{ collections.length }} 个集合</span>
-        </div>
-      </template>
-      <div class="collections-list" v-loading="collectionsLoading">
-        <el-row :gutter="16">
-          <el-col
-            v-for="collection in collections"
-            :key="collection.name"
-            :xs="24"
-            :sm="12"
-            :md="8"
-            :lg="6"
-          >
-            <el-tooltip
-              :content="collection.description"
-              placement="top"
-              effect="dark"
-            >
-              <div
-                class="collection-item"
-                @click="viewCollection(collection.name)"
-              >
-                <div class="collection-icon">
-                  <el-icon><Box /></el-icon>
-                </div>
-                <div class="collection-info">
-                  <div class="collection-name">{{ collection.display_name }}</div>
-                  <div class="collection-fields">
-                    <el-tag
-                      v-for="(field, idx) in collection.fields.slice(0, 3)"
-                      :key="idx"
-                      size="small"
-                      type="info"
-                      style="margin-right: 4px; margin-bottom: 4px;"
-                    >
-                      {{ field }}
-                    </el-tag>
-                    <span v-if="collection.fields.length > 3" class="more-fields">
-                      +{{ collection.fields.length - 3 }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </el-tooltip>
-          </el-col>
-        </el-row>
-      </div>
-    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Tickets, Search, Refresh, Loading, Warning, Box } from '@element-plus/icons-vue'
+import { Tickets, Search, Refresh, Loading, Warning } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { bondsApi, type BondItem } from '@/api/bonds'
@@ -409,16 +355,6 @@ const detailDialogVisible = ref(false)
 const selectedBondCode = ref('')
 const bondDetail = ref<BondItem | null>(null)
 const bondDetailLoading = ref(false)
-
-// 数据集合
-const collections = ref<Array<{
-  name: string
-  display_name: string
-  description: string
-  route: string
-  fields: string[]
-}>>([])
-const collectionsLoading = ref(false)
 
 // 分类选项
 const categoryOptions = computed(() => [
@@ -788,32 +724,8 @@ const viewBondHistory = (code: string) => {
   })
 }
 
-// 加载数据集合列表
-const loadCollections = async () => {
-  collectionsLoading.value = true
-  try {
-    const res = await bondsApi.getCollections()
-    if (res.success && res.data) {
-      collections.value = res.data
-    }
-  } catch (e) {
-    console.error('加载数据集合失败:', e)
-  } finally {
-    collectionsLoading.value = false
-  }
-}
-
-// 查看集合数据
-const viewCollection = (collectionName: string) => {
-  router.push({
-    name: 'BondCollection',
-    params: { collectionName }
-  })
-}
-
 onMounted(() => {
   loadBonds()
-  loadCollections()
 })
 </script>
 
@@ -884,79 +796,6 @@ onMounted(() => {
   margin-left: 4px;
   font-size: 12px;
   opacity: 0.8;
-}
-
-.collections-card {
-  margin-top: 20px;
-}
-
-.collections-count {
-  font-size: 14px;
-  color: #909399;
-  font-weight: normal;
-}
-
-.collections-list {
-  min-height: 200px;
-}
-
-.collection-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 16px;
-  background: #fff;
-}
-
-.collection-item:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.collection-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ecf5ff;
-  border-radius: 8px;
-  color: #409eff;
-  font-size: 20px;
-}
-
-.collection-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.collection-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.collection-fields {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.more-fields {
-  font-size: 12px;
-  color: #909399;
 }
 
 .table-card :deep(.el-card__header) {
