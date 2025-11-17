@@ -863,6 +863,12 @@ async def get_collection_data(
     try:
         # 构建查询条件
         query = {}
+        
+        # 对于 bond_info_cm 集合，只查询标准数据记录，不查询详细查询记录
+        # 这样可以确保列表页面不会显示详细查询数据（60+个英文字段）
+        if collection_name == "bond_info_cm":
+            query["endpoint"] = "bond_info_cm"
+        
         # 安全检查：确保 filter_field 和 filter_value 都是字符串且非空
         # 注意：需要先检查类型，避免对Collection对象进行布尔运算
         # 使用try-except和type()检查，完全避免布尔运算
@@ -922,40 +928,84 @@ async def get_collection_data(
                 doc["_id"] = str(doc["_id"])
             items.append(doc)
         
-        # 获取字段信息（从第一条记录推断）
+        # 获取字段信息（从当前页的记录收集）
+        # 所有页面使用统一的字段收集逻辑
         fields_info = []
         if items:
-            sample = items[0]
-            for key, value in sample.items():
-                if key != "_id":
-                    field_type = type(value).__name__
-                    if field_type == "int":
-                        field_type = "整数"
-                    elif field_type == "float":
-                        field_type = "浮点数"
-                    elif field_type == "bool":
-                        field_type = "布尔值"
-                    elif field_type == "list":
-                        field_type = "列表"
-                    elif field_type == "dict":
-                        field_type = "对象"
-                    else:
-                        field_type = "字符串"
-                    fields_info.append({
-                        "name": key,
-                        "type": field_type,
-                        "example": str(value)[:50] if value is not None else None,
-                    })
+            field_map = {}  # {field_name: {"type": str, "example": str}}
+            
+            # 从当前页的所有记录收集字段
+            for item in items:
+                # 对于 bond_info_cm 集合，只从标准数据记录收集字段，忽略详细查询记录
+                # bond_info_cm 集合包含两种数据：
+                # - 标准数据（endpoint="bond_info_cm"）: 10个中文字段，用于列表显示
+                # - 详细查询数据（endpoint="bond_info_cm_query"）: 60+个英文字段，用于详情页
+                # 为了保证第一页和第二页显示一致，只从标准数据收集字段
+                if collection_name == "bond_info_cm":
+                    item_endpoint = item.get("endpoint", "")
+                    if item_endpoint != "bond_info_cm":
+                        # 跳过详细查询记录，不从中收集字段
+                        continue
+                
+                for key, value in item.items():
+                    if key != "_id" and key not in field_map:
+                        field_type = type(value).__name__
+                        if field_type == "int":
+                            field_type = "整数"
+                        elif field_type == "float":
+                            field_type = "浮点数"
+                        elif field_type == "bool":
+                            field_type = "布尔值"
+                        elif field_type == "list":
+                            field_type = "列表"
+                        elif field_type == "dict":
+                            field_type = "对象"
+                        else:
+                            field_type = "字符串"
+                        
+                        field_map[key] = {
+                            "name": key,
+                            "type": field_type,
+                            "example": str(value)[:50] if value is not None else None,
+                        }
+            
+            # 转换为列表
+            fields_info = list(field_map.values())
         
-        # 对于 bond_info_cm 集合，将元数据字段（code, endpoint, source）移到最后
+        # 对于 bond_info_cm 集合，只显示标准字段（中文字段），忽略详细查询的英文字段
         if collection_name == "bond_info_cm" and fields_info:
-            # 元数据字段列表
-            meta_fields = ["code", "endpoint", "source"]
-            # 分离元数据字段和业务字段
-            business_fields = [f for f in fields_info if f["name"] not in meta_fields]
-            meta_field_objs = [f for f in fields_info if f["name"] in meta_fields]
-            # 重新组合：业务字段在前，元数据字段在后
-            fields_info = business_fields + meta_field_objs
+            # 定义标准显示字段（按显示顺序）
+            standard_fields = [
+                "债券代码",
+                "债券简称", 
+                "债券类型",
+                "发行人/受托机构",
+                "发行日期",
+                "最新债项评级",
+                "查询代码",
+                "endpoint",
+                "code",
+                "source"
+            ]
+            
+            # 只保留标准字段（按定义的顺序）
+            ordered_fields = []
+            field_dict = {f["name"]: f for f in fields_info}
+            
+            for field_name in standard_fields:
+                if field_name in field_dict:
+                    ordered_fields.append(field_dict[field_name])
+            
+            # 如果标准字段不存在（可能是新数据），保留所有中文字段
+            if len(ordered_fields) < 5:
+                logger.warning(f"⚠️ [集合数据] bond_info_cm未找到标准字段，使用所有中文字段")
+                # 分离中文字段和其他字段
+                chinese_fields = [f for f in fields_info if any('\u4e00' <= c <= '\u9fff' for c in f["name"])]
+                meta_fields = [f for f in fields_info if f["name"] in ["endpoint", "code", "source"]]
+                ordered_fields = chinese_fields + meta_fields
+            
+            fields_info = ordered_fields
+            logger.info(f"✅ [集合数据] bond_info_cm显示{len(fields_info)}个标准字段")
         
         return {
             "success": True,

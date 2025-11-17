@@ -1,18 +1,14 @@
-import axios from 'axios'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { ApiClient, type ApiResponse } from './request'
 
 export const fundsApi = {
   // 获取基金概览
-  async getOverview() {
-    const response = await axios.get(`${API_BASE_URL}/api/funds/overview`)
-    return response.data
+  async getOverview(): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/funds/overview')
   },
 
   // 获取基金集合列表
-  async getCollections() {
-    const response = await axios.get(`${API_BASE_URL}/api/funds/collections`)
-    return response.data
+  async getCollections(): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/funds/collections')
   },
 
   // 获取指定集合的数据
@@ -26,33 +22,37 @@ export const fundsApi = {
       filter_field?: string
       filter_value?: string
     }
-  ) {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/funds/collections/${collectionName}`,
-      { params }
-    )
-    return response.data
+  ): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/funds/collections/${collectionName}`, params)
   },
 
   // 获取集合统计信息
-  async getCollectionStats(collectionName: string) {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/funds/collections/${collectionName}/stats`
-    )
-    return response.data
+  async getCollectionStats(collectionName: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/funds/collections/${collectionName}/stats`)
   },
 
   // 搜索基金
-  async searchFunds(keyword: string) {
-    const response = await axios.get(`${API_BASE_URL}/api/funds/search`, {
-      params: { keyword }
-    })
-    return response.data
+  async searchFunds(keyword: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/funds/search', { keyword })
   },
 
   // 获取基金分析
-  async getFundAnalysis(fundCode: string) {
-    const response = await axios.get(`${API_BASE_URL}/api/funds/analysis/${fundCode}`)
-    return response.data
+  async getFundAnalysis(fundCode: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/funds/analysis/${fundCode}`)
+  },
+
+  // 刷新集合数据
+  async refreshCollectionData(collectionName: string, params?: any): Promise<ApiResponse<any>> {
+    return await ApiClient.post(`/api/funds/collections/${collectionName}/refresh`, params || {})
+  },
+
+  // 获取刷新任务状态
+  async getRefreshTaskStatus(collectionName: string, taskId: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/funds/collections/${collectionName}/refresh/status/${taskId}`)
+  },
+
+  // 清空集合数据
+  async clearCollectionData(collectionName: string): Promise<ApiResponse<any>> {
+    return await ApiClient.delete(`/api/funds/collections/${collectionName}/clear`)
   }
 }

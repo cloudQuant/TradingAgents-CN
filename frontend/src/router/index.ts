@@ -124,6 +124,15 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'collections/:collectionName',
+        name: 'FundCollection',
+        component: () => import('@/views/Funds/Collection.vue'),
+        meta: {
+          title: '数据集合详情',
+          requiresAuth: true
+        }
+      },
+      {
         path: 'analysis',
         name: 'FundAnalysis',
         component: () => import('@/views/Funds/FundAnalysis.vue'),

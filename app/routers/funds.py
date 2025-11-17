@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from app.routers.auth_db import get_current_user
 from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
+from app.services.fund_refresh_service import FundRefreshService
+from app.services.fund_data_service import FundDataService
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 logger = logging.getLogger("webapi")
@@ -50,8 +52,15 @@ async def list_fund_collections(current_user: dict = Depends(get_current_user)):
         # 定义基金数据集合
         collections = [
             {
+                "name": "fund_name_em",
+                "display_name": "基金基本信息",
+                "description": "东方财富网所有基金的基本信息，包括基金代码、简称、类型等",
+                "route": "/funds/collections/fund_name_em",
+                "fields": ["基金代码", "拼音缩写", "基金简称", "基金类型", "拼音全称"],
+            },
+            {
                 "name": "fund_basic_info",
-                "display_name": "基金基础信息",
+                "display_name": "基金基础信息（旧）",
                 "description": "基金的基础信息，包括代码、名称、类型、规模等",
                 "route": "/funds/collections/fund_basic_info",
                 "fields": ["code", "name", "type", "size", "manager", "establish_date"],
@@ -97,6 +106,7 @@ async def get_fund_collection_data(
     
     # 集合映射
     collection_map = {
+        "fund_name_em": db.get_collection("fund_name_em"),
         "fund_basic_info": db.get_collection("fund_basic_info"),
         "fund_net_value": db.get_collection("fund_net_value"),
         "fund_ranking": db.get_collection("fund_ranking"),
@@ -184,6 +194,7 @@ async def get_fund_collection_stats(
     db = get_mongo_db()
     
     collection_map = {
+        "fund_name_em": db.get_collection("fund_name_em"),
         "fund_basic_info": db.get_collection("fund_basic_info"),
         "fund_net_value": db.get_collection("fund_net_value"),
         "fund_ranking": db.get_collection("fund_ranking"),
@@ -284,4 +295,100 @@ async def get_fund_analysis(
         }
     except Exception as e:
         logger.error(f"获取基金分析失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/{collection_name}/refresh")
+async def refresh_fund_collection(
+    collection_name: str,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+):
+    """刷新基金数据集合"""
+    try:
+        db = get_mongo_db()
+        task_manager = get_task_manager()
+        
+        # 创建任务
+        task_id = task_manager.create_task(
+            task_type=f"refresh_{collection_name}",
+            description=f"更新基金集合: {collection_name}"
+        )
+        
+        # 在后台异步执行刷新任务
+        async def do_refresh():
+            refresh_service = FundRefreshService(db)
+            await refresh_service.refresh_collection(collection_name, task_id, {})
+        
+        background_tasks.add_task(do_refresh)
+        
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"刷新任务已创建"
+            }
+        }
+    except Exception as e:
+        logger.error(f"刷新基金集合失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/collections/{collection_name}/refresh/status/{task_id}")
+async def get_refresh_task_status(
+    collection_name: str,
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取刷新任务状态"""
+    try:
+        task_manager = get_task_manager()
+        task = task_manager.get_task(task_id)
+        
+        if not task:
+            return {"success": False, "error": "任务不存在"}
+        
+        return {
+            "success": True,
+            "data": task
+        }
+    except Exception as e:
+        logger.error(f"获取任务状态失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.delete("/collections/{collection_name}/clear")
+async def clear_fund_collection(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """清空基金数据集合"""
+    try:
+        db = get_mongo_db()
+        data_service = FundDataService(db)
+        
+        # 支持fund_name_em和fund_basic_info集合
+        if collection_name == "fund_name_em":
+            deleted_count = await data_service.clear_fund_name_em_data()
+            return {
+                "success": True,
+                "data": {
+                    "deleted_count": deleted_count,
+                    "message": f"成功清空 {deleted_count} 条数据"
+                }
+            }
+        elif collection_name == "fund_basic_info":
+            deleted_count = await data_service.clear_fund_basic_info_data()
+            return {
+                "success": True,
+                "data": {
+                    "deleted_count": deleted_count,
+                    "message": f"成功清空 {deleted_count} 条数据"
+                }
+            }
+        else:
+            return {"success": False, "error": f"集合 {collection_name} 不支持清空操作"}
+            
+    except Exception as e:
+        logger.error(f"清空基金集合失败: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
