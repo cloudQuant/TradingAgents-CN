@@ -21,7 +21,8 @@ class FundRefreshService:
     """基金数据刷新服务"""
     
     def __init__(self, db=None):
-        self.db = db or get_mongo_db()
+        # AsyncIOMotorDatabase does not implement truthiness; avoid boolean evaluation
+        self.db = db if db is not None else get_mongo_db()
         self.data_service = FundDataService(self.db)
         self.task_manager = get_task_manager()
     
@@ -43,6 +44,7 @@ class FundRefreshService:
             刷新结果
         """
         try:
+            self.task_manager.start_task(task_id)
             self.task_manager.update_progress(task_id, 0, 100, f"开始刷新 {collection_name}...")
             
             # 根据collection_name调用不同的刷新方法
@@ -57,7 +59,10 @@ class FundRefreshService:
             
             result = await handler(task_id, params or {})
             
-            self.task_manager.complete_task(task_id, result)
+            # 确保任务状态正确更新为成功
+            message = result.get('message', '数据更新成功')
+            self.task_manager.complete_task(task_id, result, message)
+            logger.info(f"任务 {task_id} 完成: {message}")
             return result
             
         except Exception as e:
@@ -89,8 +94,14 @@ class FundRefreshService:
             
             self.task_manager.update_progress(task_id, 50, 100, f"获取到 {len(df)} 条基金数据，正在保存...")
             
-            # 保存数据
-            saved_count = await self.data_service.save_fund_name_em_data(df)
+            # 定义进度回调函数
+            def on_save_progress(current, total, percentage, message):
+                # 计算总体进度（50%用于获取数据，50%用于保存数据）
+                overall_progress = 50 + int(percentage * 0.5)
+                self.task_manager.update_progress(task_id, overall_progress, 100, message)
+            
+            # 保存数据（传入进度回调）
+            saved_count = await self.data_service.save_fund_name_em_data(df, progress_callback=on_save_progress)
             
             self.task_manager.update_progress(task_id, 100, 100, f"成功保存 {saved_count} 条数据")
             
@@ -145,8 +156,14 @@ class FundRefreshService:
             
             self.task_manager.update_progress(task_id, 50, 100, f"获取到 {len(df)} 条基金数据，正在保存到fund_basic_info集合...")
             
-            # 保存数据到fund_basic_info集合
-            saved_count = await self.data_service.save_fund_basic_info_data(df)
+            # 定义进度回调函数
+            def on_save_progress(current, total, percentage, message):
+                # 计算总体进度（50%用于获取数据，50%用于保存数据）
+                overall_progress = 50 + int(percentage * 0.5)
+                self.task_manager.update_progress(task_id, overall_progress, 100, message)
+            
+            # 保存数据到fund_basic_info集合（传入进度回调）
+            saved_count = await self.data_service.save_fund_basic_info_data(df, progress_callback=on_save_progress)
             
             self.task_manager.update_progress(task_id, 100, 100, f"成功保存 {saved_count} 条数据")
             

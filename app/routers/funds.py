@@ -190,9 +190,10 @@ async def get_fund_collection_stats(
     collection_name: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """获取基金集合的统计信息"""
+    """获取基金集合统计信息"""
     db = get_mongo_db()
     
+    # 支持的集合列表
     collection_map = {
         "fund_name_em": db.get_collection("fund_name_em"),
         "fund_basic_info": db.get_collection("fund_basic_info"),
@@ -205,17 +206,35 @@ async def get_fund_collection_stats(
         return {"success": False, "error": f"集合 {collection_name} 不存在"}
     
     try:
-        total_count = await collection.count_documents({})
-        
-        stats = {
-            "total_count": total_count,
-            "collection_name": collection_name,
-        }
-        
-        return {
-            "success": True,
-            "data": stats
-        }
+        # 对于 fund_name_em 和 fund_basic_info，使用 FundDataService 获取详细统计
+        if collection_name in ["fund_name_em", "fund_basic_info"]:
+            from app.services.fund_data_service import FundDataService
+            data_service = FundDataService(db)
+            
+            if collection_name == "fund_name_em":
+                stats = await data_service.get_fund_name_em_stats()
+            else:
+                stats = await data_service.get_fund_basic_info_stats()
+            
+            stats["collection_name"] = collection_name
+            
+            return {
+                "success": True,
+                "data": stats
+            }
+        else:
+            # 其他集合只返回基本统计
+            total_count = await collection.count_documents({})
+            
+            stats = {
+                "total_count": total_count,
+                "collection_name": collection_name,
+            }
+            
+            return {
+                "success": True,
+                "data": stats
+            }
     except Exception as e:
         logger.error(f"获取基金集合统计失败: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
@@ -317,8 +336,16 @@ async def refresh_fund_collection(
         
         # 在后台异步执行刷新任务
         async def do_refresh():
-            refresh_service = FundRefreshService(db)
-            await refresh_service.refresh_collection(collection_name, task_id, {})
+            try:
+                refresh_service = FundRefreshService(db)
+                await refresh_service.refresh_collection(collection_name, task_id, {})
+            except Exception as e:
+                logger.error(f"后台刷新任务失败: {e}", exc_info=True)
+                # 确保任务状态被标记为失败
+                try:
+                    task_manager.fail_task(task_id, str(e))
+                except Exception as inner_e:
+                    logger.error(f"更新任务状态失败: {inner_e}", exc_info=True)
         
         background_tasks.add_task(do_refresh)
         

@@ -167,6 +167,28 @@
           />
         </div>
       </el-card>
+
+      <!-- 年度发行量柱状图，仅 bond_info_cm 显示 -->
+      <el-card
+        v-if="collectionName === 'bond_info_cm' && issuanceChartOption"
+        shadow="hover"
+        class="issuance-card"
+      >
+        <template #header>
+          <div class="card-header">
+            <span>年度债券发行量</span>
+            <small class="text-muted">数据来源：bond_info_cm · 发行日期</small>
+          </div>
+        </template>
+        <div class="chart-wrapper">
+          <v-chart
+            :option="issuanceChartOption"
+            :autoresize="true"
+            style="height: 360px; width: 100%"
+            v-loading="issuanceLoading"
+          />
+        </div>
+      </el-card>
     </div>
 
     <!-- 更新数据对话框 -->
@@ -219,7 +241,7 @@
           >
             <template #default>
               <div style="font-size: 12px;">
-                正在使用10个并发线程更新数据，请耐心等待...
+                正在使用 {{ sanitizedBatchConcurrency }} 个并发线程，任务启动前延迟 {{ sanitizedBatchDelaySeconds }} 秒，请耐心等待...
               </div>
             </template>
           </el-alert>
@@ -273,6 +295,55 @@
         
         <!-- bond_info_cm 查询参数 -->
         <template v-if="needsBondParams">
+          <section class="batch-config-section">
+            <div class="batch-config-header">
+              <div>
+                <p class="batch-config-title">批量更新参数</p>
+                <p class="batch-config-subtitle">按年份批量刷新数据，适用于大范围同步</p>
+              </div>
+              <el-tag size="small" type="success" effect="plain">批量工具</el-tag>
+            </div>
+            <div class="batch-config-grid">
+              <div class="batch-config-field">
+                <label class="batch-field-label">并发线程数</label>
+                <el-input-number
+                  v-model="batchConcurrency"
+                  :min="1"
+                  :max="20"
+                  :step="1"
+                  controls-position="right"
+                  style="width: 100%;"
+                />
+              </div>
+              <div class="batch-config-field">
+                <label class="batch-field-label">启动延迟 (秒)</label>
+                <el-input-number
+                  v-model="batchDelaySeconds"
+                  :min="0"
+                  :max="60"
+                  :step="1"
+                  controls-position="right"
+                  style="width: 100%;"
+                />
+              </div>
+              <div class="batch-config-field batch-config-action">
+                <label class="batch-field-label">批量操作</label>
+                <el-button 
+                  type="success"
+                  size="small"
+                  class="batch-update-btn"
+                  @click="refreshAllYears"
+                  :loading="batchRefreshing"
+                  :disabled="refreshing || batchRefreshing"
+                >
+                  {{ batchRefreshing ? `批量更新中 (${batchProgress.completed}/${batchProgress.total})...` : '更新全部年份' }}
+                </el-button>
+                <p class="batch-config-note">根据并发与延迟策略逐年执行，请确保系统资源充足</p>
+              </div>
+            </div>
+            <el-divider class="batch-config-divider" />
+          </section>
+
           <el-alert
             title="查询参数设置"
             type="info"
@@ -412,15 +483,6 @@
           {{ refreshing ? '取消' : '关闭' }}
         </el-button>
         <el-button 
-          v-if="needsBondParams"
-          type="success" 
-          @click="refreshAllYears" 
-          :loading="batchRefreshing"
-          :disabled="refreshing || batchRefreshing"
-        >
-          {{ batchRefreshing ? `批量更新中 (${batchProgress.completed}/${batchProgress.total})...` : '更新全部年份' }}
-        </el-button>
-        <el-button 
           type="primary" 
           @click="refreshData" 
           :loading="refreshing"
@@ -438,7 +500,14 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Box, Refresh, Search, Document, Calendar, Download, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import VChart from 'vue-echarts'
 import { bondsApi } from '@/api/bonds'
+
+use([CanvasRenderer, BarChart, GridComponent, TooltipComponent, LegendComponent])
 
 const route = useRoute()
 const router = useRouter()
@@ -464,6 +533,8 @@ const sortDir = ref<'asc' | 'desc'>('asc')
 // 统计数据
 const stats = ref<any>(null)
 const collectionInfo = ref<any>(null)
+const issuanceLoading = ref(false)
+const issuanceChartOption = ref<any>(null)
 
 // 更新数据相关
 const refreshDialogVisible = ref(false)
@@ -492,6 +563,18 @@ const bondInfoParams = ref({
 const batchRefreshing = ref(false)
 const batchProgress = ref({ completed: 0, total: 0, failed: 0 })
 const batchTasks = ref<Array<{ year: string; taskId: string; status: string }>>([])
+const batchConcurrency = ref(5)
+const batchDelaySeconds = ref(5)
+const sanitizedBatchConcurrency = computed(() => {
+  const value = Number(batchConcurrency.value)
+  if (Number.isNaN(value)) return 1
+  return Math.max(1, Math.min(20, Math.floor(value)))
+})
+const sanitizedBatchDelaySeconds = computed(() => {
+  const value = Number(batchDelaySeconds.value)
+  if (Number.isNaN(value)) return 0
+  return Math.max(0, Math.min(60, Math.floor(value)))
+})
 
 // 清空数据相关
 const clearing = ref(false)
@@ -526,6 +609,8 @@ const availableYears = computed(() => {
   return years
 })
 
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
 // 加载数据
 const loadData = async () => {
   loading.value = true
@@ -558,6 +643,12 @@ const loadData = async () => {
       total.value = dataRes.data.total || 0
     } else {
       ElMessage.error('加载数据失败')
+    }
+
+    if (collectionName.value === 'bond_info_cm') {
+      await loadIssuanceStats()
+    } else {
+      issuanceChartOption.value = null
     }
   } catch (e: any) {
     console.error('加载数据失败:', e)
@@ -608,6 +699,60 @@ const handleSortChange = ({ column, prop, order }: { column: any; prop: string; 
   }
   page.value = 1
   loadData()
+}
+
+const loadIssuanceStats = async () => {
+  try {
+    issuanceLoading.value = true
+    const res = await bondsApi.getBondInfoIssuanceYearly()
+    if (res.success && res.data?.items?.length) {
+      const years = res.data.items.map((item: { year: string }) => item.year)
+      const counts = res.data.items.map((item: { count: number }) => item.count)
+      issuanceChartOption.value = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '5%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: years,
+          name: '年份',
+          nameLocation: 'middle',
+          nameGap: 30,
+          axisLabel: {
+            rotate: years.length > 10 ? 45 : 0
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: '发行数量 (条)'
+        },
+        series: [
+          {
+            name: '发行量',
+            type: 'bar',
+            data: counts,
+            itemStyle: {
+              color: '#5b8ff9'
+            }
+          }
+        ]
+      }
+    } else {
+      issuanceChartOption.value = null
+    }
+  } catch (error: any) {
+    console.error('加载发行统计失败:', error)
+    ElMessage.warning(error?.message || '加载年度发行统计失败')
+    issuanceChartOption.value = null
+  } finally {
+    issuanceLoading.value = false
+  }
 }
 
 // 显示更新对话框
@@ -777,9 +922,12 @@ const cancelRefresh = () => {
 // 批量更新所有年份（从1993到当前年份）
 const refreshAllYears = async () => {
   try {
+    const concurrency = sanitizedBatchConcurrency.value
+    const delaySeconds = sanitizedBatchDelaySeconds.value
+    const delayMs = delaySeconds * 1000
     // 确认操作
     await ElMessageBox.confirm(
-      '将从1993年到今年，按年份逐年更新债券信息数据。将使用10个并发线程进行更新，预计需要较长时间。是否继续？',
+      `将从1993年到今年，按年份逐年更新债券信息数据。将使用 ${concurrency} 个并发线程进行更新，并在每个任务开始前延迟 ${delaySeconds} 秒以避免触发频率限制。是否继续？`,
       '批量更新确认',
       {
         confirmButtonText: '开始更新',
@@ -800,63 +948,67 @@ const refreshAllYears = async () => {
     batchProgress.value = { completed: 0, total: years.length, failed: 0 }
     batchTasks.value = []
     
-    ElMessage.info(`开始批量更新，共 ${years.length} 个年份，使用10个并发线程`)
+    ElMessage.info(`开始批量更新，共 ${years.length} 个年份，使用 ${concurrency} 个并发线程且每个任务启动前延迟 ${delaySeconds} 秒`)
     
-    // 使用并发控制，最多10个并发任务
-    const concurrency = 10
+    // 使用并发控制，最多 concurrency 个并发任务，并在任务启动前延迟
     const results: Array<{ year: string; success: boolean; error?: string }> = []
+    const executing: Promise<void>[] = []
     
-    // 分批处理
-    for (let i = 0; i < years.length; i += concurrency) {
-      const batch = years.slice(i, i + concurrency)
-      
-      // 并发执行当前批次
-      const batchPromises = batch.map(async (year) => {
-        try {
-          // 构建参数
-          const params: any = {
-            issue_year: year
-          }
-          
-          // 保留其他已设置的参数
-          if (bondInfoParams.value.bond_type) params.bond_type = bondInfoParams.value.bond_type
-          if (bondInfoParams.value.coupon_type) params.coupon_type = bondInfoParams.value.coupon_type
-          if (bondInfoParams.value.grade) params.grade = bondInfoParams.value.grade
-          if (bondInfoParams.value.bond_name) params.bond_name = bondInfoParams.value.bond_name
-          if (bondInfoParams.value.bond_code) params.bond_code = bondInfoParams.value.bond_code
-          if (bondInfoParams.value.bond_issue) params.bond_issue = bondInfoParams.value.bond_issue
-          if (bondInfoParams.value.underwriter) params.underwriter = bondInfoParams.value.underwriter
-          
-          // 创建任务
-          const res = await bondsApi.refreshCollectionData(collectionName.value, params)
-          
-          if (res.success && res.data?.task_id) {
-            const taskId = res.data.task_id
-            batchTasks.value.push({ year, taskId, status: 'running' })
-            
-            // 等待任务完成
-            await waitForTask(taskId)
-            
-            batchProgress.value.completed++
-            return { year, success: true }
-          } else {
-            throw new Error(res.data?.message || '创建任务失败')
-          }
-        } catch (error: any) {
-          batchProgress.value.completed++
-          batchProgress.value.failed++
-          console.error(`更新${year}年数据失败:`, error)
-          return { year, success: false, error: error.message }
+    const runYearTask = async (year: string) => {
+      try {
+        const params: Record<string, any> = {
+          issue_year: year
+        }
+        
+        if (bondInfoParams.value.bond_type) params.bond_type = bondInfoParams.value.bond_type
+        if (bondInfoParams.value.coupon_type) params.coupon_type = bondInfoParams.value.coupon_type
+        if (bondInfoParams.value.grade) params.grade = bondInfoParams.value.grade
+        if (bondInfoParams.value.bond_name) params.bond_name = bondInfoParams.value.bond_name
+        if (bondInfoParams.value.bond_code) params.bond_code = bondInfoParams.value.bond_code
+        if (bondInfoParams.value.bond_issue) params.bond_issue = bondInfoParams.value.bond_issue
+        if (bondInfoParams.value.underwriter) params.underwriter = bondInfoParams.value.underwriter
+        
+        const res = await bondsApi.refreshCollectionData(collectionName.value, params)
+        
+        if (res.success && res.data?.task_id) {
+          const taskId = res.data.task_id
+          batchTasks.value.push({ year, taskId, status: 'running' })
+          await waitForTask(taskId)
+          return { year, success: true as const }
+        }
+        throw new Error(res.data?.message || '创建任务失败')
+      } catch (error: any) {
+        batchProgress.value.failed++
+        console.error(`更新${year}年数据失败:`, error)
+        return { year, success: false as const, error: error?.message || '未知错误' }
+      } finally {
+        batchProgress.value.completed++
+      }
+    }
+    
+    for (const year of years) {
+      if (delayMs > 0) {
+        await delay(delayMs)
+      }
+      const taskPromise = (async () => {
+        const result = await runYearTask(year)
+        results.push(result)
+      })()
+      executing.push(taskPromise)
+      taskPromise.finally(() => {
+        const index = executing.indexOf(taskPromise)
+        if (index > -1) {
+          executing.splice(index, 1)
         }
       })
       
-      // 等待当前批次完成
-      const batchResults = await Promise.all(batchPromises)
-      results.push(...batchResults)
-      
-      // 显示当前进度
-      console.log(`批次完成: ${batchProgress.value.completed}/${batchProgress.value.total}`)
+      if (executing.length >= concurrency) {
+        await Promise.race(executing)
+      }
     }
+    
+    await Promise.all(executing)
+    console.log(`批量更新完成: ${batchProgress.value.completed}/${batchProgress.value.total}`)
     
     // 所有任务完成
     const successCount = results.filter(r => r.success).length
@@ -1022,6 +1174,15 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
+.issuance-card {
+  margin-bottom: 16px;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 360px;
+}
+
 .stats-label {
   font-size: 14px;
   color: #606266;
@@ -1056,6 +1217,81 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.batch-config-section {
+  padding: 16px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  margin-bottom: 20px;
+}
+
+.batch-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.batch-config-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.batch-config-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #909399;
+}
+
+.batch-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.batch-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.batch-field-label {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.batch-config-action {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.batch-update-btn {
+  width: fit-content;
+  padding: 4px 18px;
+  font-weight: 500;
+}
+
+.batch-config-note {
+  margin: 0;
+  font-size: 12px;
+  color: #a0a4ab;
+  line-height: 1.4;
+}
+
+.batch-config-divider {
+  margin: 20px 0 0 0;
+}
+
+@media (max-width: 768px) {
+  .batch-config-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {

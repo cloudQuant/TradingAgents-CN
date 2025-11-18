@@ -20,6 +20,7 @@ from apscheduler.events import (
 from app.core.database import get_mongo_db
 from tradingagents.utils.logging_manager import get_logger
 from app.utils.timezone import now_tz
+from app.services.scheduler_state_store import record_job_state, apply_persisted_states
 
 logger = get_logger(__name__)
 
@@ -57,6 +58,8 @@ class SchedulerService:
 
         # 添加事件监听器，监控任务执行
         self._setup_event_listeners()
+        # 应用持久化的暂停状态
+        apply_persisted_states(self.scheduler)
     
     def _get_db(self):
         """获取数据库连接"""
@@ -118,7 +121,8 @@ class SchedulerService:
         try:
             self.scheduler.pause_job(job_id)
             logger.info(f"⏸️ 任务 {job_id} 已暂停")
-            
+            record_job_state(job_id, True)
+
             # 记录操作历史
             await self._record_job_action(job_id, "pause", "success")
             return True
@@ -140,7 +144,8 @@ class SchedulerService:
         try:
             self.scheduler.resume_job(job_id)
             logger.info(f"▶️ 任务 {job_id} 已恢复")
-            
+            record_job_state(job_id, False)
+
             # 记录操作历史
             await self._record_job_action(job_id, "resume", "success")
             return True

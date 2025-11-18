@@ -103,6 +103,16 @@
       />
     </el-card>
 
+    <!-- 基金类型分布图表 -->
+    <el-card class="chart-card" v-if="stats && stats.type_stats && stats.type_stats.length > 0">
+      <template #header>
+        <div class="card-header">
+          <span style="font-weight: 600; font-size: 16px;">基金类型分布</span>
+        </div>
+      </template>
+      <v-chart :option="chartOption" style="height: 400px;" />
+    </el-card>
+
     <!-- 更新数据对话框 -->
     <el-dialog
       v-model="refreshDialogVisible"
@@ -157,11 +167,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Refresh, Search, Download, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fundsApi } from '@/api/funds'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { PieChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import VChart from 'vue-echarts'
+
+use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent])
 
 const route = useRoute()
 
@@ -186,6 +203,66 @@ const sortDir = ref<'asc' | 'desc'>('desc')
 // 统计数据
 const stats = ref<any>(null)
 const collectionInfo = ref<any>(null)
+
+// 饼图配置
+const chartOption = computed(() => {
+  if (!stats.value || !stats.value.type_stats) {
+    console.log('⚠️ 无法生成饼图配置，统计数据不完整:', stats.value)
+    return {}
+  }
+  
+  const chartData = stats.value.type_stats.map((item: any) => ({
+    name: item.type || '未分类',
+    value: item.count
+  }))
+  
+  console.log('✅ 饼图数据准备完成:', chartData)
+  
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      type: 'scroll',
+      pageIconSize: 12,
+      pageTextStyle: {
+        color: '#666'
+      }
+    },
+    series: [
+      {
+        name: '基金类型',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['60%', '50%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: true,
+          formatter: '{b}: {d}%'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: true
+        },
+        data: chartData
+      }
+    ]
+  }
+})
 
 // 更新数据相关
 const refreshDialogVisible = ref(false)
@@ -213,6 +290,10 @@ const loadData = async () => {
     const statsRes = await fundsApi.getCollectionStats(collectionName.value)
     if (statsRes.success && statsRes.data) {
       stats.value = statsRes.data
+      console.log('📊 统计数据加载成功:', stats.value)
+      if (stats.value.type_stats) {
+        console.log('📈 基金类型统计:', stats.value.type_stats)
+      }
     }
 
     // 加载数据
@@ -227,7 +308,14 @@ const loadData = async () => {
     
     if (dataRes.success && dataRes.data) {
       items.value = dataRes.data.items || []
-      fields.value = dataRes.data.fields || []
+      
+      // 调整字段顺序：将系统字段移到最后
+      const allFields = dataRes.data.fields || []
+      const metaFields = ['code', 'endpoint', 'source', 'updated_at']
+      const mainFields = allFields.filter((f: any) => !metaFields.includes(f.name))
+      const metaFieldsData = allFields.filter((f: any) => metaFields.includes(f.name))
+      fields.value = [...mainFields, ...metaFieldsData]
+      
       total.value = dataRes.data.total || 0
     } else {
       ElMessage.error('加载数据失败')
@@ -301,40 +389,69 @@ const refreshData = async () => {
 
 // 轮询任务状态
 const pollTaskStatus = async () => {
+  let pollCount = 0
+  const maxPollCount = 300 // 最多轮询5分钟（300秒）
+  
   progressTimer = setInterval(async () => {
     try {
+      pollCount++
+      
+      // 超时检查
+      if (pollCount > maxPollCount) {
+        console.warn('任务状态轮询超时，停止轮询')
+        if (progressTimer) {
+          clearInterval(progressTimer)
+          progressTimer = null
+        }
+        progressStatus.value = 'warning'
+        progressMessage.value = '任务超时，请刷新页面查看结果'
+        ElMessage.warning('任务执行时间过长，请刷新页面查看结果')
+        refreshing.value = false
+        return
+      }
+      
       const res = await fundsApi.getRefreshTaskStatus(collectionName.value, currentTaskId.value)
       
       if (res.success && res.data) {
         const task = res.data
         
         // 更新进度
-        progressPercentage.value = Math.round((task.progress / task.total) * 100)
+        if (task.progress !== undefined && task.total !== undefined) {
+          progressPercentage.value = Math.round((task.progress / task.total) * 100)
+        }
         progressMessage.value = task.message || ''
         
         // 检查是否完成
         if (task.status === 'success') {
+          console.log('✅ 任务完成，准备关闭对话框', task)
           progressStatus.value = 'success'
+          progressPercentage.value = 100
           
           let message = task.message || '数据更新成功'
           if (task.result && task.result.saved !== undefined) {
             message = `成功更新 ${task.result.saved} 条数据`
           }
           
+          progressMessage.value = message
           ElMessage.success(message)
           
+          // 清除轮询定时器
           if (progressTimer) {
             clearInterval(progressTimer)
             progressTimer = null
           }
           
+          // 刷新页面数据
           await loadData()
           
+          // 延迟1.5秒后关闭对话框
           setTimeout(() => {
+            console.log('🔒 关闭更新对话框')
             refreshDialogVisible.value = false
             refreshing.value = false
             progressPercentage.value = 0
             progressStatus.value = ''
+            progressMessage.value = ''
           }, 1500)
           
         } else if (task.status === 'failed') {
@@ -347,6 +464,9 @@ const pollTaskStatus = async () => {
           }
           refreshing.value = false
         }
+        // 如果是 running 或 pending，继续轮询
+      } else {
+        console.warn('获取任务状态失败，响应:', res)
       }
     } catch (e) {
       console.error('查询任务状态失败:', e)
@@ -355,6 +475,8 @@ const pollTaskStatus = async () => {
         progressTimer = null
       }
       progressStatus.value = 'exception'
+      progressMessage.value = '查询任务状态失败'
+      ElMessage.error('查询任务状态失败，请重试')
       refreshing.value = false
     }
   }, 1000)
@@ -450,6 +572,11 @@ onMounted(() => {
 }
 
 .table-card {
+  background: #fff;
+}
+
+.chart-card {
+  margin-top: 20px;
   background: #fff;
 }
 

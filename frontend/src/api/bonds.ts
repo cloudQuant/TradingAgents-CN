@@ -102,6 +102,13 @@ export const bondsApi = {
     return ApiClient.get(`/api/bonds/collections/${encodeURIComponent(collectionName)}/stats`)
   },
 
+  async getBondInfoIssuanceYearly(): Promise<ApiResponse<{
+    items: Array<{ year: string; count: number }>;
+    total_years: number
+  }>> {
+    return ApiClient.get('/api/bonds/collections/bond_info_cm/issuance/yearly')
+  },
+
   // 债券分析相关API
   async startAnalysis(request: {
     bond_code: string

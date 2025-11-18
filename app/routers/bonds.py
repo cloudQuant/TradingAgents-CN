@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status
 from pydantic import BaseModel
@@ -1161,6 +1161,46 @@ async def get_collection_stats(
         )
 
 
+@router.get("/collections/bond_info_cm/issuance/yearly")
+async def get_bond_info_cm_yearly_issuance(
+    current_user: dict = Depends(get_current_user),
+):
+    """统计 bond_info_cm 集合按年份的债券发行数量"""
+    db = get_mongo_db()
+    svc = BondDataService(db)
+
+    pipeline = [
+        {"$match": {"endpoint": "bond_info_cm", "发行日期": {"$exists": True, "$ne": ""}}},
+        {"$addFields": {"year": {"$substr": ["$发行日期", 0, 4]}}},
+        {"$match": {"year": {"$regex": "^[0-9]{4}$"}}},
+        {"$group": {"_id": "$year", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}},
+    ]
+
+    try:
+        results: List[Dict[str, Any]] = []
+        async for doc in svc.col_info_cm.aggregate(pipeline):
+            year = str(doc.get("_id", ""))
+            count = int(doc.get("count", 0))
+            results.append({"year": year, "count": count})
+
+        return {
+            "success": True,
+            "data": {
+                "items": results,
+                "total_years": len(results)
+            }
+        }
+    except Exception as e:
+        logger.error(f"❌ [bond_info_cm] 获取年度发行统计失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"获取年度发行统计失败: {str(e)}"
+        )
+
+
+
+
 # 债券分析相关模型
 class BondAnalysisRequest(BaseModel):
     bond_code: str
@@ -1328,9 +1368,17 @@ async def refresh_collection_data(
         
         # 在后台异步执行刷新任务
         async def do_refresh():
-            await refresh_service.refresh_collection(
-                collection_name, task_id, params
-            )
+            try:
+                await refresh_service.refresh_collection(
+                    collection_name, task_id, params
+                )
+            except Exception as e:
+                logger.error(f"后台刷新任务失败: {e}", exc_info=True)
+                # 确保任务状态被标记为失败
+                try:
+                    task_manager.fail_task(task_id, str(e))
+                except Exception as inner_e:
+                    logger.error(f"更新任务状态失败: {inner_e}", exc_info=True)
         
         background_tasks.add_task(do_refresh)
         
