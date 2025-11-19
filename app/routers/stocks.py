@@ -659,3 +659,271 @@ async def get_news(code: str, days: int = 2, limit: int = 50, include_announceme
         }
         return ok(data)
 
+
+@router.get("/collections")
+async def list_stock_collections(
+    current_user: dict = Depends(get_current_user),
+):
+    """获取所有股票相关数据集合列表及其说明"""
+    collections = [
+        {
+            "name": "stock_basic_info",
+            "display_name": "股票基础信息",
+            "description": "股票的基础信息，包括代码、名称、行业、市场、总市值、流通市值等",
+            "route": "/stocks/collections/stock_basic_info",
+            "fields": ["code", "name", "industry", "market", "list_date", "total_mv", "circ_mv", "pe", "pb"],
+        },
+        {
+            "name": "market_quotes",
+            "display_name": "实时行情数据",
+            "description": "股票的实时行情数据，包括最新价、涨跌幅、成交量、成交额等",
+            "route": "/stocks/collections/market_quotes",
+            "fields": ["code", "trade_date", "open", "high", "low", "close", "volume", "amount", "pct_chg", "turnover_rate"],
+        },
+        {
+            "name": "stock_financial_data",
+            "display_name": "财务数据",
+            "description": "股票的财务数据，包括营业收入、净利润、ROE、负债率等财务指标",
+            "route": "/stocks/collections/stock_financial_data",
+            "fields": ["code", "report_period", "revenue", "net_profit", "roe", "debt_to_assets", "eps"],
+        },
+        {
+            "name": "stock_daily",
+            "display_name": "日线行情",
+            "description": "股票的日线历史行情数据，包括开盘价、最高价、最低价、收盘价、成交量等",
+            "route": "/stocks/collections/stock_daily",
+            "fields": ["code", "trade_date", "open", "high", "low", "close", "volume", "amount"],
+        },
+        {
+            "name": "stock_weekly",
+            "display_name": "周线行情",
+            "description": "股票的周线历史行情数据",
+            "route": "/stocks/collections/stock_weekly",
+            "fields": ["code", "trade_date", "open", "high", "low", "close", "volume", "amount"],
+        },
+        {
+            "name": "stock_monthly",
+            "display_name": "月线行情",
+            "description": "股票的月线历史行情数据",
+            "route": "/stocks/collections/stock_monthly",
+            "fields": ["code", "trade_date", "open", "high", "low", "close", "volume", "amount"],
+        },
+    ]
+    return collections
+
+
+@router.get("/quotes/overview")
+async def get_quotes_overview(
+    page: int = Query(1, ge=1, description="页码，从1开始"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量，默认20，最大100"),
+    sort_by: Optional[str] = Query("amount", description="排序字段，默认按成交额排序"),
+    sort_dir: str = Query("desc", description="排序方向：asc|desc"),
+    keyword: Optional[str] = Query(None, description="按代码或名称模糊搜索"),
+    current_user: dict = Depends(get_current_user),
+):
+    """获取股票行情概览列表（支持分页与搜索）
+
+    - 数据来源：market_quotes + stock_basic_info
+    - 支持分页：page/page_size
+    - 支持按代码/名称关键字搜索
+    """
+    db = get_mongo_db()
+
+    # 允许排序的字段白名单
+    allowed_sort_fields = {"amount", "volume", "pct_chg", "close", "trade_date", "updated_at"}
+    sort_key = sort_by if sort_by in allowed_sort_fields else "amount"
+    sort_direction = -1 if sort_dir == "desc" else 1
+
+    try:
+        # 构建基础查询条件
+        query: Dict[str, Any] = {}
+
+        # 如果提供了关键字，则先在 stock_basic_info 中查找匹配的代码
+        if keyword:
+            kw = keyword.strip()
+            if kw:
+                codes: List[str] = []
+                basic_cursor = db["stock_basic_info"].find(
+                    {
+                        "$or": [
+                            {"code": {"$regex": kw, "$options": "i"}},
+                            {"name": {"$regex": kw, "$options": "i"}},
+                        ]
+                    },
+                    {"_id": 0, "code": 1},
+                )
+                async for doc in basic_cursor:
+                    code = doc.get("code")
+                    if code and code not in codes:
+                        codes.append(code)
+
+                if codes:
+                    query["$or"] = [
+                        {"code": {"$in": codes}},
+                        {"symbol": {"$in": codes}},
+                    ]
+                else:
+                    # 没有匹配代码，直接返回空结果
+                    return ok({"items": [], "total": 0, "page": page, "page_size": page_size})
+
+        # 计算总数
+        total = await db["market_quotes"].count_documents(query)
+
+        # 分页查询
+        skip = (page - 1) * page_size
+        cursor = (
+            db["market_quotes"]
+            .find(
+                query,
+                {
+                    "_id": 0,
+                    "code": 1,
+                    "symbol": 1,
+                    "close": 1,
+                    "pct_chg": 1,
+                    "volume": 1,
+                    "amount": 1,
+                    "trade_date": 1,
+                    "updated_at": 1,
+                },
+            )
+            .sort(sort_key, sort_direction)
+            .skip(skip)
+            .limit(page_size)
+        )
+        quotes = await cursor.to_list(length=page_size)
+
+        # 收集代码，用于补充名称和市场信息
+        codes_for_basic: List[str] = []
+        for q in quotes:
+            code = q.get("code") or q.get("symbol")
+            if code and code not in codes_for_basic:
+                codes_for_basic.append(code)
+
+        basic_map: Dict[str, Dict[str, Any]] = {}
+        if codes_for_basic:
+            basic_cursor = db["stock_basic_info"].find(
+                {"code": {"$in": codes_for_basic}},
+                {"_id": 0, "code": 1, "name": 1, "market": 1},
+            )
+            async for doc in basic_cursor:
+                code = doc.get("code")
+                if code:
+                    basic_map[code] = doc
+
+        items: List[Dict[str, Any]] = []
+        for q in quotes:
+            code = (q.get("code") or q.get("symbol") or "").strip()
+            basic = basic_map.get(code, {})
+            item = {
+                "code": code,
+                "name": basic.get("name"),
+                "market": basic.get("market", "CN"),
+                "latest_price": q.get("close"),
+                "pct_chg": q.get("pct_chg"),
+                "volume": q.get("volume"),
+                "amount": q.get("amount"),
+                "trade_date": q.get("trade_date"),
+                "updated_at": q.get("updated_at"),
+            }
+            items.append(item)
+
+        return ok({
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        })
+
+    except Exception as e:
+        logger.error(f"获取股票行情概览失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/collections/{collection_name}/data")
+async def get_stock_collection_data(
+    collection_name: str,
+    page: int = Query(1, ge=1, description="页码，从1开始"),
+    page_size: int = Query(20, ge=1, le=200, description="每页数量，默认20，最大200"),
+    sort_by: Optional[str] = Query(None, description="排序字段"),
+    sort_dir: str = Query("desc", description="排序方向：asc|desc"),
+    code: Optional[str] = Query(None, description="按股票代码过滤"),
+    current_user: dict = Depends(get_current_user),
+):
+    """获取指定股票数据集合的数据（分页）
+
+    支持的集合名称：
+    - stock_basic_info
+    - market_quotes
+    - stock_financial_data
+    - stock_daily
+    - stock_weekly
+    - stock_monthly
+    """
+    db = get_mongo_db()
+
+    collection_map = {
+        "stock_basic_info": db["stock_basic_info"],
+        "market_quotes": db["market_quotes"],
+        "stock_financial_data": db["stock_financial_data"],
+        "stock_daily": db["stock_daily"],
+        "stock_weekly": db["stock_weekly"],
+        "stock_monthly": db["stock_monthly"],
+    }
+
+    collection = collection_map.get(collection_name)
+    if collection is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"集合 {collection_name} 不存在")
+
+    try:
+        # 构建查询条件
+        query: Dict[str, Any] = {}
+        if code:
+            # 同时兼容 code 和 symbol 字段
+            code6 = str(code).strip()
+            query["$or"] = [{"code": code6}, {"symbol": code6}]
+
+        # 获取总数
+        total = await collection.count_documents(query)
+
+        # 确定默认排序字段
+        default_sort_key = None
+        for date_field in ["trade_date", "date", "datetime", "timestamp", "report_period", "updated_at"]:
+            test_doc = await collection.find_one({date_field: {"$exists": True}})
+            if test_doc is not None:
+                default_sort_key = date_field
+                break
+
+        if sort_by is not None:
+            sort_key = sort_by
+        elif default_sort_key is not None:
+            sort_key = default_sort_key
+        else:
+            sort_key = "_id"
+        sort_direction = -1 if sort_dir == "desc" else 1
+
+        # 分页查询
+        skip = (page - 1) * page_size
+        cursor = collection.find(query).sort(sort_key, sort_direction).skip(skip).limit(page_size)
+
+        items: List[Dict[str, Any]] = []
+        async for doc in cursor:
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+            items.append(doc)
+
+        data = {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+
+        return ok(data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取股票集合 {collection_name} 数据失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+

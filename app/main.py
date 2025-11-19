@@ -274,6 +274,19 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Startup backfill failed (ignored): {e}")
 
+    # 启动期：确保债券数据索引已创建（避免每次任务执行时重复检查）
+    if settings.BONDS_SYNC_ENABLED:
+        try:
+            from app.core.database import get_database
+            from app.services.bond_data_service import BondDataService
+            db = await get_database()
+            bond_svc = BondDataService(db)
+            logger.info("🔧 开始初始化债券数据索引...")
+            await bond_svc.ensure_indexes()
+            logger.info("✅ 债券数据索引初始化完成")
+        except Exception as e:
+            logger.warning(f"⚠️ 债券索引初始化失败 (ignored): {e}")
+
     # 启动每日定时任务：可配置
     scheduler: AsyncIOScheduler | None = None
     try:
@@ -582,7 +595,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_basic_list_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_basic_list()
                 logger.info(
                     f"✅ 债券基础信息列表同步完成: saved={res.get('saved')} count={res.get('count')}"
@@ -605,7 +617,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_yield_curve_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_yield_curve()
                 logger.info(
                     f"✅ 债券收益率曲线同步完成: saved={res.get('saved')} rows={res.get('rows')}"
@@ -629,7 +640,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_history_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 from tradingagents.dataflows.providers.china.bonds import AKShareBondProvider
                 provider = AKShareBondProvider()
                 items = await provider.get_symbol_list()
@@ -658,7 +668,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_spot_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_spot_quotes()
                 logger.info(f"✅ 债券现货快照同步完成: {res}")
             except Exception as e:
@@ -678,7 +687,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_indices_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_indices()
                 logger.info(f"✅ 债券指数同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
             except Exception as e:
@@ -698,7 +706,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_us_yield_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_us_yields()
                 logger.info(f"✅ 美国国债收益率同步完成: saved={res.get('saved')} rows={res.get('rows')}")
             except Exception as e:
@@ -718,7 +725,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_cb_profiles_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_cb_profiles(limit=300)
                 logger.info(f"✅ 可转债档案同步完成: saved={res.get('saved')} count={res.get('count')}")
             except Exception as e:
@@ -738,7 +744,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_buybacks_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_buybacks()
                 logger.info(f"✅ 债券回购同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
             except Exception as e:
@@ -757,7 +762,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_curve_map_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_yield_curve_map()
                 logger.info(f"✅ 债券曲线映射同步完成: saved={res.get('saved')} rows={res.get('rows')}")
             except Exception as e:
@@ -775,7 +779,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_cninfo_issues_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_cninfo_issues()
                 logger.info(f"✅ 债券发行公告同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -793,7 +796,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_cb_events_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_cb_events_and_valuation()
                 logger.info(f"✅ 可转债事件/估值同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -811,7 +813,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_spot_detail_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_spot_quote_and_deals()
                 logger.info(f"✅ 债券现货报价/成交明细同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -829,7 +830,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_sse_summary_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_sse_summaries()
                 logger.info(f"✅ 上交所成交/资金摘要同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -847,7 +847,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_nafmii_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_nafmii()
                 logger.info(f"✅ NAFMII 银行间债务同步完成: saved={res.get('saved')} rows={res.get('rows')}")
             except Exception as e:
@@ -865,7 +864,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_info_cm_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_info_cm()
                 logger.info(f"✅ 中债信息cm同步完成: saved={res.get('saved')} rows={res.get('rows')}")
             except Exception as e:
@@ -883,7 +881,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_buybacks_hist_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_buybacks_history()
                 logger.info(f"✅ 回购历史同步完成: saved={res.get('saved')} rows={res.get('rows')}")
             except Exception as e:
@@ -901,7 +898,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_cb_lists_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_cb_lists()
                 logger.info(f"✅ 可转债列表同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -919,7 +915,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_info_cm_queries_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_info_cm_queries()
                 logger.info(f"✅ 中债信息查询/详情同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -938,7 +933,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_close_return_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 # 同步主要收益率曲线：国债
                 res = await svc.sync_close_return(symbol="国债", period="1")
                 logger.info(f"✅ 收盘收益率曲线同步完成: saved={res.get('saved')} rows={res.get('rows')}")
@@ -958,7 +952,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_cov_info_details_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 res = await svc.sync_cov_info_details(limit=100)
                 logger.info(f"✅ 可转债详情信息同步完成: total_saved={res.get('total_saved')}")
             except Exception as e:
@@ -977,7 +970,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_minute_data_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 # 获取最近活跃的可转债代码（可选：从数据库查询最近有成交的债券）
                 res = await svc.sync_bond_minute_data(codes=None, period="1", pre_minute=False)
                 logger.info(f"✅ 分钟数据同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")
@@ -997,7 +989,6 @@ async def lifespan(app: FastAPI):
         async def run_bonds_pre_minute_sync():
             try:
                 svc = BondSyncService()
-                await svc.ensure_indexes()
                 # 获取最近活跃的可转债代码
                 res = await svc.sync_bond_minute_data(codes=None, period="1", pre_minute=True)
                 logger.info(f"✅ 盘前分时数据同步完成: total_saved={res.get('total_saved')} total_rows={res.get('total_rows')}")

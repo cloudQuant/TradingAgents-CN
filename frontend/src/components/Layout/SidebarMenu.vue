@@ -11,14 +11,15 @@
       <template #title>仪表板</template>
     </el-menu-item>
 
-    <el-sub-menu index="/analysis">
+    <el-sub-menu index="/stocks">
       <template #title>
         <el-icon><TrendCharts /></el-icon>
-        <span>股票分析</span>
+        <span>股票投研</span>
       </template>
+      <el-menu-item index="/stocks/overview">概览</el-menu-item>
+      <el-menu-item index="/stocks/collections">数据集合</el-menu-item>
       <el-menu-item index="/analysis/single">单股分析</el-menu-item>
       <el-menu-item index="/analysis/batch">批量分析</el-menu-item>
-      <!-- 新增：将分析报告作为股票分析的子菜单 -->
       <el-menu-item index="/reports">分析报告</el-menu-item>
     </el-sub-menu>
 

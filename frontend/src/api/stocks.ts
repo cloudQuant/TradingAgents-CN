@@ -80,6 +80,32 @@ export interface NewsResponse {
   items: NewsItem[]
 }
 
+export interface QuotesOverviewItem {
+  code: string
+  name?: string
+  market?: string
+  latest_price?: number
+  pct_chg?: number
+  volume?: number
+  amount?: number
+  trade_date?: string
+  updated_at?: string
+}
+
+export interface QuotesOverviewResponse {
+  items: QuotesOverviewItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface StockCollectionDataResponse<T = any> {
+  items: T[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export const stocksApi = {
   /**
    * 获取股票行情
@@ -117,6 +143,38 @@ export const stocksApi = {
    */
   async getNews(symbol: string, days = 2, limit = 50, includeAnnouncements = true) {
     return ApiClient.get<NewsResponse>(`/api/stocks/${symbol}/news`, { days, limit, include_announcements: includeAnnouncements })
+  },
+
+  /**
+   * 获取市场行情一览（分页 + 搜索）
+   */
+  async getQuotesOverview(params: {
+    page?: number
+    page_size?: number
+    sort_by?: string
+    sort_dir?: string
+    keyword?: string
+  }) {
+    return ApiClient.get<QuotesOverviewResponse>(
+      '/api/stocks/quotes/overview',
+      params,
+    )
+  },
+
+  /**
+   * 获取股票数据集合详情（分页）
+   */
+  async getStockCollectionData(collectionName: string, params: {
+    page?: number
+    page_size?: number
+    sort_by?: string
+    sort_dir?: string
+    code?: string
+  } = {}) {
+    return ApiClient.get<StockCollectionDataResponse>(
+      `/api/stocks/collections/${collectionName}/data`,
+      params,
+    )
   }
 }
 

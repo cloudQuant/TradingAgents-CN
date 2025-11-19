@@ -354,13 +354,43 @@ const routes: RouteRecordRaw[] = [
     name: 'Stocks',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '股票详情',
+      title: '股票投研',
       icon: 'TrendCharts',
       requiresAuth: true,
-      hideInMenu: true,
       transition: 'fade'
     },
     children: [
+      {
+        path: 'overview',
+        name: 'StocksOverview',
+        component: () => import('@/views/Stocks/index.vue'),
+        meta: {
+          title: '股票概览',
+          requiresAuth: true,
+          transition: 'fade'
+        }
+      },
+      {
+        path: 'collections',
+        name: 'StocksCollections',
+        component: () => import('@/views/Stocks/Collections.vue'),
+        meta: {
+          title: '数据集合',
+          requiresAuth: true,
+          transition: 'fade'
+        }
+      },
+      {
+        path: 'collections/:collectionName',
+        name: 'StocksCollectionDetail',
+        component: () => import('@/views/Stocks/Collection.vue'),
+        meta: {
+          title: '数据集合详情',
+          requiresAuth: true,
+          hideInMenu: true,
+          transition: 'fade',
+        },
+      },
       {
         path: ':code',
         name: 'StockDetail',

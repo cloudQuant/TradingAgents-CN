@@ -81,8 +81,7 @@ class BondDataService:
                 existing_sparse = existing_by_name.get('sparse', False)
                 
                 if existing_unique == unique and existing_sparse == sparse:
-                    # 索引已存在且规格一致，无需重建
-                    logger.debug(f"✓ 索引 {name} 已存在且规格一致")
+                    # 索引已存在且规格一致，无需重建（静默返回，避免日志污染）
                     return
                 else:
                     # 索引规格不一致，需要删除重建
@@ -99,8 +98,7 @@ class BondDataService:
                 existing_sparse = existing_by_key.get('sparse', False)
                 
                 if existing_unique == unique and existing_sparse == sparse:
-                    # 键和规格都一致，只是名称不同，保留旧索引即可
-                    logger.debug(f"✓ 索引键已存在 (旧名称: {old_name})，规格一致，跳过创建")
+                    # 键和规格都一致，只是名称不同，保留旧索引即可（静默返回，避免日志污染）
                     return
                 else:
                     # 需要替换旧索引
@@ -116,7 +114,7 @@ class BondDataService:
             else:
                 await collection.create_index(index_spec, unique=unique, sparse=sparse, name=name)
             
-            logger.debug(f"✓ 成功创建索引 {name}")
+            logger.info(f"✅ 成功创建索引 {name}")
             
         except Exception as e:
             error_msg = str(e)
