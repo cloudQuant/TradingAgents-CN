@@ -69,7 +69,9 @@ install_base_packages() {
         build-essential \
         git \
         vim \
-        htop
+        htop \
+        ufw \
+        net-tools
         
     log_success "基础依赖包安装完成"
 }
@@ -218,6 +220,42 @@ configure_mongodb() {
     log_success "MongoDB 配置完成"
 }
 
+# 配置 MongoDB 网络访问
+configure_mongodb_network() {
+    log_info "配置 MongoDB 网络访问..."
+    
+    local mongo_conf="/etc/mongod.conf"
+    
+    # 备份原配置文件
+    sudo cp "$mongo_conf" "$mongo_conf.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # 配置网络绑定 - 允许所有IP访问 (生产环境建议限制具体IP)
+    if grep -q "^  bindIp:" "$mongo_conf"; then
+        sudo sed -i 's/^  bindIp:.*/  bindIp: 0.0.0.0/' "$mongo_conf"
+    elif grep -q "^#  bindIp:" "$mongo_conf"; then
+        sudo sed -i 's/^#  bindIp:.*/  bindIp: 0.0.0.0/' "$mongo_conf"
+    else
+        # 在 net: 部分添加 bindIp 配置
+        sudo sed -i '/^net:/a\  bindIp: 0.0.0.0' "$mongo_conf"
+    fi
+    
+    # 确保端口配置正确
+    if ! grep -q "^  port:" "$mongo_conf"; then
+        sudo sed -i '/^net:/a\  port: 27017' "$mongo_conf"
+    fi
+    
+    # 重启 MongoDB
+    sudo systemctl restart mongod
+    
+    # 验证网络绑定
+    sleep 3
+    if netstat -tlnp | grep :27017 | grep -q "0.0.0.0:27017"; then
+        log_success "MongoDB 网络访问配置成功 (0.0.0.0:27017)"
+    else
+        log_warning "MongoDB 网络绑定可能未完全生效，请检查配置"
+    fi
+}
+
 # 安装 Redis
 install_redis() {
     log_info "安装 Redis..."
@@ -257,17 +295,92 @@ configure_redis() {
         echo 'requirepass tradingagents123' | sudo tee -a "$redis_conf" > /dev/null
     fi
     
+    # 配置网络绑定 - 允许所有IP访问 (生产环境建议限制具体IP)
+    if grep -q "^bind " "$redis_conf"; then
+        sudo sed -i 's/^bind .*/bind 0.0.0.0/' "$redis_conf"
+    elif grep -q "^# bind " "$redis_conf"; then
+        sudo sed -i 's/^# bind .*/bind 0.0.0.0/' "$redis_conf"
+    else
+        echo 'bind 0.0.0.0' | sudo tee -a "$redis_conf" > /dev/null
+    fi
+    
+    # 禁用保护模式以允许远程连接
+    if grep -q "^protected-mode" "$redis_conf"; then
+        sudo sed -i 's/^protected-mode .*/protected-mode no/' "$redis_conf"
+    elif grep -q "^# protected-mode" "$redis_conf"; then
+        sudo sed -i 's/^# protected-mode .*/protected-mode no/' "$redis_conf"
+    else
+        echo 'protected-mode no' | sudo tee -a "$redis_conf" > /dev/null
+    fi
+    
     # 重启 Redis
     sudo systemctl restart redis-server
     
-    # 验证密码配置
-    sleep 2
+    # 验证密码配置和网络绑定
+    sleep 3
     if redis-cli -a tradingagents123 ping | grep -q "PONG"; then
         log_success "Redis 密码配置成功"
     else
         log_error "Redis 密码配置失败"
         exit 1
     fi
+    
+    # 验证网络绑定
+    if netstat -tlnp | grep :6379 | grep -q "0.0.0.0:6379"; then
+        log_success "Redis 网络访问配置成功 (0.0.0.0:6379)"
+    else
+        log_warning "Redis 网络绑定可能未完全生效，请检查配置"
+    fi
+}
+
+# 配置防火墙和端口开放
+configure_firewall() {
+    log_info "配置防火墙和开放端口..."
+    
+    # 启用 UFW 防火墙
+    sudo ufw --force enable
+    
+    # 允许 SSH (22) - 避免锁定自己
+    sudo ufw allow ssh
+    sudo ufw allow 22/tcp
+    
+    # 开放 MongoDB 端口 (27017)
+    sudo ufw allow 27017/tcp
+    log_info "已开放 MongoDB 端口: 27017"
+    
+    # 开放 Redis 端口 (6379)
+    sudo ufw allow 6379/tcp
+    log_info "已开放 Redis 端口: 6379"
+    
+    # 开放额外端口 (3000) - 通常用于前端开发服务器
+    sudo ufw allow 3000/tcp
+    log_info "已开放开发端口: 3000"
+    
+    # 显示防火墙状态
+    log_info "当前防火墙规则:"
+    sudo ufw status numbered
+    
+    log_success "防火墙配置完成"
+}
+
+# 显示网络访问信息
+show_network_info() {
+    log_info "获取网络访问信息..."
+    
+    # 获取本机IP地址
+    local internal_ip=$(hostname -I | awk '{print $1}')
+    local external_ip=$(curl -s -m 5 ifconfig.me 2>/dev/null || echo "无法获取")
+    
+    echo
+    echo "=== 网络访问信息 ==="
+    echo "内网IP: $internal_ip"
+    echo "外网IP: $external_ip"
+    echo
+    echo "服务端口状态:"
+    echo "  MongoDB (27017): $(netstat -tlnp | grep :27017 | awk '{print $4}' || echo '未启动')"
+    echo "  Redis (6379):    $(netstat -tlnp | grep :6379 | awk '{print $4}' || echo '未启动')"
+    echo "  开发端口 (3000): 已开放（待应用使用）"
+    echo
 }
 
 # 验证所有服务
@@ -336,14 +449,20 @@ show_usage_info() {
     echo "=== 使用说明 ==="
     echo
     echo "连接信息:"
-    echo "  MongoDB: mongodb://admin:tradingagents123@localhost:27017/"
-    echo "  Redis:   redis://:tradingagents123@localhost:6379"
+    echo "  本地 MongoDB: mongodb://admin:tradingagents123@localhost:27017/"
+    echo "  远程 MongoDB: mongodb://admin:tradingagents123@<SERVER_IP>:27017/"
+    echo "  本地 Redis:   redis://:tradingagents123@localhost:6379"
+    echo "  远程 Redis:   redis://:tradingagents123@<SERVER_IP>:6379"
+    echo "  开发服务器:   http://localhost:3000 或 http://<SERVER_IP>:3000"
     echo
     echo "常用命令:"
     echo "  查看服务状态: sudo systemctl status mongod redis-server"
     echo "  重启服务:     sudo systemctl restart mongod redis-server"
     echo "  MongoDB连接:  mongosh mongodb://admin:tradingagents123@localhost:27017/"
     echo "  Redis连接:    redis-cli -a tradingagents123"
+    echo "  查看端口状态: sudo netstat -tlnp | grep -E ':(27017|6379|3000)'"
+    echo "  防火墙状态:   sudo ufw status"
+    echo "  开放新端口:   sudo ufw allow <PORT>/tcp"
     echo
     echo "Python 虚拟环境创建:"
     echo "  python3.13 -m venv venv"
@@ -373,11 +492,14 @@ main() {
     install_nodejs
     install_mongodb
     configure_mongodb
+    configure_mongodb_network
     install_redis
     configure_redis
+    configure_firewall
     
     echo
     verify_services
+    show_network_info
     show_usage_info
     
     log_success "所有组件安装配置完成！"
