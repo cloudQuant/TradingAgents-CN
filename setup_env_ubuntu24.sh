@@ -236,7 +236,7 @@ check_mongodb_installed() {
 
 # 安装 MongoDB
 install_mongodb() {
-    log_info "安装 MongoDB 5.0..."
+    log_info "安装 MongoDB 7.0..."
     
     # 检查是否已安装
     if check_mongodb_installed; then
@@ -244,43 +244,33 @@ install_mongodb() {
     fi
     
     # 使用现代 GPG keyring 方式
-    local keyring_file="/usr/share/keyrings/mongodb-server-5.0.gpg"
+    local keyring_file="/usr/share/keyrings/mongodb-server-7.0.gpg"
     
-    # 下载并添加 MongoDB GPG 密钥
-    curl -fsSL https://www.mongodb.org/static/pgp/server-5.0.asc | sudo gpg --dearmor -o "$keyring_file"
+    # 下载并添加 MongoDB 7.0 GPG 密钥
+    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --dearmor -o "$keyring_file"
     
-    # Ubuntu 24.04 noble 使用 focal 源（MongoDB官方支持）
-    local mongo_codename="focal"
-    log_info "使用 MongoDB 源: $mongo_codename"
+    # 使用 jammy 源（MongoDB 官方支持 22.04，24.04 尚未官方支持，但通常兼容）
+    local mongo_codename="jammy"
+    log_info "使用 MongoDB 源: $mongo_codename (7.0)"
     
     # 创建 MongoDB 源列表文件（使用现代格式）
-    echo "deb [arch=amd64,arm64 signed-by=$keyring_file] https://repo.mongodb.org/apt/ubuntu $mongo_codename/mongodb-org/5.0 multiverse" \
-        | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    echo "deb [arch=amd64,arm64 signed-by=$keyring_file] https://repo.mongodb.org/apt/ubuntu $mongo_codename/mongodb-org/7.0 multiverse" \
+        | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
     
     # 更新包列表
     sudo apt-get update
     
-    # 安装 MongoDB
+    # 安装 MongoDB 7.0
     if ! sudo apt-get install -y mongodb-org; then
-        log_error "MongoDB 安装失败，尝试替代方案"
-        # 尝试安装社区版本
-        sudo apt-get install -y mongodb
-        if command -v mongod &> /dev/null; then
-            log_warning "已安装 MongoDB 社区版本"
-        else
-            log_error "MongoDB 安装完全失败"
-            exit 1
-        fi
+        log_error "MongoDB 7.0 安装失败（可能与 Ubuntu 24.04 的官方支持状态有关）"
+        log_error "建议：可以考虑使用 Docker 方式运行 MongoDB，或手工安装 .tgz 版本"
+        return 1
     fi
     
     # 启动服务
     sudo systemctl daemon-reload
     
-    # 确定服务名称
     local service_name="mongod"
-    if ! sudo systemctl list-unit-files | grep -q "mongod.service"; then
-        service_name="mongodb"
-    fi
     
     sudo systemctl start "$service_name"
     sudo systemctl enable "$service_name"
@@ -295,7 +285,7 @@ install_mongodb() {
     else
         log_error "MongoDB 服务启动失败"
         sudo systemctl status "$service_name"
-        exit 1
+        return 1
     fi
 }
 
