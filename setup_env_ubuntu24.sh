@@ -76,36 +76,105 @@ install_base_packages() {
     log_success "基础依赖包安装完成"
 }
 
-# 安装 Python 3.13
-install_python() {
-    log_info "安装 Python 3.13..."
+# 安装 Anaconda3
+install_anaconda() {
+    log_info "安装 Anaconda3 集成环境..."
     
-    # 添加 deadsnakes PPA
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt-get update
+    # 设置下载变量
+    local anaconda_version="2024.10-1"
+    local anaconda_installer="Anaconda3-${anaconda_version}-Linux-x86_64.sh"
+    local download_url="https://repo.anaconda.com/archive/${anaconda_installer}"
+    local install_dir="/opt/anaconda3"
     
-    # 安装 Python 3.13 及相关包
-    sudo apt-get install -y \
-        python3.13 \
-        python3.13-venv \
-        python3.13-dev \
-        python3.13-distutils \
-        python3-pip
+    # 检查是否已安装
+    if [[ -d "$install_dir" ]]; then
+        log_warning "Anaconda3 已存在于 $install_dir，跳过安装"
+        return 0
+    fi
     
-    # 验证安装
-    if command -v python3.13 &> /dev/null; then
-        PYTHON_VERSION=$(python3.13 --version)
-        log_success "Python 安装成功: $PYTHON_VERSION"
-        
-        # 创建符号链接（可选）
-        if ! command -v python3 &> /dev/null || [[ $(python3 --version) != *"3.13"* ]]; then
-            log_info "创建 python3 -> python3.13 符号链接..."
-            sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
-        fi
-    else
-        log_error "Python 3.13 安装失败"
+    # 下载 Anaconda 安装包
+    log_info "下载 Anaconda3 安装包..."
+    cd /tmp
+    if [[ ! -f "$anaconda_installer" ]]; then
+        wget "$download_url" -O "$anaconda_installer"
+    fi
+    
+    # 验证下载
+    if [[ ! -f "$anaconda_installer" ]]; then
+        log_error "Anaconda3 下载失败"
         exit 1
     fi
+    
+    # 安装 Anaconda（静默安装）
+    log_info "安装 Anaconda3 到 $install_dir..."
+    sudo bash "$anaconda_installer" -b -p "$install_dir"
+    
+    # 设置目录权限
+    sudo chown -R $USER:$USER "$install_dir"
+    
+    # 清理安装包
+    rm -f "$anaconda_installer"
+    
+    log_success "Anaconda3 安装完成"
+}
+
+# 配置 Anaconda 环境
+configure_anaconda() {
+    log_info "配置 Anaconda3 环境..."
+    
+    local install_dir="/opt/anaconda3"
+    local conda_init_script="$install_dir/etc/profile.d/conda.sh"
+    
+    # 初始化 conda
+    if [[ -f "$conda_init_script" ]]; then
+        source "$conda_init_script"
+    fi
+    
+    # 添加到 PATH（临时）
+    export PATH="$install_dir/bin:$PATH"
+    
+    # 配置用户 shell 环境
+    local shell_rc=""
+    if [[ "$SHELL" == *"bash"* ]]; then
+        shell_rc="$HOME/.bashrc"
+    elif [[ "$SHELL" == *"zsh"* ]]; then
+        shell_rc="$HOME/.zshrc"
+    else
+        shell_rc="$HOME/.bashrc"  # 默认使用 bashrc
+    fi
+    
+    # 添加 conda 初始化到 shell 配置文件
+    if ! grep -q "$install_dir/bin/conda" "$shell_rc" 2>/dev/null; then
+        log_info "配置 shell 环境 ($shell_rc)..."
+        echo "" >> "$shell_rc"
+        echo "# >>> conda initialize >>>" >> "$shell_rc"
+        echo "export PATH=\"$install_dir/bin:\$PATH\"" >> "$shell_rc"
+        echo "# <<< conda initialize <<<" >> "$shell_rc"
+    fi
+    
+    # 运行 conda init
+    "$install_dir/bin/conda" init bash 2>/dev/null || true
+    if [[ "$SHELL" == *"zsh"* ]]; then
+        "$install_dir/bin/conda" init zsh 2>/dev/null || true
+    fi
+    
+    # 更新 conda 和基础环境
+    log_info "更新 conda 和基础环境..."
+    "$install_dir/bin/conda" update -n base -c defaults conda -y
+    
+    # 验证安装
+    if command -v conda &> /dev/null || [[ -x "$install_dir/bin/conda" ]]; then
+        local python_version=$("$install_dir/bin/python" --version 2>&1)
+        local conda_version=$("$install_dir/bin/conda" --version 2>&1)
+        log_success "Anaconda3 配置成功"
+        log_success "Python: $python_version"
+        log_success "Conda: $conda_version"
+    else
+        log_error "Anaconda3 配置失败"
+        exit 1
+    fi
+    
+    log_info "请运行以下命令重新加载环境: source $shell_rc"
 }
 
 # 安装 Node.js 和 npm (使用 NodeSource 官方源)
@@ -390,11 +459,24 @@ verify_services() {
     echo
     echo "=== 服务验证结果 ==="
     
-    # Python
-    if command -v python3.13 &> /dev/null; then
-        echo -e "${GREEN}✓${NC} Python: $(python3.13 --version)"
+    # Python (Anaconda)
+    local anaconda_python="/opt/anaconda3/bin/python"
+    if [[ -x "$anaconda_python" ]]; then
+        echo -e "${GREEN}✓${NC} Python: $($anaconda_python --version 2>&1)"
+    elif command -v python &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Python: $(python --version 2>&1)"
     else
         echo -e "${RED}✗${NC} Python: 未安装"
+    fi
+    
+    # Conda
+    local anaconda_conda="/opt/anaconda3/bin/conda"
+    if [[ -x "$anaconda_conda" ]]; then
+        echo -e "${GREEN}✓${NC} Conda: $($anaconda_conda --version 2>&1)"
+    elif command -v conda &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Conda: $(conda --version 2>&1)"
+    else
+        echo -e "${RED}✗${NC} Conda: 未安装"
     fi
     
     # Node.js
@@ -464,9 +546,13 @@ show_usage_info() {
     echo "  防火墙状态:   sudo ufw status"
     echo "  开放新端口:   sudo ufw allow <PORT>/tcp"
     echo
-    echo "Python 虚拟环境创建:"
-    echo "  python3.13 -m venv venv"
-    echo "  source venv/bin/activate"
+    echo "Python/Conda 环境管理:"
+    echo "  重新加载环境: source ~/.bashrc (或 ~/.zshrc)"
+    echo "  创建conda环境: conda create -n myenv python=3.11"
+    echo "  激活环境:     conda activate myenv"
+    echo "  安装包:       conda install package_name"
+    echo "  或使用pip:    pip install package_name"
+    echo "  查看环境列表: conda env list"
     echo
 }
 
@@ -488,7 +574,8 @@ main() {
     
     echo
     install_base_packages
-    install_python
+    install_anaconda
+    configure_anaconda
     install_nodejs
     install_mongodb
     configure_mongodb
