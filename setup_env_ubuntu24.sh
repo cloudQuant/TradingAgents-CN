@@ -30,6 +30,13 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+INSTALL_ANACONDA=${INSTALL_ANACONDA:-1}
+INSTALL_NODEJS=${INSTALL_NODEJS:-1}
+INSTALL_MONGODB=${INSTALL_MONGODB:-1}
+INSTALL_REDIS=${INSTALL_REDIS:-1}
+CONFIGURE_FIREWALL=${CONFIGURE_FIREWALL:-1}
+AUTO_CONFIRM=${AUTO_CONFIRM:-0}
+
 # 检查是否为 root 用户
 check_user() {
     if [[ $EUID -eq 0 ]]; then
@@ -43,9 +50,13 @@ check_ubuntu_version() {
     log_info "检查 Ubuntu 版本..."
     if ! grep -q "Ubuntu 24.04" /etc/os-release; then
         log_warning "此脚本专为 Ubuntu 24.04 设计，当前系统可能不兼容"
-        read -p "是否继续? (y/N): " -r
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
+        if [[ "$AUTO_CONFIRM" -eq 1 ]]; then
+            log_warning "AUTO_CONFIRM=1，已自动确认继续执行"
+        else
+            read -p "是否继续? (y/N): " -r
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
         fi
     fi
     log_success "Ubuntu 版本检查完成"
@@ -177,9 +188,24 @@ configure_anaconda() {
     log_info "请运行以下命令重新加载环境: source $shell_rc"
 }
 
+# 检查 Node.js 是否已安装
+check_nodejs_installed() {
+    if command -v node &> /dev/null && command -v npm &> /dev/null; then
+        local node_version=$(node --version 2>/dev/null)
+        log_info "Node.js 已安装 ($node_version)，跳过安装"
+        return 0
+    fi
+    return 1
+}
+
 # 安装 Node.js 和 npm (使用 NodeSource 官方源)
 install_nodejs() {
     log_info "安装 Node.js 和 npm (最新 LTS 版本)..."
+    
+    # 检查是否已安装
+    if check_nodejs_installed; then
+        return 0
+    fi
     
     # 添加 NodeSource 官方仓库
     curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
@@ -199,54 +225,76 @@ install_nodejs() {
     fi
 }
 
+# 检查 MongoDB 是否已安装
+check_mongodb_installed() {
+    if command -v mongod &> /dev/null && sudo systemctl is-enabled mongod &> /dev/null; then
+        log_info "MongoDB 已安装并启用，跳过安装"
+        return 0
+    fi
+    return 1
+}
+
 # 安装 MongoDB
 install_mongodb() {
     log_info "安装 MongoDB 5.0..."
     
-    # 导入 MongoDB 公钥
-    wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
-    
-    # Ubuntu 24.04 使用 jammy，但 MongoDB 5.0 可能只有 focal，先尝试 jammy
-    UBUNTU_CODENAME=$(lsb_release -cs)
-    if [[ "$UBUNTU_CODENAME" == "noble" ]]; then
-        # Ubuntu 24.04 noble，但 MongoDB 可能没有 noble 源，使用 jammy
-        MONGO_CODENAME="jammy"
-    else
-        MONGO_CODENAME="$UBUNTU_CODENAME"
+    # 检查是否已安装
+    if check_mongodb_installed; then
+        return 0
     fi
     
-    log_info "使用 MongoDB 源: $MONGO_CODENAME"
+    # 使用现代 GPG keyring 方式
+    local keyring_file="/usr/share/keyrings/mongodb-server-5.0.gpg"
     
-    # 创建 MongoDB 源列表文件
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $MONGO_CODENAME/mongodb-org/5.0 multiverse" \
+    # 下载并添加 MongoDB GPG 密钥
+    curl -fsSL https://www.mongodb.org/static/pgp/server-5.0.asc | sudo gpg --dearmor -o "$keyring_file"
+    
+    # Ubuntu 24.04 noble 使用 focal 源（MongoDB官方支持）
+    local mongo_codename="focal"
+    log_info "使用 MongoDB 源: $mongo_codename"
+    
+    # 创建 MongoDB 源列表文件（使用现代格式）
+    echo "deb [arch=amd64,arm64 signed-by=$keyring_file] https://repo.mongodb.org/apt/ubuntu $mongo_codename/mongodb-org/5.0 multiverse" \
         | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     
-    # 如果 jammy 源不存在，fallback 到 focal
-    sudo apt-get update || {
-        log_warning "jammy 源不可用，使用 focal 源"
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" \
-            | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-        sudo apt-get update
-    }
+    # 更新包列表
+    sudo apt-get update
     
     # 安装 MongoDB
-    sudo apt-get install -y mongodb-org
+    if ! sudo apt-get install -y mongodb-org; then
+        log_error "MongoDB 安装失败，尝试替代方案"
+        # 尝试安装社区版本
+        sudo apt-get install -y mongodb
+        if command -v mongod &> /dev/null; then
+            log_warning "已安装 MongoDB 社区版本"
+        else
+            log_error "MongoDB 安装完全失败"
+            exit 1
+        fi
+    fi
     
     # 启动服务
     sudo systemctl daemon-reload
-    sudo systemctl start mongod
-    sudo systemctl enable mongod
+    
+    # 确定服务名称
+    local service_name="mongod"
+    if ! sudo systemctl list-unit-files | grep -q "mongod.service"; then
+        service_name="mongodb"
+    fi
+    
+    sudo systemctl start "$service_name"
+    sudo systemctl enable "$service_name"
     
     # 等待服务启动
     log_info "等待 MongoDB 服务启动..."
     sleep 5
     
     # 验证服务状态
-    if sudo systemctl is-active --quiet mongod; then
+    if sudo systemctl is-active --quiet "$service_name"; then
         log_success "MongoDB 服务启动成功"
     else
         log_error "MongoDB 服务启动失败"
-        sudo systemctl status mongod
+        sudo systemctl status "$service_name"
         exit 1
     fi
 }
@@ -325,9 +373,23 @@ configure_mongodb_network() {
     fi
 }
 
+# 检查 Redis 是否已安装
+check_redis_installed() {
+    if command -v redis-server &> /dev/null && sudo systemctl is-enabled redis-server &> /dev/null; then
+        log_info "Redis 已安装并启用，跳过安装"
+        return 0
+    fi
+    return 1
+}
+
 # 安装 Redis
 install_redis() {
     log_info "安装 Redis..."
+    
+    # 检查是否已安装
+    if check_redis_installed; then
+        return 0
+    fi
     
     sudo apt-get update
     sudo apt-get install -y redis-server
@@ -556,39 +618,109 @@ show_usage_info() {
     echo
 }
 
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -y|--yes)
+                AUTO_CONFIRM=1
+                ;;
+            --no-anaconda)
+                INSTALL_ANACONDA=0
+                ;;
+            --no-node)
+                INSTALL_NODEJS=0
+                ;;
+            --no-mongodb)
+                INSTALL_MONGODB=0
+                ;;
+            --no-redis)
+                INSTALL_REDIS=0
+                ;;
+            --no-firewall)
+                CONFIGURE_FIREWALL=0
+                ;;
+            -h|--help)
+                echo "用法: $0 [选项]"
+                echo "  -y, --yes          自动确认所有提示"
+                echo "  --no-anaconda      不安装 Anaconda3"
+                echo "  --no-node          不安装 Node.js/npm"
+                echo "  --no-mongodb       不安装 MongoDB"
+                echo "  --no-redis         不安装 Redis"
+                echo "  --no-firewall      不配置 UFW 防火墙"
+                exit 0
+                ;;
+            *)
+                log_warning "未知参数: $1 (使用 --help 查看说明)"
+                ;;
+        esac
+        shift
+    done
+}
+
 # 主函数
 main() {
     echo "=== Ubuntu 24.04 开发环境安装脚本 ==="
-    echo "安装: Python 3.13, Node.js, npm, MongoDB, Redis"
+    echo "安装: Anaconda3(Python), Node.js, npm, MongoDB, Redis"
     echo
-    
+
+    parse_args "$@"
+
     check_user
     check_ubuntu_version
-    
+
     echo
-    read -p "是否开始安装? (Y/n): " -r
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo "安装已取消"
-        exit 0
+    if [[ "$AUTO_CONFIRM" -eq 1 ]]; then
+        log_info "AUTO_CONFIRM=1，已自动确认开始安装"
+    else
+        read -p "是否开始安装? (Y/n): " -r
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            echo "安装已取消"
+            exit 0
+        fi
     fi
-    
+
     echo
     install_base_packages
-    install_anaconda
-    configure_anaconda
-    install_nodejs
-    install_mongodb
-    configure_mongodb
-    configure_mongodb_network
-    install_redis
-    configure_redis
-    configure_firewall
-    
+
+    if [[ "$INSTALL_ANACONDA" -eq 1 ]]; then
+        install_anaconda
+        configure_anaconda
+    else
+        log_info "跳过 Anaconda3 安装 (INSTALL_ANACONDA=0)"
+    fi
+
+    if [[ "$INSTALL_NODEJS" -eq 1 ]]; then
+        install_nodejs
+    else
+        log_info "跳过 Node.js 安装 (INSTALL_NODEJS=0)"
+    fi
+
+    if [[ "$INSTALL_MONGODB" -eq 1 ]]; then
+        install_mongodb
+        configure_mongodb
+        configure_mongodb_network
+    else
+        log_info "跳过 MongoDB 安装 (INSTALL_MONGODB=0)"
+    fi
+
+    if [[ "$INSTALL_REDIS" -eq 1 ]]; then
+        install_redis
+        configure_redis
+    else
+        log_info "跳过 Redis 安装 (INSTALL_REDIS=0)"
+    fi
+
+    if [[ "$CONFIGURE_FIREWALL" -eq 1 ]]; then
+        configure_firewall
+    else
+        log_info "跳过防火墙配置 (CONFIGURE_FIREWALL=0)"
+    fi
+
     echo
     verify_services
     show_network_info
     show_usage_info
-    
+
     log_success "所有组件安装配置完成！"
 }
 
