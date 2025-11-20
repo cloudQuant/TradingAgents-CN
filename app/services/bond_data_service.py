@@ -2,7 +2,7 @@ from typing import Optional, Iterable, Dict, Any
 from datetime import datetime
 import datetime as dt
 import pandas as pd
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient
 from pymongo import UpdateOne
 from loguru import logger
 
@@ -1079,6 +1079,157 @@ class BondDataService:
             res = await self.col_nafmii.bulk_write(ops, ordered=False)
             return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
         return 0
+
+    async def import_bond_info_cm_from_file(self, content: bytes, filename: Optional[str] = None) -> Dict[str, Any]:
+        import io
+        import logging
+
+        logger_std = logging.getLogger("webapi")
+
+        if not content:
+            raise ValueError("上传文件为空")
+
+        name = (filename or "").lower()
+        buffer = io.BytesIO(content)
+
+        df: Optional[pd.DataFrame] = None
+        try:
+            if name.endswith(".csv") or name.endswith(".txt"):
+                df = pd.read_csv(buffer)
+            elif name.endswith(".xls") or name.endswith(".xlsx"):
+                df = pd.read_excel(buffer)
+            else:
+                try:
+                    df = pd.read_csv(buffer)
+                except Exception:
+                    buffer.seek(0)
+                    df = pd.read_excel(buffer)
+        except Exception as e:
+            logger_std.error(f"❌ [bond_info_cm 导入] 读取文件失败: {e}", exc_info=True)
+            raise ValueError("无法解析上传文件，请确认为有效的 CSV 或 Excel 文件")
+
+        if df is None or df.empty:
+            logger_std.warning("⚠️ [bond_info_cm 导入] 解析结果为空 DataFrame")
+            return {"saved": 0, "rows": 0}
+
+        rows = len(df)
+        saved = await self.save_info_cm(df)
+        logger_std.info(f"💾 [bond_info_cm 导入] 从文件 {filename} 导入 {rows} 行，保存 {saved} 条记录")
+
+        return {"saved": saved, "rows": rows}
+
+    async def sync_collection_from_remote_mongo(
+        self,
+        collection_name: str,
+        remote_host: str,
+        batch_size: int = 5000,
+        remote_collection: Optional[str] = None,
+        remote_username: Optional[str] = None,
+        remote_password: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """从远程 MongoDB 同步指定集合到当前数据库。
+
+        目前仅支持 bond_info_cm 集合，并复用 save_info_cm 的 upsert 逻辑，保证增量更新。
+        """
+
+        if not remote_host:
+            raise ValueError("远程主机地址不能为空")
+
+        if collection_name != "bond_info_cm":
+            raise ValueError("当前仅支持 bond_info_cm 集合的远程同步")
+
+        # 规范 batch_size
+        try:
+            batch = int(batch_size)
+        except Exception:
+            batch = 5000
+        if batch <= 0:
+            batch = 5000
+
+        # 构建远程 Mongo URI
+        db_name = self.db.name
+        if remote_host.startswith("mongodb://") or remote_host.startswith("mongodb+srv://"):
+            # 如果已经是完整 URI，则直接使用（假定其中已包含认证信息或不需要认证）
+            uri = remote_host
+        else:
+            host = remote_host
+            port = 27017
+            if ":" in remote_host:
+                host_part, port_str = remote_host.split(":", 1)
+                host = host_part or host
+                try:
+                    port = int(port_str)
+                except Exception:
+                    port = 27017
+
+            if remote_username:
+                # 如果提供了用户名/密码，则拼接认证信息
+                if remote_password:
+                    cred = f"{remote_username}:{remote_password}"
+                else:
+                    cred = remote_username
+                uri = f"mongodb://{cred}@{host}:{port}/{db_name}"
+            else:
+                uri = f"mongodb://{host}:{port}/{db_name}"
+
+        logger.info(f"📡 [远程同步] 开始从 {uri} 同步集合 {collection_name}，batch_size={batch}")
+
+        client: AsyncIOMotorClient = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+        try:
+            # 获取远程数据库和集合
+            try:
+                remote_db = client.get_default_database() or client[self.db.name]
+            except Exception:
+                remote_db = client[self.db.name]
+
+            target_collection = remote_collection or collection_name
+            remote_col = remote_db[target_collection]
+
+            from bson import ObjectId
+
+            base_filter: Dict[str, Any] = {"$or": [{"endpoint": "bond_info_cm"}, {"endpoint": {"$exists": False}}]}
+
+            try:
+                remote_total = await remote_col.count_documents(base_filter)
+            except Exception as e:
+                logger.warning(f"⚠️ [远程同步] 统计远程文档数量失败: {e}")
+                remote_total = 0
+
+            synced = 0
+            last_id: Optional[ObjectId] = None
+
+            while True:
+                if last_id is not None:
+                    query: Dict[str, Any] = {"$and": [base_filter, {"_id": {"$gt": last_id}}]}
+                else:
+                    query = base_filter
+
+                cursor = remote_col.find(query).sort("_id", 1).limit(batch)
+                docs = await cursor.to_list(length=batch)
+                if not docs:
+                    break
+
+                last_id = docs[-1].get("_id")
+
+                # 清理 _id，避免与本地冲突
+                for d in docs:
+                    d.pop("_id", None)
+
+                df = pd.DataFrame(docs)
+                if df is not None and not df.empty:
+                    saved = await self.save_info_cm(df)
+                    synced += int(saved or 0)
+
+            logger.info(
+                f"✅ [远程同步] 完成集合 {collection_name} 同步：remote_total={remote_total}, synced={synced}"
+            )
+
+            return {"collection_name": collection_name, "remote_total": remote_total, "synced": synced}
+        finally:
+            try:
+                client.close()
+            except Exception:
+                pass
 
     async def save_info_cm(self, df: pd.DataFrame) -> int:
         if df is None or df.empty:

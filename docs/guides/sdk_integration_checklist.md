@@ -227,7 +227,7 @@
    - [基础提供器](../../tradingagents/dataflows/base_provider.py)
    - [示例适配器](../../tradingagents/dataflows/example_sdk_provider.py)
    - [同步服务](../../app/worker/example_sdk_sync_service.py)
-3. **测试脚本**: [集成测试示例](../../scripts/test_stock_data_api.py)
+3. **测试脚本**: [集成测试示例](../../tests/test_stock_data_api.py)
 
 ---
 

@@ -1,169 +1,211 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-测试使用.env配置的数据库管理器
+测试环境变量配置
+
+用于验证聚合渠道的环境变量是否正确配置
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
-def test_env_config():
-    """测试.env配置"""
-    print("🔧 测试使用.env配置的数据库管理器")
-    print("=" * 50)
+# 添加项目根目录到 Python 路径
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+# 加载环境变量
+from dotenv import load_dotenv
+load_dotenv()
+
+
+def test_env_variables():
+    """测试环境变量配置"""
     
-    # 1. 检查.env文件
-    print("\n📁 检查.env文件...")
-    env_file = Path(".env")
-    if env_file.exists():
-        print(f"✅ .env文件存在: {env_file}")
-        
-        # 读取并显示相关配置
-        with open(env_file, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        
-        print("📊 数据库相关配置:")
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                if any(keyword in line.upper() for keyword in ['MONGODB', 'REDIS']):
-                    # 隐藏密码
-                    if 'PASSWORD' in line.upper():
-                        key, value = line.split('=', 1)
-                        print(f"  {key}=***")
-                    else:
-                        print(f"  {line}")
-    else:
-        print(f"❌ .env文件不存在: {env_file}")
-        return False
+    print("=" * 60)
+    print("🔍 聚合渠道环境变量配置检查")
+    print("=" * 60)
+    print()
     
-    # 2. 测试数据库管理器
-    print("\n🔧 测试数据库管理器...")
-    try:
-        from tradingagents.config.database_manager import get_database_manager
-        
-        db_manager = get_database_manager()
-        print("✅ 数据库管理器创建成功")
-        
-        # 获取状态报告
-        status = db_manager.get_status_report()
-        
-        print("📊 数据库状态:")
-        print(f"  数据库可用: {'✅ 是' if status['database_available'] else '❌ 否'}")
-        
-        mongodb_info = status['mongodb']
-        print(f"  MongoDB: {'✅ 可用' if mongodb_info['available'] else '❌ 不可用'}")
-        print(f"    地址: {mongodb_info['host']}:{mongodb_info['port']}")
-        
-        redis_info = status['redis']
-        print(f"  Redis: {'✅ 可用' if redis_info['available'] else '❌ 不可用'}")
-        print(f"    地址: {redis_info['host']}:{redis_info['port']}")
-        
-        print(f"  缓存后端: {status['cache_backend']}")
-        print(f"  降级支持: {'✅ 启用' if status['fallback_enabled'] else '❌ 禁用'}")
-        
-    except Exception as e:
-        print(f"❌ 数据库管理器测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    # 定义需要检查的环境变量
+    env_vars = {
+        "AI302_API_KEY": {
+            "name": "302.AI",
+            "required": False,
+            "description": "302.AI 聚合平台 API Key"
+        },
+        "OPENROUTER_API_KEY": {
+            "name": "OpenRouter",
+            "required": False,
+            "description": "OpenRouter 聚合平台 API Key"
+        },
+        "ONEAPI_API_KEY": {
+            "name": "One API",
+            "required": False,
+            "description": "One API 自部署实例 API Key"
+        },
+        "ONEAPI_BASE_URL": {
+            "name": "One API Base URL",
+            "required": False,
+            "description": "One API 自部署实例 Base URL"
+        },
+        "NEWAPI_API_KEY": {
+            "name": "New API",
+            "required": False,
+            "description": "New API 自部署实例 API Key"
+        },
+        "NEWAPI_BASE_URL": {
+            "name": "New API Base URL",
+            "required": False,
+            "description": "New API 自部署实例 Base URL"
+        }
+    }
     
-    # 3. 测试缓存系统
-    print("\n💾 测试缓存系统...")
-    try:
-        from tradingagents.dataflows.integrated_cache import get_cache
-        
-        cache = get_cache()
-        print("✅ 缓存系统创建成功")
-        
-        # 获取后端信息
-        backend_info = cache.get_cache_backend_info()
-        print(f"  缓存系统: {backend_info['system']}")
-        print(f"  主要后端: {backend_info['primary_backend']}")
-        print(f"  性能模式: {cache.get_performance_mode()}")
-        
-        # 测试基本功能
-        test_data = "测试数据 - 使用.env配置"
-        cache_key = cache.save_stock_data(
-            symbol="TEST_ENV",
-            data=test_data,
-            start_date="2024-01-01",
-            end_date="2024-12-31",
-            data_source="env_test"
-        )
-        print(f"✅ 数据保存成功: {cache_key}")
-        
-        # 加载数据
-        loaded_data = cache.load_stock_data(cache_key)
-        if loaded_data == test_data:
-            print("✅ 数据加载成功，内容匹配")
-        else:
-            print("❌ 数据加载失败或内容不匹配")
-            return False
-        
-    except Exception as e:
-        print(f"❌ 缓存系统测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    configured_count = 0
+    total_count = len([v for v in env_vars.values() if "API_KEY" in v["description"]])
     
-    # 4. 显示环境变量
-    print("\n🔍 检查环境变量...")
-    env_vars = [
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_USERNAME", "MONGODB_PASSWORD",
-        "MONGODB_DATABASE", "MONGODB_AUTH_SOURCE",
-        "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_DB"
-    ]
-    
-    for var in env_vars:
-        value = os.getenv(var)
-        if value:
-            if 'PASSWORD' in var:
-                print(f"  {var}=***")
+    for env_var, config in env_vars.items():
+        value = os.getenv(env_var)
+        
+        # 检查是否配置
+        is_configured = bool(value and not value.startswith('your_'))
+        
+        if is_configured:
+            if "API_KEY" in env_var:
+                configured_count += 1
+            
+            # 隐藏敏感信息
+            if "API_KEY" in env_var:
+                display_value = f"{value[:10]}...{value[-4:]}" if len(value) > 14 else "***"
             else:
-                print(f"  {var}={value}")
+                display_value = value
+            
+            print(f"✅ {config['name']}")
+            print(f"   变量名: {env_var}")
+            print(f"   值: {display_value}")
+            print(f"   说明: {config['description']}")
         else:
-            print(f"  {var}=未设置")
+            status = "⚠️" if config["required"] else "⏭️"
+            print(f"{status} {config['name']}")
+            print(f"   变量名: {env_var}")
+            print(f"   状态: 未配置")
+            print(f"   说明: {config['description']}")
+        
+        print()
     
-    # 5. 总结
-    print("\n📊 测试总结:")
-    print("✅ 系统已正确使用.env配置文件")
-    print("✅ 数据库管理器正常工作")
-    print("✅ 缓存系统正常工作")
-    print("✅ 支持MongoDB和Redis的完整配置")
-    print("✅ 在数据库不可用时自动降级到文件缓存")
+    print("=" * 60)
+    print(f"📊 配置统计: {configured_count}/{total_count} 个聚合渠道已配置")
+    print("=" * 60)
+    print()
     
-    print("\n💡 配置说明:")
-    print("1. 系统读取.env文件中的数据库配置")
-    print("2. 自动检测MongoDB和Redis是否可用")
-    print("3. 根据可用性选择最佳缓存后端")
-    print("4. 支持用户名密码认证")
-    print("5. 在数据库不可用时自动使用文件缓存")
+    # 给出建议
+    if configured_count == 0:
+        print("💡 建议:")
+        print("   1. 编辑 .env 文件")
+        print("   2. 添加至少一个聚合渠道的 API Key")
+        print("   3. 推荐配置 AI302_API_KEY（国内访问稳定）")
+        print()
+        print("   示例:")
+        print("   AI302_API_KEY=sk-xxxxx")
+        print()
+    elif configured_count < total_count:
+        print("💡 提示:")
+        print(f"   已配置 {configured_count} 个聚合渠道")
+        print("   可以根据需要配置更多聚合渠道")
+        print()
+    else:
+        print("🎉 太棒了！所有聚合渠道都已配置")
+        print()
     
-    return True
+    return configured_count > 0
+
+
+def test_service_integration():
+    """测试服务集成"""
+    
+    print("=" * 60)
+    print("🧪 测试服务集成")
+    print("=" * 60)
+    print()
+    
+    try:
+        from app.services.config_service import ConfigService
+        
+        service = ConfigService()
+        
+        # 测试环境变量读取
+        print("测试环境变量读取...")
+        
+        test_providers = ["302ai", "openrouter", "oneapi", "newapi"]
+        
+        for provider in test_providers:
+            api_key = service._get_env_api_key(provider)
+            
+            if api_key:
+                display_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 14 else "***"
+                print(f"✅ {provider}: {display_key}")
+            else:
+                print(f"⏭️ {provider}: 未配置")
+        
+        print()
+        print("✅ 服务集成测试通过")
+        print()
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ 服务集成测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+        print()
+        return False
+
 
 def main():
     """主函数"""
-    try:
-        success = test_env_config()
-        
-        if success:
-            print("\n🎉 .env配置测试完成!")
-            print("\n🎯 系统特性:")
-            print("✅ 使用项目现有的.env配置")
-            print("✅ 默认不依赖数据库，可以纯文件缓存运行")
-            print("✅ 自动检测和使用可用的数据库")
-            print("✅ 支持完整的MongoDB和Redis配置")
-            print("✅ 智能降级，确保系统稳定性")
-        
-        return success
-        
-    except Exception as e:
-        print(f"❌ 测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    
+    print()
+    print("🚀 TradingAgents-CN 聚合渠道环境变量测试")
+    print()
+    
+    # 测试环境变量
+    env_ok = test_env_variables()
+    
+    # 测试服务集成
+    service_ok = test_service_integration()
+    
+    # 总结
+    print("=" * 60)
+    print("📋 测试总结")
+    print("=" * 60)
+    print()
+    
+    if env_ok and service_ok:
+        print("✅ 所有测试通过")
+        print()
+        print("下一步:")
+        print("1. 启动后端服务")
+        print("2. 调用初始化聚合渠道 API")
+        print("3. 验证聚合渠道是否自动启用")
+        print()
+        return 0
+    elif env_ok:
+        print("⚠️ 环境变量配置正常，但服务集成测试失败")
+        print()
+        print("可能原因:")
+        print("1. 依赖包未安装")
+        print("2. 数据库未启动")
+        print("3. 配置文件有误")
+        print()
+        return 1
+    else:
+        print("⚠️ 未配置聚合渠道环境变量")
+        print()
+        print("这不是错误，但建议配置至少一个聚合渠道以简化使用")
+        print()
+        return 0
+
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    sys.exit(main())
+

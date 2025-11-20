@@ -270,6 +270,99 @@
             value-format="YYYY-MM-DD"
           />
         </el-form-item>
+
+        <el-form-item v-if="collectionName === 'bond_info_cm'" label="文件导入">
+          <div style="width: 100%">
+            <el-upload
+              ref="uploadRef"
+              :auto-upload="false"
+              multiple
+              :on-change="handleImportFileChange"
+              :on-remove="handleImportFileRemove"
+              accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              drag
+            >
+              <div class="el-upload__text">
+                拖拽文件到此处或<em>点击选择文件</em>
+              </div>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持 CSV 或 Excel 文件，列结构需与债券信息查询结果一致
+                </div>
+              </template>
+            </el-upload>
+            <el-button
+              style="margin-top: 8px;"
+              size="small"
+              type="primary"
+              @click="handleImportFile"
+              :loading="importing"
+              :disabled="!importFiles.length || importing"
+            >
+              导入文件
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <el-form-item v-if="collectionName === 'bond_info_cm'" label="远程同步">
+          <div style="width: 100%">
+            <el-row :gutter="8">
+              <el-col :span="24">
+                <el-input
+                  v-model="remoteSyncHost"
+                  placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
+                />
+              </el-col>
+              <el-col :span="12" style="margin-top: 8px;">
+                <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
+                  <el-option label="MongoDB" value="mongodb" />
+                </el-select>
+              </el-col>
+              <el-col :span="12" style="margin-top: 8px;">
+                <el-select v-model="remoteSyncBatchSize" style="width: 100%">
+                  <el-option label="1000" :value="1000" />
+                  <el-option label="2000" :value="2000" />
+                  <el-option label="5000" :value="5000" />
+                  <el-option label="10000" :value="10000" />
+                </el-select>
+              </el-col>
+            </el-row>
+            <el-row :gutter="8" style="margin-top: 8px;">
+              <el-col :span="12">
+                <el-input
+                  v-model="remoteSyncCollection"
+                  placeholder="远程集合名称，默认 bond_info_cm"
+                />
+              </el-col>
+              <el-col :span="12">
+                <el-input
+                  v-model="remoteSyncUsername"
+                  placeholder="远程用户名（可选）"
+                />
+              </el-col>
+            </el-row>
+            <el-row :gutter="8" style="margin-top: 8px;">
+              <el-col :span="24">
+                <el-input
+                  v-model="remoteSyncPassword"
+                  type="password"
+                  show-password
+                  placeholder="远程密码（可选）"
+                />
+              </el-col>
+            </el-row>
+            <el-button
+              style="margin-top: 8px;"
+              size="small"
+              type="primary"
+              @click="handleRemoteSync"
+              :loading="remoteSyncing"
+              :disabled="!remoteSyncHost || remoteSyncing"
+            >
+              远程同步
+            </el-button>
+          </div>
+        </el-form-item>
         
         <el-form-item v-if="needsDateRange" label="结束日期">
           <el-date-picker
@@ -608,6 +701,127 @@ const availableYears = computed(() => {
   }
   return years
 })
+
+const importFiles = ref<File[]>([])
+const importing = ref(false)
+const uploadRef = ref()
+
+const handleImportFileChange = (file: any, fileList: any[]) => {
+  importFiles.value = (fileList || [])
+    .map((f: any) => f?.raw)
+    .filter((f: any) => !!f)
+}
+
+const handleImportFileRemove = (file: any, fileList: any[]) => {
+  importFiles.value = (fileList || [])
+    .map((f: any) => f?.raw)
+    .filter((f: any) => !!f)
+}
+
+const handleImportFile = async () => {
+  if (!importFiles.value.length) {
+    ElMessage.warning('请先选择要导入的文件')
+    return
+  }
+
+  if (collectionName.value !== 'bond_info_cm') {
+    ElMessage.warning('当前仅支持债券信息查询集合的文件导入')
+    return
+  }
+
+  try {
+    importing.value = true
+
+    let totalSaved = 0
+    let totalRows = 0
+
+    for (const file of importFiles.value) {
+      const res = await bondsApi.importCollectionData(collectionName.value, file)
+
+      if (res.success && res.data) {
+        const data: any = res.data
+        totalSaved += Number(data.saved || 0)
+        totalRows += Number(data.rows || 0)
+      } else {
+        ElMessage.error((res as any).data?.message || '导入失败')
+        return
+      }
+    }
+
+    if (totalRows > 0) {
+      ElMessage.success(`成功导入 ${importFiles.value.length} 个文件，合计 ${totalSaved} 条记录`)
+    } else {
+      ElMessage.warning('文件中没有可导入的数据')
+    }
+
+    await loadData()
+
+    if (uploadRef.value && typeof uploadRef.value.clearFiles === 'function') {
+      uploadRef.value.clearFiles()
+    }
+    importFiles.value = []
+    refreshDialogVisible.value = false
+  } catch (e: any) {
+    let msg = '导入失败'
+    if (e?.response?.data?.detail) {
+      msg = e.response.data.detail
+    } else if (e?.message) {
+      msg = e.message
+    }
+    ElMessage.error(msg)
+  } finally {
+    importing.value = false
+  }
+}
+const remoteSyncHost = ref('')
+const remoteSyncDbType = ref('mongodb')
+const remoteSyncBatchSize = ref(5000)
+const remoteSyncCollection = ref('bond_info_cm')
+const remoteSyncUsername = ref('')
+const remoteSyncPassword = ref('')
+const remoteSyncing = ref(false)
+
+const handleRemoteSync = async () => {
+  if (!remoteSyncHost.value) {
+    ElMessage.warning('请先输入远程服务器 IP 地址或连接串')
+    return
+  }
+
+  if (collectionName.value !== 'bond_info_cm') {
+    ElMessage.warning('当前仅支持债券信息查询集合的远程同步')
+    return
+  }
+
+  try {
+    remoteSyncing.value = true
+
+    const res = await bondsApi.syncCollectionFromRemote(collectionName.value, {
+      remote_host: remoteSyncHost.value.trim(),
+      db_type: remoteSyncDbType.value,
+      batch_size: remoteSyncBatchSize.value,
+      remote_collection: remoteSyncCollection.value || undefined,
+      remote_username: remoteSyncUsername.value || undefined,
+      remote_password: remoteSyncPassword.value || undefined,
+    })
+
+    if (res.success && res.data) {
+      ElMessage.success(res.data.message || '远程同步成功')
+      await loadData()
+    } else {
+      ElMessage.error((res as any).data?.message || '远程同步失败')
+    }
+  } catch (e: any) {
+    let msg = '远程同步失败'
+    if (e?.response?.data?.detail) {
+      msg = e.response.data.detail
+    } else if (e?.message) {
+      msg = e.message
+    }
+    ElMessage.error(msg)
+  } finally {
+    remoteSyncing.value = false
+  }
+}
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 

@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
 import hashlib
 import logging
@@ -1417,6 +1417,122 @@ async def get_refresh_task_status(
     except Exception as e:
         logger.error(f"❌ 查询任务状态失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/collections/{collection_name}/import")
+async def import_collection_data(
+    collection_name: str,
+    file: UploadFile = File(..., description="CSV 或 Excel 文件"),
+    current_user: dict = Depends(get_current_user),
+):
+    """从文件导入债券集合数据（目前仅支持 bond_info_cm）"""
+    try:
+        logger.info(f"📥 [集合导入] collection={collection_name}, filename={file.filename}")
+
+        if collection_name != "bond_info_cm":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前仅支持 bond_info_cm 集合的文件导入",
+            )
+
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+
+        svc = BondDataService(db)
+        content = await file.read()
+        filename = file.filename or ""
+
+        result = await svc.import_bond_info_cm_from_file(content, filename)
+        saved = int(result.get("saved") or 0)
+        rows = int(result.get("rows") or 0)
+
+        message = f"成功导入 {saved} 条记录" if rows > 0 else "文件中没有可导入的数据"
+
+        return {
+            "success": True,
+            "data": {
+                "collection_name": collection_name,
+                "saved": saved,
+                "rows": rows,
+                "message": message,
+            },
+        }
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        logger.warning(f"⚠️ [集合导入] 参数错误: {ve}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"❌ [集合导入] 导入集合 {collection_name} 失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"导入数据失败: {str(e)}")
+
+
+@router.post("/collections/{collection_name}/sync-remote")
+async def sync_collection_from_remote(
+    collection_name: str,
+    remote_host: str = Query(..., description="远程 MongoDB 主机地址或 URI"),
+    db_type: str = Query("mongodb", description="数据库类型，目前仅支持 mongodb"),
+    batch_size: int = Query(5000, ge=100, le=100000, description="每批次同步数量"),
+    remote_collection: Optional[str] = Query(None, description="远程集合名称，默认为本地集合名"),
+    remote_username: Optional[str] = Query(None, description="远程数据库用户名"),
+    remote_password: Optional[str] = Query(None, description="远程数据库密码"),
+    current_user: dict = Depends(get_current_user),
+):
+    """从远程数据库同步集合数据到本地（当前仅支持 bond_info_cm 及 MongoDB）。"""
+    try:
+        logger.info(
+            f"📡 [集合远程同步] collection={collection_name}, remote_host={remote_host}, db_type={db_type}, batch_size={batch_size}"
+        )
+
+        if collection_name != "bond_info_cm":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前仅支持 bond_info_cm 集合的远程同步",
+            )
+
+        if not remote_host:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="远程主机地址不能为空")
+
+        if (db_type or "mongodb").lower() != "mongodb":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="当前仅支持 MongoDB 远程同步")
+
+        db = get_mongo_db()
+        if db is None:
+            raise HTTPException(status_code=500, detail="数据库连接失败")
+
+        svc = BondDataService(db)
+        result = await svc.sync_collection_from_remote_mongo(
+            collection_name=collection_name,
+            remote_host=remote_host,
+            batch_size=batch_size,
+            remote_collection=remote_collection,
+            remote_username=remote_username,
+            remote_password=remote_password,
+        )
+
+        synced = int(result.get("synced") or 0)
+        remote_total = int(result.get("remote_total") or 0)
+
+        message = f"成功从远程同步 {synced} 条记录（远程共 {remote_total} 条）"
+
+        return {
+            "success": True,
+            "data": {
+                "collection_name": collection_name,
+                "synced": synced,
+                "remote_total": remote_total,
+                "batch_size": batch_size,
+                "message": message,
+            },
+        }
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        logger.warning(f"⚠️ [集合远程同步] 参数错误: {ve}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"❌ [集合远程同步] 同步集合 {collection_name} 失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"远程同步失败: {str(e)}")
 
 
 @router.delete("/collections/{collection_name}/clear")

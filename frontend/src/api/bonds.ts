@@ -183,6 +183,69 @@ export const bondsApi = {
     return ApiClient.get(`/api/bonds/collections/refresh/task/${taskId}`)
   },
 
+  async importCollectionData(
+    collectionName: string,
+    file: File
+  ): Promise<ApiResponse<{
+    collection_name: string
+    saved: number
+    rows: number
+    message: string
+  }>> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return ApiClient.post(
+      `/api/bonds/collections/${encodeURIComponent(collectionName)}/import`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+  },
+
+  async syncCollectionFromRemote(
+    collectionName: string,
+    params: {
+      remote_host: string
+      db_type?: string
+      batch_size?: number
+      remote_collection?: string
+      remote_username?: string
+      remote_password?: string
+    }
+  ): Promise<ApiResponse<{
+    collection_name: string
+    synced: number
+    remote_total: number
+    batch_size: number
+    message: string
+  }>> {
+    const payload: any = {
+      db_type: params.db_type || 'mongodb',
+      remote_host: params.remote_host,
+      batch_size: params.batch_size ?? 5000,
+    }
+
+    if (params.remote_collection) {
+      payload.remote_collection = params.remote_collection
+    }
+    if (params.remote_username) {
+      payload.remote_username = params.remote_username
+    }
+    if (params.remote_password) {
+      payload.remote_password = params.remote_password
+    }
+
+    return ApiClient.post(
+      `/api/bonds/collections/${encodeURIComponent(collectionName)}/sync-remote`,
+      undefined,
+      { params: payload }
+    )
+  },
+
   // ==================== 可转债专项功能 ====================
 
   /**

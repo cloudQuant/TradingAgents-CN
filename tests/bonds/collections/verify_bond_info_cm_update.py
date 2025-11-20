@@ -6,7 +6,8 @@ import sys
 import os
 import re
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, root_dir)
 
 print("=" * 70)
 print("验证 bond_info_cm 参数化更新功能")
@@ -15,7 +16,7 @@ print("=" * 70)
 # 1. 检查路由接口参数
 print("\n[检查1] 验证路由接口参数")
 bonds_router_path = os.path.join(
-    os.path.dirname(__file__), '..', '..', 'app', 'routers', 'bonds.py'
+    root_dir, 'app', 'routers', 'bonds.py'
 )
 bonds_router_path = os.path.abspath(bonds_router_path)
 
@@ -63,7 +64,7 @@ else:
 # 2. 检查CollectionRefreshService
 print("\n[检查2] 验证CollectionRefreshService修改")
 service_path = os.path.join(
-    os.path.dirname(__file__), '..', '..', 
+    root_dir, 
     'app', 'services', 'collection_refresh_service.py'
 )
 service_path = os.path.abspath(service_path)
@@ -147,7 +148,7 @@ if all_updated:
 # 4. 检查Provider方法
 print("\n[检查4] 验证Provider方法")
 provider_path = os.path.join(
-    os.path.dirname(__file__), '..', '..', 
+    root_dir,
     'tradingagents', 'dataflows', 'providers', 'china', 'bonds.py'
 )
 provider_path = os.path.abspath(provider_path)
@@ -191,7 +192,7 @@ else:
 # 5. 检查保存方法
 print("\n[检查5] 验证保存方法")
 service_data_path = os.path.join(
-    os.path.dirname(__file__), '..', '..', 
+    root_dir,
     'app', 'services', 'bond_data_service.py'
 )
 service_data_path = os.path.abspath(service_data_path)
