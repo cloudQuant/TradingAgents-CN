@@ -189,6 +189,35 @@
           />
         </div>
       </el-card>
+
+      <!-- 债券类型与最新债项评级分布饼图，仅 bond_info_cm 显示 -->
+      <el-card
+        v-if="collectionName === 'bond_info_cm' && (bondTypePieOption || gradePieOption)"
+        shadow="hover"
+        class="distribution-card"
+      >
+        <template #header>
+          <div class="card-header">
+            <span>债券类型与评级分布</span>
+          </div>
+        </template>
+        <div class="distribution-row">
+          <div class="chart-wrapper-small" v-if="bondTypePieOption">
+            <v-chart
+              :option="bondTypePieOption"
+              :autoresize="true"
+              style="height: 320px; width: 100%"
+            />
+          </div>
+          <div class="chart-wrapper-small" v-if="gradePieOption">
+            <v-chart
+              :option="gradePieOption"
+              :autoresize="true"
+              style="height: 320px; width: 100%"
+            />
+          </div>
+        </div>
+      </el-card>
     </div>
 
     <!-- 更新数据对话框 -->
@@ -271,7 +300,7 @@
           />
         </el-form-item>
 
-        <el-form-item v-if="collectionName === 'bond_info_cm'" label="文件导入">
+        <el-form-item v-if="collectionName === 'bond_info_cm' || collectionName === 'bond_basic_info'" label="文件导入">
           <div style="width: 100%">
             <el-upload
               ref="uploadRef"
@@ -287,7 +316,8 @@
               </div>
               <template #tip>
                 <div class="el-upload__tip">
-                  支持 CSV 或 Excel 文件，列结构需与债券信息查询结果一致
+                  <span v-if="collectionName === 'bond_info_cm'">支持 CSV 或 Excel 文件，列结构需与债券信息查询结果一致</span>
+                  <span v-else-if="collectionName === 'bond_basic_info'">支持 CSV 或 Excel 文件，列结构需包含债券代码、债券简称等字段</span>
                 </div>
               </template>
             </el-upload>
@@ -304,7 +334,7 @@
           </div>
         </el-form-item>
 
-        <el-form-item v-if="collectionName === 'bond_info_cm'" label="远程同步">
+        <el-form-item v-if="collectionName === 'bond_info_cm' || collectionName === 'bond_basic_info'" label="远程同步">
           <div style="width: 100%">
             <el-row :gutter="8">
               <el-col :span="24">
@@ -331,13 +361,21 @@
               <el-col :span="12">
                 <el-input
                   v-model="remoteSyncCollection"
-                  placeholder="远程集合名称，默认 bond_info_cm"
+                  :placeholder="collectionName === 'bond_info_cm' ? '远程集合名称，默认 bond_info_cm' : '远程集合名称，默认 bond_basic_info'"
                 />
               </el-col>
               <el-col :span="12">
                 <el-input
                   v-model="remoteSyncUsername"
                   placeholder="远程用户名（可选）"
+                />
+              </el-col>
+            </el-row>
+            <el-row :gutter="8" style="margin-top: 8px;">
+              <el-col :span="24">
+                <el-input
+                  v-model="remoteSyncAuthSource"
+                  placeholder="认证库（authSource），通常为创建该用户时所在的数据库，例如 admin 或 tradingagents"
                 />
               </el-col>
             </el-row>
@@ -361,6 +399,13 @@
             >
               远程同步
             </el-button>
+            <div
+              v-if="remoteSyncStats"
+              style="margin-top: 4px; font-size: 12px; color: #606266;"
+            >
+              最近一次同步：远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新
+              {{ remoteSyncStats.synced }} 条
+            </div>
           </div>
         </el-form-item>
         
@@ -386,6 +431,132 @@
           />
         </el-form-item>
         
+        <!-- bond_basic_info 批量更新和增量更新参数 -->
+        <template v-if="collectionName === 'bond_basic_info'">
+          <section class="batch-config-section">
+            <div class="batch-config-header">
+              <div>
+                <p class="batch-config-title">债券基础信息更新</p>
+                <p class="batch-config-subtitle">基于bond_info_cm数据，批量或增量更新债券详细信息</p>
+              </div>
+              <el-tag size="small" type="warning" effect="plain">基础信息</el-tag>
+            </div>
+            
+            <el-alert
+              title="更新模式说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 16px;"
+            >
+              <template #default>
+                <div style="font-size: 12px; line-height: 1.6;">
+                  <p><strong>批量更新：</strong>从bond_info_cm查询所有债券简称，获取详细信息更新到bond_info_detail_cm</p>
+                  <p><strong>增量更新：</strong>只更新bond_info_cm中存在但bond_info_detail_cm中缺失的债券信息</p>
+                </div>
+              </template>
+            </el-alert>
+
+            <div class="batch-config-grid">
+              <div class="batch-config-field">
+                <label class="batch-field-label">批次大小</label>
+                <el-input-number
+                  v-model="bondBasicBatchSize"
+                  :min="100"
+                  :max="5000"
+                  :step="100"
+                  controls-position="right"
+                  style="width: 100%;"
+                />
+                <p class="batch-config-note">每批处理的债券数量，建议1000-2000</p>
+              </div>
+              <div class="batch-config-field">
+                <label class="batch-field-label">并发线程数</label>
+                <el-input-number
+                  v-model="bondBasicConcurrentThreads"
+                  :min="1"
+                  :max="10"
+                  :step="1"
+                  controls-position="right"
+                  style="width: 100%;"
+                />
+                <p class="batch-config-note">同时运行的线程数，建议3-5个</p>
+              </div>
+              <div class="batch-config-field">
+                <label class="batch-field-label">保存间隔</label>
+                <el-input-number
+                  v-model="bondBasicSaveInterval"
+                  :min="500"
+                  :max="2000"
+                  :step="100"
+                  controls-position="right"
+                  style="width: 100%;"
+                />
+                <p class="batch-config-note">每获取多少条数据保存一次</p>
+              </div>
+            </div>
+            
+            <div class="batch-config-actions">
+              <el-button 
+                type="primary"
+                size="small"
+                @click="startBondBasicBatchUpdate"
+                :loading="bondBasicBatchUpdating"
+                :disabled="refreshing || bondBasicBatchUpdating || bondBasicIncrementalUpdating"
+              >
+                {{ bondBasicBatchUpdating ? '批量更新中...' : '批量更新' }}
+              </el-button>
+              
+              <el-button 
+                type="success"
+                size="small"
+                @click="startBondBasicIncrementalUpdate"
+                :loading="bondBasicIncrementalUpdating"
+                :disabled="refreshing || bondBasicBatchUpdating || bondBasicIncrementalUpdating"
+              >
+                {{ bondBasicIncrementalUpdating ? '增量更新中...' : '增量更新' }}
+              </el-button>
+              
+              <el-button 
+                size="small"
+                @click="getBondBasicUpdateStatistics"
+                :loading="loadingBondBasicStats"
+              >
+                {{ loadingBondBasicStats ? '查询中...' : '查询统计' }}
+              </el-button>
+            </div>
+            
+            <!-- 统计信息显示 -->
+            <div v-if="bondBasicStats" class="stats-display">
+              <el-descriptions :column="2" size="small" border>
+                <el-descriptions-item label="基础信息总数">{{ bondBasicStats.bond_info_cm_count || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="详细信息总数">{{ bondBasicStats.bond_info_detail_cm_count || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="覆盖率">{{ bondBasicStats.coverage_rate || 0 }}%</el-descriptions-item>
+                <el-descriptions-item label="缺失详情数">{{ bondBasicStats.missing_detail_count || 0 }}</el-descriptions-item>
+              </el-descriptions>
+            </div>
+            
+            <!-- 进度显示 -->
+            <div v-if="bondBasicProgress.show" class="bond-basic-progress">
+              <el-progress
+                :percentage="bondBasicProgress.percentage"
+                :status="bondBasicProgress.status"
+                :stroke-width="15"
+              />
+              <p class="progress-message">{{ bondBasicProgress.message }}</p>
+              <div v-if="bondBasicProgress.details" class="progress-details">
+                <el-descriptions :column="2" size="small">
+                  <el-descriptions-item label="总数量">{{ bondBasicProgress.details.total || 0 }}</el-descriptions-item>
+                  <el-descriptions-item label="已处理">{{ bondBasicProgress.details.processed || 0 }}</el-descriptions-item>
+                  <el-descriptions-item label="已更新">{{ bondBasicProgress.details.updated || 0 }}</el-descriptions-item>
+                  <el-descriptions-item label="错误数">{{ bondBasicProgress.details.errors || 0 }}</el-descriptions-item>
+                </el-descriptions>
+              </div>
+            </div>
+            
+            <el-divider class="batch-config-divider" />
+          </section>
+        </template>
+
         <!-- bond_info_cm 查询参数 -->
         <template v-if="needsBondParams">
           <section class="batch-config-section">
@@ -554,7 +725,7 @@
         >
           <template #default>
             <div style="font-size: 12px; line-height: 1.6;">
-              <p v-if="collectionName === 'bond_basic_info'">将从AKShare获取最新的债券列表并更新到数据库</p>
+              <p v-if="collectionName === 'bond_basic_info'">将从AKShare获取最新的债券列表并更新到数据库，支持批量更新和增量更新</p>
               <p v-else-if="collectionName === 'yield_curve_daily'">将获取指定日期范围的收益率曲线数据（默认最近30天，范围需小于一年）</p>
               <p v-else-if="collectionName === 'bond_daily'">将为数据库中的债券更新历史行情数据（最多10个债券，默认最近7天）</p>
               <p v-else-if="collectionName === 'bond_cb_list_jsl'">将从集思录获取所有可转债的实时数据</p>
@@ -595,12 +766,12 @@ import { Box, Refresh, Search, Document, Calendar, Download, Delete } from '@ele
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart } from 'echarts/charts'
+import { BarChart, PieChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { bondsApi } from '@/api/bonds'
 
-use([CanvasRenderer, BarChart, GridComponent, TooltipComponent, LegendComponent])
+use([CanvasRenderer, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
 const route = useRoute()
 const router = useRouter()
@@ -628,6 +799,8 @@ const stats = ref<any>(null)
 const collectionInfo = ref<any>(null)
 const issuanceLoading = ref(false)
 const issuanceChartOption = ref<any>(null)
+const bondTypePieOption = ref<any>(null)
+const gradePieOption = ref<any>(null)
 
 // 更新数据相关
 const refreshDialogVisible = ref(false)
@@ -671,6 +844,22 @@ const sanitizedBatchDelaySeconds = computed(() => {
 
 // 清空数据相关
 const clearing = ref(false)
+
+// bond_basic_info 批量更新和增量更新相关
+const bondBasicBatchSize = ref(1000)
+const bondBasicConcurrentThreads = ref(3)
+const bondBasicSaveInterval = ref(1000)
+const bondBasicBatchUpdating = ref(false)
+const bondBasicIncrementalUpdating = ref(false)
+const loadingBondBasicStats = ref(false)
+const bondBasicStats = ref<any>(null)
+const bondBasicProgress = ref({
+  show: false,
+  percentage: 0,
+  status: '' as any,
+  message: '',
+  details: null as any
+})
 
 // 判断是否需要日期范围
 const needsDateRange = computed(() => {
@@ -724,8 +913,8 @@ const handleImportFile = async () => {
     return
   }
 
-  if (collectionName.value !== 'bond_info_cm') {
-    ElMessage.warning('当前仅支持债券信息查询集合的文件导入')
+  if (!['bond_info_cm', 'bond_basic_info'].includes(collectionName.value)) {
+    ElMessage.warning('当前仅支持债券信息查询集合和债券基础信息集合的文件导入')
     return
   }
 
@@ -776,10 +965,12 @@ const handleImportFile = async () => {
 const remoteSyncHost = ref('')
 const remoteSyncDbType = ref('mongodb')
 const remoteSyncBatchSize = ref(5000)
-const remoteSyncCollection = ref('bond_info_cm')
+const remoteSyncCollection = ref('')
 const remoteSyncUsername = ref('')
+const remoteSyncAuthSource = ref('')
 const remoteSyncPassword = ref('')
 const remoteSyncing = ref(false)
+const remoteSyncStats = ref<{ remote_total: number; synced: number } | null>(null)
 
 const handleRemoteSync = async () => {
   if (!remoteSyncHost.value) {
@@ -787,13 +978,14 @@ const handleRemoteSync = async () => {
     return
   }
 
-  if (collectionName.value !== 'bond_info_cm') {
-    ElMessage.warning('当前仅支持债券信息查询集合的远程同步')
+  if (!['bond_info_cm', 'bond_basic_info'].includes(collectionName.value)) {
+    ElMessage.warning('当前仅支持债券信息查询集合和债券基础信息集合的远程同步')
     return
   }
 
   try {
     remoteSyncing.value = true
+    remoteSyncStats.value = null
 
     const res = await bondsApi.syncCollectionFromRemote(collectionName.value, {
       remote_host: remoteSyncHost.value.trim(),
@@ -802,9 +994,14 @@ const handleRemoteSync = async () => {
       remote_collection: remoteSyncCollection.value || undefined,
       remote_username: remoteSyncUsername.value || undefined,
       remote_password: remoteSyncPassword.value || undefined,
+      remote_auth_source: remoteSyncAuthSource.value || undefined,
     })
 
     if (res.success && res.data) {
+      remoteSyncStats.value = {
+        remote_total: Number(res.data.remote_total ?? 0),
+        synced: Number(res.data.synced ?? 0),
+      }
       ElMessage.success(res.data.message || '远程同步成功')
       await loadData()
     } else {
@@ -825,6 +1022,80 @@ const handleRemoteSync = async () => {
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+const updateBondInfoDistributions = () => {
+  if (collectionName.value !== 'bond_info_cm' || !stats.value) {
+    bondTypePieOption.value = null
+    gradePieOption.value = null
+    return
+  }
+
+  const s: any = stats.value
+  const typeStats: Array<{ type: string; count: number }> = s.bond_type_stats || []
+  const gradeStats: Array<{ grade: string; count: number }> = s.grade_stats || []
+
+  if (typeStats && typeStats.length > 0) {
+    bondTypePieOption.value = {
+      tooltip: {
+        trigger: 'item',
+      },
+      legend: {
+        type: 'scroll',
+        bottom: 0,
+        left: 'center',
+      },
+      series: [
+        {
+          name: '债券类型',
+          type: 'pie',
+          radius: ['35%', '65%'],
+          center: ['50%', '45%'],
+          avoidLabelOverlap: false,
+          label: {
+            formatter: '{b}\n{d}%',
+          },
+          data: typeStats.map((item) => ({
+            name: item.type || '未知',
+            value: item.count || 0,
+          })),
+        },
+      ],
+    }
+  } else {
+    bondTypePieOption.value = null
+  }
+
+  if (gradeStats && gradeStats.length > 0) {
+    gradePieOption.value = {
+      tooltip: {
+        trigger: 'item',
+      },
+      legend: {
+        type: 'scroll',
+        bottom: 0,
+        left: 'center',
+      },
+      series: [
+        {
+          name: '最新债项评级',
+          type: 'pie',
+          radius: ['35%', '65%'],
+          center: ['50%', '45%'],
+          avoidLabelOverlap: false,
+          label: {
+            formatter: '{b}\n{d}%',
+          },
+          data: gradeStats.map((item) => ({
+            name: item.grade || '未知',
+            value: item.count || 0,
+          })),
+        },
+      ],
+    }
+  } else {
+    gradePieOption.value = null
+  }
+}
+
 // 加载数据
 const loadData = async () => {
   loading.value = true
@@ -839,6 +1110,8 @@ const loadData = async () => {
     const statsRes = await bondsApi.getCollectionStats(collectionName.value)
     if (statsRes.success && statsRes.data) {
       stats.value = statsRes.data
+    } else {
+      stats.value = null
     }
 
     // 加载数据
@@ -860,9 +1133,12 @@ const loadData = async () => {
     }
 
     if (collectionName.value === 'bond_info_cm') {
+      updateBondInfoDistributions()
       await loadIssuanceStats()
     } else {
       issuanceChartOption.value = null
+      bondTypePieOption.value = null
+      gradePieOption.value = null
     }
   } catch (e: any) {
     console.error('加载数据失败:', e)
@@ -1319,6 +1595,174 @@ const handleClearData = async () => {
     if (error !== 'cancel') {
       console.error('清空操作错误:', error)
     }
+  }
+}
+
+// ========== bond_basic_info 相关方法 ==========
+
+// 获取债券基础信息更新统计
+const getBondBasicUpdateStatistics = async () => {
+  try {
+    loadingBondBasicStats.value = true
+    const response = await bondsApi.getBondBasicUpdateStatistics()
+    
+    if (response.success && response.data) {
+      bondBasicStats.value = response.data
+      ElMessage.success('获取统计信息成功')
+    } else {
+      throw new Error(response.data?.message || '获取统计信息失败')
+    }
+  } catch (error: any) {
+    console.error('获取统计信息失败:', error)
+    ElMessage.error(`获取统计信息失败: ${error.message}`)
+  } finally {
+    loadingBondBasicStats.value = false
+  }
+}
+
+// 开始批量更新
+const startBondBasicBatchUpdate = async () => {
+  try {
+    const result = await ElMessageBox.confirm(
+      `确认开始批量更新？\n批次大小: ${bondBasicBatchSize.value}\n并发线程: ${bondBasicConcurrentThreads.value}\n保存间隔: ${bondBasicSaveInterval.value}`,
+      '批量更新确认',
+      {
+        confirmButtonText: '开始更新',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    if (result !== 'confirm') return
+    
+    bondBasicBatchUpdating.value = true
+    bondBasicProgress.value = {
+      show: true,
+      percentage: 0,
+      status: '',
+      message: '正在启动批量更新...',
+      details: null
+    }
+    
+    const response = await bondsApi.startBondBasicBatchUpdate({
+      batch_size: bondBasicBatchSize.value,
+      concurrent_threads: bondBasicConcurrentThreads.value,
+      save_interval: bondBasicSaveInterval.value
+    })
+    
+    if (response.success && response.data) {
+      const data = response.data
+      
+      // 更新进度
+      bondBasicProgress.value = {
+        show: true,
+        percentage: 100,
+        status: 'success',
+        message: data.message || '批量更新完成',
+        details: {
+          total: data.total_bonds,
+          processed: data.total_processed,
+          updated: data.total_updated,
+          errors: data.total_errors
+        }
+      }
+      
+      ElMessage.success('批量更新完成')
+      
+      // 刷新统计数据
+      await getBondBasicUpdateStatistics()
+      
+      // 刷新页面数据
+      await loadData()
+      
+    } else {
+      throw new Error(response.data?.message || '批量更新失败')
+    }
+    
+  } catch (error: any) {
+    bondBasicProgress.value = {
+      show: true,
+      percentage: 0,
+      status: 'exception',
+      message: `批量更新失败: ${error.message}`,
+      details: null
+    }
+    
+    ElMessage.error(`批量更新失败: ${error.message}`)
+  } finally {
+    bondBasicBatchUpdating.value = false
+  }
+}
+
+// 开始增量更新
+const startBondBasicIncrementalUpdate = async () => {
+  try {
+    const missingCount = bondBasicStats.value?.missing_detail_count || 0
+    
+    const result = await ElMessageBox.confirm(
+      `确认开始增量更新？\n预计需要更新 ${missingCount} 个缺失的债券基础信息。`,
+      '增量更新确认',
+      {
+        confirmButtonText: '开始更新',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    
+    if (result !== 'confirm') return
+    
+    bondBasicIncrementalUpdating.value = true
+    bondBasicProgress.value = {
+      show: true,
+      percentage: 0,
+      status: '',
+      message: '正在启动增量更新...',
+      details: null
+    }
+    
+    const response = await bondsApi.startBondBasicIncrementalUpdate()
+    
+    if (response.success && response.data) {
+      const data = response.data
+      
+      // 更新进度
+      bondBasicProgress.value = {
+        show: true,
+        percentage: 100,
+        status: data.updated > 0 ? 'success' : 'warning',
+        message: data.message || '增量更新完成',
+        details: {
+          total: data.missing_codes,
+          processed: data.missing_codes,
+          updated: data.updated,
+          errors: data.errors
+        }
+      }
+      
+      ElMessage.success('增量更新完成')
+      
+      // 刷新统计数据
+      await getBondBasicUpdateStatistics()
+      
+      // 刷新页面数据
+      await loadData()
+      
+    } else {
+      throw new Error(response.data?.message || '增量更新失败')
+    }
+    
+  } catch (error: any) {
+    bondBasicProgress.value = {
+      show: true,
+      percentage: 0,
+      status: 'exception',
+      message: `增量更新失败: ${error.message}`,
+      details: null
+    }
+    
+    ElMessage.error(`增量更新失败: ${error.message}`)
+  } finally {
+    bondBasicIncrementalUpdating.value = false
   }
 }
 

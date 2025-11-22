@@ -1126,6 +1126,7 @@ class BondDataService:
         remote_collection: Optional[str] = None,
         remote_username: Optional[str] = None,
         remote_password: Optional[str] = None,
+        remote_auth_source: Optional[str] = None,
     ) -> Dict[str, Any]:
         """从远程 MongoDB 同步指定集合到当前数据库。
 
@@ -1148,6 +1149,11 @@ class BondDataService:
 
         # 构建远程 Mongo URI
         db_name = self.db.name
+        # 认证库（authSource）：
+        # - 如果显式提供 remote_auth_source，则使用它
+        # - 否则默认使用目标数据库名（多数情况下用户也创建在该库下）
+        auth_source = (remote_auth_source or db_name) if remote_username else None
+
         if remote_host.startswith("mongodb://") or remote_host.startswith("mongodb+srv://"):
             # 如果已经是完整 URI，则直接使用（假定其中已包含认证信息或不需要认证）
             uri = remote_host
@@ -1168,7 +1174,11 @@ class BondDataService:
                     cred = f"{remote_username}:{remote_password}"
                 else:
                     cred = remote_username
-                uri = f"mongodb://{cred}@{host}:{port}/{db_name}"
+
+                if auth_source:
+                    uri = f"mongodb://{cred}@{host}:{port}/{db_name}?authSource={auth_source}"
+                else:
+                    uri = f"mongodb://{cred}@{host}:{port}/{db_name}"
             else:
                 uri = f"mongodb://{host}:{port}/{db_name}"
 

@@ -56,6 +56,7 @@ def main() -> None:
         "remote_collection",
         "remote_username",
         "remote_password",
+        "remote_auth_source",
     ]
     missing_params = [p for p in required_params if p not in snippet]
     if missing_params:
@@ -121,6 +122,7 @@ def main() -> None:
         "remoteSyncCollection",
         "remoteSyncUsername",
         "remoteSyncPassword",
+        "remoteSyncAuthSource",
         "handleRemoteSync",
     ]
     missing_handlers = [h for h in handler_checks if h not in view_content]

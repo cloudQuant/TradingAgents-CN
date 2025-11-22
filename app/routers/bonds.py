@@ -1144,7 +1144,63 @@ async def get_collection_stats(
         except Exception as exch_err:
             logger.debug(f"⚠️ [集合统计] 获取交易所统计失败: {exch_err}")
             pass
-        
+
+        # bond_info_cm 专用统计：按“债券类型”和“最新债项评级”统计
+        if collection_name == "bond_info_cm":
+            # 债券类型分布
+            try:
+                pipeline = [
+                    {
+                        "$match": {
+                            "$and": [
+                                {"$or": [{"endpoint": "bond_info_cm"}, {"endpoint": {"$exists": False}}]},
+                                {"债券类型": {"$exists": True, "$ne": ""}},
+                            ]
+                        }
+                    },
+                    {"$group": {"_id": "$债券类型", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}},
+                ]
+                bond_type_stats: List[Dict[str, Any]] = []
+                async for doc in collection.aggregate(pipeline):
+                    type_id = doc.get("_id")
+                    count = int(doc.get("count", 0))
+                    bond_type_stats.append(
+                        {"type": str(type_id) if type_id is not None else "未知", "count": count}
+                    )
+                if bond_type_stats:
+                    stats["bond_type_stats"] = bond_type_stats
+                    logger.info(f"📊 [集合统计] bond_info_cm 债券类型统计项数: {len(bond_type_stats)}")
+            except Exception as type_err:
+                logger.debug(f"⚠️ [集合统计] 获取债券类型统计失败: {type_err}")
+
+            # 最新债项评级分布
+            try:
+                pipeline = [
+                    {
+                        "$match": {
+                            "$and": [
+                                {"$or": [{"endpoint": "bond_info_cm"}, {"endpoint": {"$exists": False}}]},
+                                {"最新债项评级": {"$exists": True, "$ne": ""}},
+                            ]
+                        }
+                    },
+                    {"$group": {"_id": "$最新债项评级", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}},
+                ]
+                grade_stats: List[Dict[str, Any]] = []
+                async for doc in collection.aggregate(pipeline):
+                    grade_id = doc.get("_id")
+                    count = int(doc.get("count", 0))
+                    grade_stats.append(
+                        {"grade": str(grade_id) if grade_id is not None else "未知", "count": count}
+                    )
+                if grade_stats:
+                    stats["grade_stats"] = grade_stats
+                    logger.info(f"📊 [集合统计] bond_info_cm 最新债项评级统计项数: {len(grade_stats)}")
+            except Exception as grade_err:
+                logger.debug(f"⚠️ [集合统计] 获取债项评级统计失败: {grade_err}")
+
         logger.info(f"✅ [集合统计] 集合 {collection_name} 统计信息获取成功")
         return {"success": True, "data": stats}
     except HTTPException:
@@ -1476,6 +1532,7 @@ async def sync_collection_from_remote(
     remote_collection: Optional[str] = Query(None, description="远程集合名称，默认为本地集合名"),
     remote_username: Optional[str] = Query(None, description="远程数据库用户名"),
     remote_password: Optional[str] = Query(None, description="远程数据库密码"),
+    remote_auth_source: Optional[str] = Query(None, description="远程认证库（authSource），默认为目标数据库名"),
     current_user: dict = Depends(get_current_user),
 ):
     """从远程数据库同步集合数据到本地（当前仅支持 bond_info_cm 及 MongoDB）。"""
@@ -1508,6 +1565,7 @@ async def sync_collection_from_remote(
             remote_collection=remote_collection,
             remote_username=remote_username,
             remote_password=remote_password,
+            remote_auth_source=remote_auth_source,
         )
 
         synced = int(result.get("synced") or 0)
@@ -1920,4 +1978,111 @@ async def reset_initialization(
     
     except Exception as e:
         logger.error(f"❌ [管理] 重置初始化状态失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 债券基础信息批量更新API ====================
+
+@router.post("/basic-info/batch-update")
+async def start_bond_basic_batch_update(
+    batch_size: int = Query(1000, ge=100, le=5000, description="每批处理的数量"),
+    concurrent_threads: int = Query(3, ge=1, le=10, description="并发线程数"),
+    save_interval: int = Query(1000, ge=500, le=2000, description="保存间隔"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    启动债券基础信息批量更新
+    
+    从bond_info_cm表查询债券简称，然后获取详细信息更新到bond_info_detail_cm中。
+    采用多线程批量更新，每获取指定数量的数据保存到集合一次。
+    """
+    try:
+        from app.services.bond_basic_info_service import BondBasicInfoService
+        
+        db = get_mongo_db()
+        service = BondBasicInfoService(db)
+        
+        logger.info(f"🚀 [批量更新API] 用户 {current_user.get('username')} 启动债券基础信息批量更新")
+        logger.info(f"📊 [批量更新API] 参数: batch_size={batch_size}, threads={concurrent_threads}, save_interval={save_interval}")
+        
+        # 执行批量更新
+        result = await service.batch_update_from_bond_info_cm(
+            batch_size=batch_size,
+            concurrent_threads=concurrent_threads,
+            save_interval=save_interval
+        )
+        
+        if result.get("success"):
+            logger.info(f"✅ [批量更新API] 批量更新完成: {result.get('message')}")
+            return {"success": True, "data": result}
+        else:
+            logger.error(f"❌ [批量更新API] 批量更新失败: {result.get('error')}")
+            raise HTTPException(status_code=500, detail=result.get("error"))
+            
+    except Exception as e:
+        logger.error(f"❌ [批量更新API] 执行失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/basic-info/incremental-update")
+async def start_bond_basic_incremental_update(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    启动债券基础信息增量更新
+    
+    从bond_info_cm集合中查询债券简称，然后从bond_info_detail_cm集合中获取已有的债券代码，
+    找出缺失的债券基础信息并更新到集合中。
+    """
+    try:
+        from app.services.bond_basic_info_service import BondBasicInfoService
+        
+        db = get_mongo_db()
+        service = BondBasicInfoService(db)
+        
+        logger.info(f"🔍 [增量更新API] 用户 {current_user.get('username')} 启动债券基础信息增量更新")
+        
+        # 执行增量更新
+        result = await service.incremental_update_missing_info()
+        
+        if result.get("success"):
+            logger.info(f"✅ [增量更新API] 增量更新完成: {result.get('message')}")
+            return {"success": True, "data": result}
+        else:
+            logger.error(f"❌ [增量更新API] 增量更新失败: {result.get('error')}")
+            raise HTTPException(status_code=500, detail=result.get("error"))
+            
+    except Exception as e:
+        logger.error(f"❌ [增量更新API] 执行失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/basic-info/update-statistics")
+async def get_bond_basic_update_statistics(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    获取债券基础信息更新统计
+    
+    返回bond_info_cm和bond_info_detail_cm的记录数量、覆盖率等统计信息。
+    """
+    try:
+        from app.services.bond_basic_info_service import BondBasicInfoService
+        
+        db = get_mongo_db()
+        service = BondBasicInfoService(db)
+        
+        logger.debug(f"📊 [统计API] 用户 {current_user.get('username')} 查询债券基础信息更新统计")
+        
+        # 获取统计信息
+        result = await service.get_update_statistics()
+        
+        if result.get("success"):
+            return {"success": True, "data": result}
+        else:
+            logger.error(f"❌ [统计API] 获取统计失败: {result.get('error')}")
+            raise HTTPException(status_code=500, detail=result.get("error"))
+            
+    except Exception as e:
+        logger.error(f"❌ [统计API] 执行失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

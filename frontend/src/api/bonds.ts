@@ -98,6 +98,8 @@ export const bondsApi = {
     date_field?: string
     category_stats?: Array<{ category: string; count: number }>
     exchange_stats?: Array<{ exchange: string; count: number }>
+    bond_type_stats?: Array<{ type: string; count: number }>
+    grade_stats?: Array<{ grade: string; count: number }>
   }>> {
     return ApiClient.get(`/api/bonds/collections/${encodeURIComponent(collectionName)}/stats`)
   },
@@ -215,6 +217,7 @@ export const bondsApi = {
       remote_collection?: string
       remote_username?: string
       remote_password?: string
+      remote_auth_source?: string
     }
   ): Promise<ApiResponse<{
     collection_name: string
@@ -238,11 +241,18 @@ export const bondsApi = {
     if (params.remote_password) {
       payload.remote_password = params.remote_password
     }
+    if (params.remote_auth_source) {
+      payload.remote_auth_source = params.remote_auth_source
+    }
 
     return ApiClient.post(
       `/api/bonds/collections/${encodeURIComponent(collectionName)}/sync-remote`,
       undefined,
-      { params: payload }
+      {
+        params: payload,
+        // 远程同步可能较慢，这里单独放宽超时时间到 5 分钟
+        timeout: 300000,
+      }
     )
   },
 
@@ -362,5 +372,56 @@ export const bondsApi = {
     message: string
   }>> {
     return ApiClient.delete(`/api/bonds/collections/${encodeURIComponent(collectionName)}/clear`)
+  },
+
+  // ==================== 债券基础信息批量更新API ====================
+
+  /**
+   * 启动债券基础信息批量更新
+   */
+  async startBondBasicBatchUpdate(params: {
+    batch_size: number
+    concurrent_threads: number
+    save_interval: number
+  }): Promise<ApiResponse<{
+    total_bonds: number
+    total_processed: number
+    total_updated: number
+    total_errors: number
+    duration_seconds: number
+    concurrent_threads: number
+    batch_size: number
+    message: string
+  }>> {
+    return ApiClient.post('/api/bonds/basic-info/batch-update', undefined, { params })
+  },
+
+  /**
+   * 启动债券基础信息增量更新
+   */
+  async startBondBasicIncrementalUpdate(): Promise<ApiResponse<{
+    total_basic_codes: number
+    total_detail_codes: number
+    missing_codes: number
+    updated: number
+    errors: number
+    error_details?: Array<{ code: string; error: string }>
+    duration_seconds: number
+    message: string
+  }>> {
+    return ApiClient.post('/api/bonds/basic-info/incremental-update')
+  },
+
+  /**
+   * 获取债券基础信息更新统计
+   */
+  async getBondBasicUpdateStatistics(): Promise<ApiResponse<{
+    bond_info_cm_count: number
+    bond_info_detail_cm_count: number
+    bond_basic_info_count: number
+    coverage_rate: number
+    missing_detail_count: number
+  }>> {
+    return ApiClient.get('/api/bonds/basic-info/update-statistics')
   }
 }
