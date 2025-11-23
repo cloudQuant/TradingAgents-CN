@@ -106,6 +106,35 @@ export interface StockCollectionDataResponse<T = any> {
   page_size: number
 }
 
+export interface CollectionInfo {
+  name: string
+  display_name: string
+  description: string
+  route: string
+  fields: string[]
+}
+
+export interface CollectionStatsResponse {
+  total_count: number
+  collection_name: string
+  latest_update?: string
+}
+
+export interface RefreshTaskResponse {
+  task_id: string
+  message: string
+}
+
+export interface RefreshStatusResponse {
+  task_id: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  progress: number
+  total: number
+  message: string
+  result?: any
+  error?: string
+}
+
 export const stocksApi = {
   /**
    * 获取股票行情
@@ -174,6 +203,50 @@ export const stocksApi = {
     return ApiClient.get<StockCollectionDataResponse>(
       `/api/stocks/collections/${collectionName}/data`,
       params,
+    )
+  },
+
+  /**
+   * 获取所有股票数据集合列表
+   */
+  async getCollections() {
+    return ApiClient.get<CollectionInfo[]>('/api/stocks/collections')
+  },
+
+  /**
+   * 刷新股票数据集合
+   */
+  async refreshCollection(collectionName: string, params: any = {}) {
+    return ApiClient.post<RefreshTaskResponse>(
+      `/api/stocks/collections/${collectionName}/refresh`,
+      params
+    )
+  },
+
+  /**
+   * 查询刷新任务状态
+   */
+  async getRefreshStatus(collectionName: string, taskId: string) {
+    return ApiClient.get<RefreshStatusResponse>(
+      `/api/stocks/collections/${collectionName}/refresh/status/${taskId}`
+    )
+  },
+
+  /**
+   * 获取集合数据统计信息
+   */
+  async getCollectionStats(collectionName: string) {
+    return ApiClient.get<CollectionStatsResponse>(
+      `/api/stocks/collections/${collectionName}/stats`
+    )
+  },
+
+  /**
+   * 清空集合数据
+   */
+  async clearCollection(collectionName: string) {
+    return ApiClient.delete<{ deleted_count: number; message: string }>(
+      `/api/stocks/collections/${collectionName}/clear`
     )
   }
 }

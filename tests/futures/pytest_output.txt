@@ -1,0 +1,103 @@
+/Users/yunjinqi/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:211: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.8, pytest-8.3.0, pluggy-1.5.0 -- /Users/yunjinqi/opt/anaconda3/bin/python3.11
+cachedir: .pytest_cache
+metadata: {'Python': '3.11.8', 'Platform': 'macOS-15.3.2-arm64-arm-64bit', 'Packages': {'pytest': '8.3.0', 'pluggy': '1.5.0'}, 'Plugins': {'Faker': '37.5.3', 'anyio': '4.11.0', 'flask': '1.3.0', 'html': '4.1.1', 'asyncio': '1.1.0', 'xdist': '3.8.0', 'time-machine': '2.16.0', 'timeout': '2.4.0', 'metadata': '3.1.1', 'rerunfailures': '14.0', 'cov': '6.2.1', 'playwright': '0.7.0', 'mock': '3.14.1', 'ordering': '0.6', 'sugar': '1.1.1', 'benchmark': '5.1.0', 'langsmith': '0.4.38', 'base-url': '2.1.0', 'dash': '2.18.2', 'picked': '0.5.1', 'requests-mock': '1.12.1'}, 'JAVA_HOME': '/opt/homebrew/Cellar/openjdk/24.0.1/libexec/openjdk.jdk/Contents/Home', 'Base URL': ''}
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /Users/yunjinqi/Documents/TradingAgents-CN/tests
+configfile: pytest.ini
+plugins: Faker-37.5.3, anyio-4.11.0, flask-1.3.0, html-4.1.1, asyncio-1.1.0, xdist-3.8.0, time-machine-2.16.0, timeout-2.4.0, metadata-3.1.1, rerunfailures-14.0, cov-6.2.1, playwright-0.7.0, mock-3.14.1, ordering-0.6, sugar-1.1.1, benchmark-5.1.0, langsmith-0.4.38, base-url-2.1.0, dash-2.18.2, picked-0.5.1, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+___ ERROR collecting futures/collections/001_futures_fees_info_collection.py ___
+ImportError while importing test module '/Users/yunjinqi/Documents/TradingAgents-CN/tests/futures/collections/001_futures_fees_info_collection.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../opt/anaconda3/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+collections/001_futures_fees_info_collection.py:11: in <module>
+    from app.main import app
+../../app/main.py:43: in <module>
+    from app.routers import currencies as currencies_router
+E   ImportError: cannot import name 'currencies' from 'app.routers' (/Users/yunjinqi/Documents/TradingAgents-CN/app/routers/__init__.py)
+------------------------------- Captured stdout --------------------------------
+2025-11-23 14:50:20,475 | agents               | INFO     | 🔍 [ConfigManager] 加载 .env 文件: /Users/yunjinqi/Documents/TradingAgents-CN/.env
+2025-11-23 14:50:20,475 | agents               | INFO     | 🔍 [ConfigManager] 加载前 DASHSCOPE_API_KEY: 空
+2025-11-23 14:50:20,478 | agents               | INFO     | 🔍 [ConfigManager] 加载后 DASHSCOPE_API_KEY: 有值
+2025-11-23 14:50:20,478 | agents               | INFO     | 🔧 [ConfigManager] 开始初始化 MongoDB 存储...
+2025-11-23 14:50:20,478 | agents               | INFO     | 🔍 [ConfigManager] USE_MONGODB_STORAGE=false (解析为: False)
+2025-11-23 14:50:20,478 | agents               | INFO     | ℹ️ [ConfigManager] MongoDB 存储未启用，将使用 JSON 文件存储
+2025-11-23 14:50:20,502 | tradingagents.init   | INFO     | 🚀 TradingAgents-CN 日志系统初始化完成
+2025-11-23 14:50:20,502 | tradingagents.init   | INFO     | 📁 日志目录: ./logs
+2025-11-23 14:50:20,502 | tradingagents.init   | INFO     | 📊 日志级别: INFO
+2025-11-23 14:50:24,140 | tradingagents.init   | INFO     | 🚀 TradingAgents-CN 日志系统初始化完成
+2025-11-23 14:50:24,140 | tradingagents.init   | INFO     | 📁 日志目录: ./logs
+2025-11-23 14:50:24,140 | tradingagents.init   | INFO     | 📊 日志级别: INFO
+2025-11-23 14:50:24,345 | tradingagents.config | INFO     | [runtime_settings] TA_USE_APP_CACHE evaluated -> False (source=default, env=None)
+2025-11-23 14:50:24,352 | dataflows            | INFO     | ✅ [数据源配置] 从数据库读取到已启用的数据源: {'alpha_vantage', 'tushare', 'akshare', 'baostock', 'yahoo_finance', 'finnhub'}
+2025-11-23 14:50:24,353 | dataflows            | WARNING  | ⚠️ Tushare数据源不可用: API Key未配置（数据库和环境变量均未找到）
+2025-11-23 14:50:24,353 | dataflows            | INFO     | ✅ AKShare数据源可用且已启用
+2025-11-23 14:50:24,358 | dataflows            | INFO     | ✅ BaoStock数据源可用且已启用
+2025-11-23 14:50:24,358 | agents               | INFO     | 📁 缓存管理器初始化完成，缓存目录: /Users/yunjinqi/Documents/TradingAgents-CN/tradingagents/dataflows/cache/data_cache
+2025-11-23 14:50:24,358 | agents               | INFO     | 🗄️ 数据库缓存管理器初始化完成
+2025-11-23 14:50:24,358 | agents               | INFO     |    美股数据: ✅ 已配置
+2025-11-23 14:50:24,358 | agents               | INFO     |    A股数据: ✅ 已配置
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | MongoDB启用: False
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | Redis启用: False
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | 开始检测数据库可用性...
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | ❌ MongoDB: MongoDB未启用 (MONGODB_ENABLED=false)
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | ❌ Redis: Redis未启用 (REDIS_ENABLED=false)
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | 主要缓存后端: file
+2025-11-23 14:50:24,362 | tradingagents.config.database_manager | INFO     | 数据库管理器初始化完成 - MongoDB: False, Redis: False
+2025-11-23 14:50:24,362 | tradingagents.dataflows.cache.adaptive | INFO     | 自适应缓存系统初始化 - 主要后端: file
+2025-11-23 14:50:24,362 | dataflows            | INFO     | ✅ 自适应缓存系统已启用
+2025-11-23 14:50:24,362 | dataflows            | INFO     | 📊 缓存配置:
+2025-11-23 14:50:24,362 | dataflows            | INFO     |   主要后端: file
+2025-11-23 14:50:24,362 | dataflows            | INFO     |   MongoDB: ❌ 不可用
+2025-11-23 14:50:24,362 | dataflows            | INFO     |   Redis: ❌ 不可用
+2025-11-23 14:50:24,362 | dataflows            | INFO     |   降级支持: ✅ 启用
+2025-11-23 14:50:24,362 | agents               | INFO     | ✅ 使用集成缓存系统（支持 MongoDB/Redis/File 自动选择）
+2025-11-23 14:50:24,363 | dataflows            | INFO     | ✅ 统一缓存管理器已启用
+2025-11-23 14:50:24,363 | dataflows            | INFO     | 📊 数据源管理器初始化完成
+2025-11-23 14:50:24,363 | dataflows            | INFO     |    MongoDB缓存: ❌ 未启用
+2025-11-23 14:50:24,363 | dataflows            | INFO     |    统一缓存: ✅ 已启用
+2025-11-23 14:50:24,363 | dataflows            | INFO     |    默认数据源: DataSourceCode.AKSHARE
+2025-11-23 14:50:24,363 | dataflows            | INFO     |    可用数据源: [<DataSourceCode.AKSHARE: 'akshare'>, <DataSourceCode.BAOSTOCK: 'baostock'>]
+=============================== warnings summary ===============================
+../../app/models/stock_models.py:54
+  /Users/yunjinqi/Documents/TradingAgents-CN/app/models/stock_models.py:54: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class StockBasicInfoExtended(BaseModel):
+
+../../app/models/stock_models.py:153
+  /Users/yunjinqi/Documents/TradingAgents-CN/app/models/stock_models.py:153: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class MarketQuotesExtended(BaseModel):
+
+../../tradingagents/config/__init__.py:5
+  /Users/yunjinqi/Documents/TradingAgents-CN/tradingagents/config/__init__.py:5: DeprecationWarning: ConfigManager is deprecated and will be removed in version 2.0 (2026-03-31). Please use app.services.config_service.ConfigService instead. See docs/DEPRECATION_NOTICE.md for migration guide.
+    from .config_manager import config_manager, token_tracker, ModelConfig, PricingConfig, UsageRecord
+
+<frozen abc>:106
+  <frozen abc>:106: LangGraphDeprecatedSinceV10: AgentStatePydantic has been moved to `langchain.agents`. Please update your import to `from langchain.agents import AgentStatePydantic`. Deprecated in LangGraph V1.0 to be removed in V2.0.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR collections/001_futures_fees_info_collection.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+========================= 4 warnings, 1 error in 5.02s =========================
+--- Logging error ---
+Traceback (most recent call last):
+  File "/Users/yunjinqi/opt/anaconda3/lib/python3.11/logging/__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+ValueError: I/O operation on closed file.
+Call stack:
+  File "/Users/yunjinqi/Documents/TradingAgents-CN/app/services/user_service.py", line 43, in __del__
+    self.close()
+  File "/Users/yunjinqi/Documents/TradingAgents-CN/app/services/user_service.py", line 39, in close
+    logger.info("✅ UserService MongoDB 连接已关闭")
+Message: '✅ UserService MongoDB 连接已关闭'
+Arguments: ()

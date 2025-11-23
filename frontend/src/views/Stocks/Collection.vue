@@ -36,6 +36,72 @@
       />
 
       <template v-else>
+        <!-- 数据统计卡片 -->
+        <el-card shadow="hover" class="stats-card">
+          <template #header>
+            <div class="card-header">
+              <span>数据统计</span>
+              <div class="card-actions">
+                <el-button 
+                  type="primary" 
+                  size="small" 
+                  :loading="refreshing"
+                  @click="handleRefreshData"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  更新数据
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  @click="handleClearData"
+                >
+                  <el-icon><Delete /></el-icon>
+                  清空数据
+                </el-button>
+              </div>
+            </div>
+          </template>
+          
+          <el-row :gutter="20" v-loading="statsLoading">
+            <el-col :span="8">
+              <el-statistic title="数据总数" :value="stats.total_count || 0">
+                <template #suffix>条</template>
+              </el-statistic>
+            </el-col>
+            <el-col :span="8">
+              <el-statistic title="最后更新">
+                <template #default>
+                  <span v-if="stats.latest_update">{{ formatTime(stats.latest_update) }}</span>
+                  <span v-else class="text-muted">暂无数据</span>
+                </template>
+              </el-statistic>
+            </el-col>
+            <el-col :span="8">
+              <el-statistic title="刷新状态">
+                <template #default>
+                  <el-tag v-if="refreshStatus" :type="getStatusType(refreshStatus.status)">
+                    {{ getStatusText(refreshStatus.status) }}
+                  </el-tag>
+                  <span v-else class="text-muted">无任务</span>
+                </template>
+              </el-statistic>
+            </el-col>
+          </el-row>
+          
+          <!-- 刷新进度条 -->
+          <div v-if="refreshing && refreshStatus" class="refresh-progress">
+            <el-progress 
+              :percentage="getProgressPercentage(refreshStatus)" 
+              :status="refreshStatus.status === 'failed' ? 'exception' : undefined"
+            >
+              <template #default="{ percentage }">
+                <span class="progress-text">{{ refreshStatus.message }} - {{ percentage }}%</span>
+              </template>
+            </el-progress>
+          </div>
+        </el-card>
+
         <!-- 字段说明 -->
         <el-card shadow="hover" class="fields-card">
           <template #header>
@@ -100,11 +166,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Box } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { stocksApi } from '@/api/stocks'
+import { Box, Refresh, Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { stocksApi, type CollectionStatsResponse, type RefreshStatusResponse } from '@/api/stocks'
 
 const route = useRoute()
 const router = useRouter()
@@ -177,6 +243,19 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
+// 统计信息
+const stats = ref<CollectionStatsResponse>({
+  total_count: 0,
+  collection_name: collectionName.value
+})
+const statsLoading = ref(false)
+
+// 刷新相关
+const refreshing = ref(false)
+const refreshStatus = ref<RefreshStatusResponse | null>(null)
+const currentTaskId = ref<string | null>(null)
+let statusCheckInterval: number | null = null
+
 const loadCollectionPage = async () => {
   const name = collectionName.value
   if (!name) return
@@ -216,12 +295,170 @@ const goBack = () => {
   router.push('/stocks/collections')
 }
 
+// 加载统计信息
+const loadStats = async () => {
+  const name = collectionName.value
+  if (!name) return
+  
+  statsLoading.value = true
+  try {
+    const res = await stocksApi.getCollectionStats(name)
+    stats.value = res.data
+  } catch (error) {
+    console.error('加载统计信息失败', error)
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+// 刷新数据
+const handleRefreshData = async () => {
+  const name = collectionName.value
+  if (!name) return
+  
+  try {
+    refreshing.value = true
+    const res = await stocksApi.refreshCollection(name, {})
+    currentTaskId.value = res.data.task_id
+    ElMessage.success('刷新任务已启动')
+    
+    // 开始轮询任务状态
+    startStatusPolling()
+  } catch (error: any) {
+    console.error('启动刷新任务失败', error)
+    ElMessage.error(error.response?.data?.detail || '启动刷新任务失败')
+    refreshing.value = false
+  }
+}
+
+// 清空数据
+const handleClearData = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要清空此集合的所有数据吗？此操作不可恢复！',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    const name = collectionName.value
+    if (!name) return
+    
+    const res = await stocksApi.clearCollection(name)
+    ElMessage.success(`已清空 ${res.data.deleted_count} 条数据`)
+    
+    // 重新加载统计和数据
+    await Promise.all([loadStats(), refreshData()])
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('清空数据失败', error)
+      ElMessage.error(error.response?.data?.detail || '清空数据失败')
+    }
+  }
+}
+
+// 开始轮询任务状态
+const startStatusPolling = () => {
+  // 清除之前的轮询
+  if (statusCheckInterval) {
+    clearInterval(statusCheckInterval)
+  }
+  
+  // 每2秒检查一次状态
+  statusCheckInterval = window.setInterval(async () => {
+    await checkRefreshStatus()
+  }, 2000)
+}
+
+// 检查刷新任务状态
+const checkRefreshStatus = async () => {
+  const name = collectionName.value
+  const taskId = currentTaskId.value
+  if (!name || !taskId) return
+  
+  try {
+    const res = await stocksApi.getRefreshStatus(name, taskId)
+    refreshStatus.value = res.data
+    
+    // 如果任务完成或失败，停止轮询
+    if (res.data.status === 'completed' || res.data.status === 'failed') {
+      stopStatusPolling()
+      refreshing.value = false
+      
+      if (res.data.status === 'completed') {
+        ElMessage.success('数据刷新完成')
+        // 重新加载统计和数据
+        await Promise.all([loadStats(), refreshData()])
+      } else {
+        ElMessage.error(`数据刷新失败: ${res.data.error || '未知错误'}`)
+      }
+    }
+  } catch (error) {
+    console.error('查询刷新状态失败', error)
+  }
+}
+
+// 停止轮询
+const stopStatusPolling = () => {
+  if (statusCheckInterval) {
+    clearInterval(statusCheckInterval)
+    statusCheckInterval = null
+  }
+}
+
+// 格式化时间
+const formatTime = (timeStr: string) => {
+  try {
+    const date = new Date(timeStr)
+    return date.toLocaleString('zh-CN')
+  } catch {
+    return timeStr
+  }
+}
+
+// 获取状态类型
+const getStatusType = (status: string) => {
+  const typeMap: Record<string, any> = {
+    pending: 'info',
+    running: 'warning',
+    completed: 'success',
+    failed: 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status: string) => {
+  const textMap: Record<string, string> = {
+    pending: '等待中',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败'
+  }
+  return textMap[status] || status
+}
+
+// 获取进度百分比
+const getProgressPercentage = (status: RefreshStatusResponse) => {
+  if (!status.total || status.total === 0) return 0
+  return Math.round((status.progress / status.total) * 100)
+}
+
 onMounted(() => {
   if (!collectionDef.value) {
     ElMessage.warning('未找到对应的数据集合定义')
     return
   }
-  refreshData()
+  // 加载统计信息和数据
+  Promise.all([loadStats(), refreshData()])
+})
+
+onUnmounted(() => {
+  // 组件卸载时停止轮询
+  stopStatusPolling()
 })
 </script>
 
@@ -307,6 +544,29 @@ onMounted(() => {
 
 .example-placeholder {
   color: #c0c4cc;
+}
+
+.stats-card {
+  margin-bottom: 16px;
+  
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.refresh-progress {
+  margin-top: 16px;
+  
+  .progress-text {
+    font-size: 13px;
+    color: #606266;
+  }
+}
+
+.text-muted {
+  color: #909399;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {

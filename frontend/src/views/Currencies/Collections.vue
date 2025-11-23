@@ -11,7 +11,13 @@
         </el-input>
       </el-card>
       <div class="collections-grid">
-        <el-card v-for="collection in filteredCollections" :key="collection.name" shadow="hover" class="collection-card">
+        <el-card 
+          v-for="collection in filteredCollections" 
+          :key="collection.name" 
+          shadow="hover" 
+          class="collection-card"
+          @click="handleCollectionClick(collection)"
+        >
           <template #header>
             <div class="collection-header">
               <el-icon class="collection-icon"><Document /></el-icon>
@@ -28,9 +34,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Box, Search, Document } from '@element-plus/icons-vue'
 import { currenciesApi } from '@/api/currencies'
 
+const router = useRouter()
 const searchKeyword = ref('')
 const collections = ref<any[]>([])
 
@@ -42,11 +50,22 @@ const filteredCollections = computed(() => {
   )
 })
 
+const handleCollectionClick = (collection: any) => {
+  router.push({
+    name: 'CurrenciesCollectionDetail',
+    params: { collectionName: collection.name }
+  })
+}
+
 onMounted(async () => {
   try {
     const res = await currenciesApi.getCollections()
-    if (res.success) collections.value = res.data
-  } catch (error) { console.error('加载数据集合失败:', error) }
+    if (res.success) {
+      collections.value = res.data
+    }
+  } catch (error) { 
+    console.error('加载数据集合失败:', error) 
+  }
 })
 </script>
 

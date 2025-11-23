@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import os
 import platform
+import json
 
 from app.core.logging_context import LoggingContextFilter, trace_id_var
 
@@ -41,7 +42,6 @@ def resolve_logging_cfg_path() -> Path:
 class SimpleJsonFormatter(logging.Formatter):
     """Minimal JSON formatter without external deps."""
     def format(self, record: logging.LogRecord) -> str:
-        import json
         obj = {
             "time": self.formatTime(record, "%Y-%m-%d %H:%M:%S"),
             "name": record.name,

@@ -54,5 +54,31 @@ export const futuresApi = {
   async getFuturesAnalysis(futuresCode: string) {
     const response = await axios.get(`${API_BASE_URL}/api/futures/analysis/${futuresCode}`)
     return response.data
+  },
+
+  // 更新集合数据
+  async updateCollection(
+    collectionName: string,
+    params?: {
+      symbol?: string
+      market?: string
+      adjust?: string
+      [key: string]: any
+    }
+  ) {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}/update`,
+      null,
+      { params }
+    )
+    return response.data
+  },
+
+  // 清空集合数据
+  async clearCollection(collectionName: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}`
+    )
+    return response.data
   }
 }

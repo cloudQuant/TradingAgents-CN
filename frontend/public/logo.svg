@@ -1,5 +1,47 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="12" fill="#409EFF"/>
-  <path d="M16 24L32 16L48 24V40L32 48L16 40V24Z" fill="white"/>
-  <path d="M24 28L32 24L40 28V36L32 40L24 36V28Z" fill="#409EFF"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rainbow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF3B30"/>
+      <stop offset="20%" stop-color="#FF9500"/>
+      <stop offset="40%" stop-color="#FFCC00"/>
+      <stop offset="60%" stop-color="#4CD964"/>
+      <stop offset="80%" stop-color="#007AFF"/>
+      <stop offset="100%" stop-color="#5856D6"/>
+    </linearGradient>
+    <filter id="softGlow" height="300%" width="300%" x="-75%" y="-75%">
+      <feMorphology operator="dilate" radius="4" in="SourceAlpha" result="thicken" />
+      <feGaussianBlur in="thicken" stdDeviation="10" result="blurred" />
+      <feFlood flood-color="rgb(255, 255, 255)" result="glowColor" />
+      <feComposite in="glowColor" in2="blurred" operator="in" result="softGlow_colored" />
+      <feMerge>
+        <feMergeNode in="softGlow_colored"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Body -->
+  <path d="M140,400 C140,400 200,440 300,430 C380,422 420,380 430,340 C435,320 430,300 420,280" 
+        fill="none" stroke="url(#rainbow)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Antennae -->
+  <path d="M425,290 Q440,250 430,230" fill="none" stroke="url(#rainbow)" stroke-width="18" stroke-linecap="round" />
+  <path d="M440,300 Q470,260 470,235" fill="none" stroke="url(#rainbow)" stroke-width="18" stroke-linecap="round" />
+  
+  <!-- Antennae Tips -->
+  <circle cx="430" cy="230" r="14" fill="url(#rainbow)" />
+  <circle cx="470" cy="235" r="14" fill="url(#rainbow)" />
+
+  <!-- Shell -->
+  <path d="M260,370 
+           C190,370 130,310 130,240 
+           C130,160 190,100 270,100 
+           C340,100 390,150 390,220 
+           C390,280 340,320 280,320 
+           C240,320 210,290 210,250 
+           C210,230 225,215 245,215"
+        fill="none" stroke="url(#rainbow)" stroke-width="65" stroke-linecap="round" filter="url(#softGlow)"/>
+
+  <!-- Shine highlight -->
+  <circle cx="270" cy="100" r="5" fill="white" fill-opacity="0.5" />
 </svg>

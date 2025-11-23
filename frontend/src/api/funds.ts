@@ -21,9 +21,17 @@ export const fundsApi = {
       sort_dir?: string
       filter_field?: string
       filter_value?: string
+      tracking_target?: string
+      tracking_method?: string
+      fund_company?: string
     }
   ): Promise<ApiResponse<any>> {
     return await ApiClient.get(`/api/funds/collections/${collectionName}`, params)
+  },
+
+  // 获取基金公司列表
+  async getFundCompanies(): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/funds/companies')
   },
 
   // 获取集合统计信息
@@ -39,6 +47,16 @@ export const fundsApi = {
   // 获取基金分析
   async getFundAnalysis(fundCode: string): Promise<ApiResponse<any>> {
     return await ApiClient.get(`/api/funds/analysis/${fundCode}`)
+  },
+
+  // 上传数据文件
+  async uploadData(collectionName: string, file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<any>> {
+    return await ApiClient.upload(`/api/funds/collections/${collectionName}/upload`, file, onProgress)
+  },
+
+  // 远程同步数据
+  async syncData(collectionName: string, config: any): Promise<ApiResponse<any>> {
+    return await ApiClient.post(`/api/funds/collections/${collectionName}/sync`, config)
   },
 
   // 刷新集合数据

@@ -1,58 +1,31 @@
 <template>
   <div class="basic-layout">
-    <!-- 侧边栏 -->
-    <aside
-      class="sidebar"
-      :class="{ collapsed: appStore.sidebarCollapsed }"
-      :style="{ width: appStore.actualSidebarWidth + 'px' }"
-    >
-      <div class="sidebar-header">
-        <div class="logo">
-          <img src="/logo.svg" alt="TradingAgents-CN" />
-          <span v-show="!appStore.sidebarCollapsed" class="logo-text">
-            TradingAgents-CN
-          </span>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+      <div class="header-left">
+        <router-link to="/" class="logo">
+          <img src="/logo.svg" alt="cloudQuant" />
+          <span class="logo-text">cloudQuant</span>
+        </router-link>
+      </div>
+
+      <div class="header-center">
+        <TopMenu />
+      </div>
+      
+      <div class="header-right">
+        <HeaderActions />
+        <div class="user-profile-wrapper">
+          <UserProfile />
         </div>
       </div>
-      
-      <nav class="sidebar-nav">
-        <SidebarMenu />
-      </nav>
-      
-      <div class="sidebar-footer">
-        <UserProfile />
-      </div>
-    </aside>
-
-    <!-- 点击蒙层：移动端展开时，点击空白处收起侧边栏 -->
-    <div
-      v-if="isMobile && !appStore.sidebarCollapsed"
-      class="sidebar-overlay"
-      @click="appStore.setSidebarCollapsed(true)"
-    ></div>
+    </header>
 
     <!-- 主内容区 -->
-    <div class="main-container" :style="{ marginLeft: appStore.actualSidebarWidth + 'px' }" @click="handleMainClick">
-      <!-- 顶部导航栏 -->
-      <header class="header">
-        <div class="header-left">
-          <el-button
-            type="text"
-            @click.stop="appStore.toggleSidebar()"
-            class="sidebar-toggle"
-          >
-            <el-icon><Expand v-if="appStore.sidebarCollapsed" /><Fold v-else /></el-icon>
-          </el-button>
-          
-          <Breadcrumb />
-        </div>
-        
-        <div class="header-right">
-          <HeaderActions />
-        </div>
-      </header>
-
-      <!-- 页面内容 -->
+    <div class="main-container">
+      <!-- 二级菜单 -->
+      <SubMenu />
+      
       <main class="main-content">
         <div class="content-wrapper">
           <router-view v-slot="{ Component, route }">
@@ -83,16 +56,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
-import SidebarMenu from '@/components/Layout/SidebarMenu.vue'
+import TopMenu from '@/components/Layout/TopMenu.vue'
+import SubMenu from '@/components/Layout/SubMenu.vue'
 import UserProfile from '@/components/Layout/UserProfile.vue'
-import Breadcrumb from '@/components/Layout/Breadcrumb.vue'
 import HeaderActions from '@/components/Layout/HeaderActions.vue'
 import AppFooter from '@/components/Layout/AppFooter.vue'
-import { Expand, Fold } from '@element-plus/icons-vue'
 
 const appStore = useAppStore()
-const route = useRoute()
-const { width } = useWindowSize()
 
 // 需要缓存的组件
 const keepAliveComponents = computed(() => [
@@ -101,72 +71,41 @@ const keepAliveComponents = computed(() => [
   'AnalysisHistory',
   'QueueManagement'
 ])
-
-// 移动端判断
-const isMobile = computed(() => width.value < 768)
-
-// 点击主内容时，若移动端且侧边栏已展开，则收起
-const handleMainClick = () => {
-  if (isMobile.value && !appStore.sidebarCollapsed) {
-    appStore.setSidebarCollapsed(true)
-  }
-}
-
-// 监听窗口大小变化：在小屏幕上自动折叠侧边栏
-watch(width, (newWidth) => {
-  if (newWidth < 768 && !appStore.sidebarCollapsed) {
-    appStore.setSidebarCollapsed(true)
-  }
-})
-
-// 路由变化时，移动端收起侧边栏
-watch(() => route.fullPath, () => {
-  if (isMobile.value) {
-    appStore.setSidebarCollapsed(true)
-  }
-})
 </script>
 
 <style lang="scss" scoped>
 .basic-layout {
   min-height: 100vh;
   background-color: var(--el-bg-color-page);
-}
-
-.sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 950; // 低于侧边栏(1000)，高于内容区
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  background-color: var(--el-bg-color);
-  border-right: 1px solid var(--el-border-color-light);
-  transition: width 0.3s ease;
-  z-index: 1000;
   display: flex;
   flex-direction: column;
+}
 
-  &.collapsed {
-    width: 64px !important;
-  }
+.header {
+  height: 60px;
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
 
-  .sidebar-header {
-    height: 60px;
+  .header-left {
     display: flex;
     align-items: center;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    flex-shrink: 0;
+    margin-right: 24px;
 
     .logo {
       display: flex;
       align-items: center;
       gap: 12px;
+      text-decoration: none;
+      cursor: pointer;
 
       img {
         width: 32px;
@@ -182,66 +121,45 @@ watch(() => route.fullPath, () => {
     }
   }
 
-  .sidebar-nav {
+  .header-center {
     flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-
-  .sidebar-footer {
-    border-top: 1px solid var(--el-border-color-lighter);
-    padding: 8px;
-  }
-}
-
-.main-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  transition: margin-left 0.3s ease;
-}
-
-.header {
-  height: 60px;
-  background-color: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  position: sticky;
-  top: 0;
-  z-index: 999;
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-
-    .sidebar-toggle {
-      padding: 8px;
-      
-      .el-icon {
-        font-size: 18px;
-      }
-    }
+    min-width: 0;
+    overflow: hidden;
   }
 
   .header-right {
     display: flex;
     align-items: center;
     gap: 16px;
+    flex-shrink: 0;
+    margin-left: 16px;
+
+    .user-profile-wrapper {
+      margin-left: 8px;
+    }
   }
+}
+
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content {
   flex: 1;
   padding: 24px;
-  min-height: calc(100vh - 60px - 60px); // 减去header和footer高度
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+
+  .breadcrumb-wrapper {
+    margin-bottom: 16px;
+  }
 
   .content-wrapper {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
   }
 }
 
@@ -252,28 +170,25 @@ watch(() => route.fullPath, () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: auto;
 }
 
-// 响应式设计
+// 响应式调整
 @media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
+  .header {
+    padding: 0 16px;
     
-    &:not(.collapsed) {
-      transform: translateX(0);
+    .header-left {
+      margin-right: 16px;
+      
+      .logo-text {
+        display: none;
+      }
     }
-  }
-
-  .main-container {
-    margin-left: 0 !important;
   }
 
   .main-content {
     padding: 16px;
-  }
-
-  .header {
-    padding: 0 16px;
   }
 }
 
@@ -285,21 +200,6 @@ watch(() => route.fullPath, () => {
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
-}
-
-.slide-left-enter-active,
-.slide-left-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-left-enter-from {
-  transform: translateX(30px);
-  opacity: 0;
-}
-
-.slide-left-leave-to {
-  transform: translateX(-30px);
   opacity: 0;
 }
 </style>

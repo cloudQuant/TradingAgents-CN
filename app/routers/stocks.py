@@ -5,13 +5,18 @@
 - 路径前缀在 main.py 中挂载为 /api，当前路由自身前缀为 /stocks
 """
 from typing import Optional, Dict, Any, List, Tuple
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, UploadFile, File, Body
 import logging
 import re
+import uuid
+import asyncio
 
 from app.routers.auth_db import get_current_user
 from app.core.database import get_mongo_db
 from app.core.response import ok
+from app.services.stock_refresh_service import StockRefreshService
+from app.services.stock_data_service import StockDataService
+from app.utils.task_manager import get_task_manager
 
 logger = logging.getLogger(__name__)
 
@@ -708,6 +713,601 @@ async def list_stock_collections(
             "route": "/stocks/collections/stock_monthly",
             "fields": ["code", "trade_date", "open", "high", "low", "close", "volume", "amount"],
         },
+        {
+            "name": "stock_sgt_reference_exchange_rate_szse",
+            "display_name": "参考汇率-深港通",
+            "description": "深港通-港股通业务信息-参考汇率",
+            "route": "/stocks/collections/stock_sgt_reference_exchange_rate_szse",
+            "fields": ["适用日期", "参考汇率买入价", "参考汇率卖出价", "货币种类"],
+        },
+        {
+            "name": "stock_sgt_reference_exchange_rate_sse",
+            "display_name": "参考汇率-沪港通",
+            "description": "沪港通-港股通信息披露-参考汇率",
+            "route": "/stocks/collections/stock_sgt_reference_exchange_rate_sse",
+            "fields": ["适用日期", "参考汇率买入价", "参考汇率卖出价", "货币种类"],
+        },
+        {
+            "name": "stock_hk_ggt_components_em",
+            "display_name": "港股通成份股",
+            "description": "东方财富网-行情中心-港股市场-港股通成份股",
+            "route": "/stocks/collections/stock_hk_ggt_components_em",
+            "fields": ["序号", "代码", "最新价", "涨跌额", "涨跌幅", "今开", "最高", "最低", "昨收", "成交量", "成交额"],
+        },
+        {
+            "name": "stock_hsgt_fund_min_em",
+            "display_name": "沪深港通分时数据",
+            "description": "东方财富-数据中心-沪深港通-市场概括-分时数据",
+            "route": "/stocks/collections/stock_hsgt_fund_min_em",
+            "fields": ["日期", "时间", "沪股通", "深股通", "北向资金", "港股通(沪)", "港股通(深)", "南向资金"],
+        },
+        {
+            "name": "stock_hsgt_board_rank_em",
+            "display_name": "板块排行",
+            "description": "东方财富网-数据中心-沪深港通持股-板块排行",
+            "route": "/stocks/collections/stock_hsgt_board_rank_em",
+            "fields": ["序号", "最新涨跌幅", "报告时间"],
+        },
+        {
+            "name": "stock_hsgt_hold_stock_em",
+            "display_name": "个股排行",
+            "description": "东方财富网-数据中心-沪深港通持股-个股排行",
+            "route": "/stocks/collections/stock_hsgt_hold_stock_em",
+            "fields": ["序号", "代码", "今日收盘价", "今日涨跌幅", "日期"],
+        },
+        {
+            "name": "stock_hsgt_stock_statistics_em",
+            "display_name": "每日个股统计",
+            "description": "东方财富网-数据中心-沪深港通持股-每日个股统计",
+            "route": "/stocks/collections/stock_hsgt_stock_statistics_em",
+            "fields": ["序号", "代码", "名称", "今日收盘价", "今日涨跌幅"],
+        },
+        {
+            "name": "stock_hsgt_institution_statistics_em",
+            "display_name": "机构排行",
+            "description": "东方财富网-数据中心-沪深港通持股-机构排行",
+            "route": "/stocks/collections/stock_hsgt_institution_statistics_em",
+            "fields": ["序号", "机构名称", "持股只数", "持股市值"],
+        },
+        {
+            "name": "stock_hsgt_sh_hk_spot_em",
+            "display_name": "沪深港通-港股通(沪>港)实时行情",
+            "description": "东方财富-数据中心-沪深港通-港股通(沪>港)实时行情",
+            "route": "/stocks/collections/stock_hsgt_sh_hk_spot_em",
+            "fields": ["序号", "代码", "最新价", "涨跌额", "涨跌幅"],
+        },
+        {
+            "name": "stock_hsgt_hist_em",
+            "display_name": "沪深港通历史数据",
+            "description": "东方财富-数据中心-沪深港通-港股通(沪>港)-历史数据",
+            "route": "/stocks/collections/stock_hsgt_hist_em",
+            "fields": ["日期", "当日成交净买额", "买入成交额", "卖出成交额"],
+        },
+        {
+            "name": "stock_hsgt_individual_em",
+            "display_name": "沪深港通持股-个股",
+            "description": "东方财富-数据中心-沪深港通持股-个股",
+            "route": "/stocks/collections/stock_hsgt_individual_em",
+            "fields": ["持股日期", "当日收盘价", "持股数量", "持股市值"],
+        },
+        {
+            "name": "stock_hsgt_individual_detail_em",
+            "display_name": "个股详情",
+            "description": "东方财富-数据中心-沪深港通持股-个股详情",
+            "route": "/stocks/collections/stock_hsgt_individual_detail_em",
+            "fields": ["日期", "收盘价", "涨跌幅", "持股量", "占流通股比"],
+        },
+        {
+            "name": "stock_em_hsgt_north_net_flow_in",
+            "display_name": "北向资金流入",
+            "description": "东方财富-数据中心-沪深港通-北向资金流入",
+            "route": "/stocks/collections/stock_em_hsgt_north_net_flow_in",
+            "fields": ["日期", "沪股通", "深股通", "北向资金"],
+        },
+        {
+            "name": "stock_em_hsgt_south_net_flow_in",
+            "display_name": "南向资金流入",
+            "description": "东方财富-数据中心-沪深港通-南向资金流入",
+            "route": "/stocks/collections/stock_em_hsgt_south_net_flow_in",
+            "fields": ["日期", "港股通(沪)", "港股通(深)", "南向资金"],
+        },
+        {
+            "name": "stock_em_hsgt_hold_stock",
+            "display_name": "历史持股统计",
+            "description": "东方财富-数据中心-沪深港通-历史持股统计",
+            "route": "/stocks/collections/stock_em_hsgt_hold_stock",
+            "fields": ["日期", "个股", "持股数量", "持股市值"],
+        },
+        {
+            "name": "stock_tfp_em",
+            "display_name": "停复牌信息",
+            "description": "东方财富-数据中心-特色数据-停复牌信息",
+            "route": "/stocks/collections/stock_tfp_em",
+            "fields": ["代码", "名称", "停牌时间", "预计复牌时间"],
+        },
+        {
+            "name": "stock_zh_a_new",
+            "display_name": "新股数据",
+            "description": "东方财富-数据中心-新股数据",
+            "route": "/stocks/collections/stock_zh_a_new",
+            "fields": ["代码", "名称", "发行价", "申购日期"],
+        },
+        {
+            "name": "stock_ipo_info",
+            "display_name": "新股申购信息",
+            "description": "新浪财经-新股申购信息",
+            "route": "/stocks/collections/stock_ipo_info",
+            "fields": ["代码", "名称", "申购日期", "发行价"],
+        },
+        {
+            "name": "stock_xgsglb_em",
+            "display_name": "新股申购概览",
+            "description": "东方财富-数据中心-新股数据-新股申购与中签查询-申购概览",
+            "route": "/stocks/collections/stock_xgsglb_em",
+            "fields": ["序号", "代码", "名称", "申购日期"],
+        },
+        {
+            "name": "stock_dzjy_sctj",
+            "display_name": "大宗交易-市场统计",
+            "description": "东方财富-数据中心-特色数据-大宗交易-市场统计",
+            "route": "/stocks/collections/stock_dzjy_sctj",
+            "fields": ["日期", "成交总额", "成交总量", "成交笔数"],
+        },
+        {
+            "name": "stock_dzjy_mrmx",
+            "display_name": "大宗交易-每日明细",
+            "description": "东方财富-数据中心-特色数据-大宗交易-每日明细",
+            "route": "/stocks/collections/stock_dzjy_mrmx",
+            "fields": ["代码", "名称", "成交价", "成交量"],
+        },
+        {
+            "name": "stock_dzjy_mrtj",
+            "display_name": "大宗交易-每日统计",
+            "description": "东方财富-数据中心-特色数据-大宗交易-每日统计",
+            "route": "/stocks/collections/stock_dzjy_mrtj",
+            "fields": ["代码", "名称", "成交总量", "成交总额"],
+        },
+        {
+            "name": "stock_jgdy_tj_em",
+            "display_name": "机构调研统计",
+            "description": "东方财富-数据中心-特色数据-机构调研统计",
+            "route": "/stocks/collections/stock_jgdy_tj_em",
+            "fields": ["日期", "调研机构数量", "调研公司数量"],
+        },
+        {
+            "name": "stock_jgdy_detail_em",
+            "display_name": "机构调研明细",
+            "description": "东方财富-数据中心-特色数据-机构调研-明细",
+            "route": "/stocks/collections/stock_jgdy_detail_em",
+            "fields": ["代码", "名称", "调研日期", "接待机构数量"],
+        },
+        {
+            "name": "stock_jgcyd_em",
+            "display_name": "机构持仓地图",
+            "description": "东方财富-数据中心-特色数据-机构持仓地图",
+            "route": "/stocks/collections/stock_jgcyd_em",
+            "fields": ["代码", "名称", "持仓数量", "持仓市值"],
+        },
+        {
+            "name": "stock_gpzy_profile_em",
+            "display_name": "个股资讯-东财",
+            "description": "东方财富-数据中心-特色数据-个股资讯",
+            "route": "/stocks/collections/stock_gpzy_profile_em",
+            "fields": ["代码", "名称", "最新价", "涨跌幅"],
+        },
+        {
+            "name": "stock_news_em",
+            "display_name": "个股新闻-东财",
+            "description": "东方财富-个股新闻",
+            "route": "/stocks/collections/stock_news_em",
+            "fields": ["标题", "发布时间", "来源"],
+        },
+        {
+            "name": "stock_js_weibo_nlp_time",
+            "display_name": "个股新闻-微博",
+            "description": "微博财经-个股新闻",
+            "route": "/stocks/collections/stock_js_weibo_nlp_time",
+            "fields": ["时间", "内容", "情绪"],
+        },
+        {
+            "name": "stock_cjrl_em",
+            "display_name": "财经日历",
+            "description": "东方财富-数据中心-特色数据-财经日历",
+            "route": "/stocks/collections/stock_cjrl_em",
+            "fields": ["日期", "内容"],
+        },
+        {
+            "name": "stock_yjfp_em",
+            "display_name": "业绩报表-业绩快报",
+            "description": "东方财富-数据中心-年报季报-业绩快报",
+            "route": "/stocks/collections/stock_yjfp_em",
+            "fields": ["代码", "名称", "报告期"],
+        },
+        {
+            "name": "stock_yjyg_em",
+            "display_name": "业绩报表-业绩预告",
+            "description": "东方财富-数据中心-年报季报-业绩预告",
+            "route": "/stocks/collections/stock_yjyg_em",
+            "fields": ["代码", "名称", "报告期"],
+        },
+        {
+            "name": "stock_yysj_em",
+            "display_name": "业绩报表-预约披露",
+            "description": "东方财富-数据中心-年报季报-预约披露",
+            "route": "/stocks/collections/stock_yysj_em",
+            "fields": ["代码", "名称", "首次预约时间"],
+        },
+        {
+            "name": "stock_add_stock_cninfo",
+            "display_name": "增发-巨潮资讯",
+            "description": "增发-巨潮资讯",
+            "route": "/stocks/collections/stock_add_stock_cninfo",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_restricted_release_queue_em",
+            "display_name": "限售解禁-东财",
+            "description": "限售解禁-东财",
+            "route": "/stocks/collections/stock_restricted_release_queue_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_info_change_name_em",
+            "display_name": "信息变更-公司更名",
+            "description": "信息变更-公司更名",
+            "route": "/stocks/collections/stock_info_change_name_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_board_industry_name_em",
+            "display_name": "行业分类",
+            "description": "行业分类",
+            "route": "/stocks/collections/stock_board_industry_name_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gpgk_em",
+            "display_name": "股本变动",
+            "description": "股本变动",
+            "route": "/stocks/collections/stock_gpgk_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_fhps_detail_ths",
+            "display_name": "分红情况-同花顺",
+            "description": "分红情况-同花顺",
+            "route": "/stocks/collections/stock_fhps_detail_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_hk_fhpx_detail_ths",
+            "display_name": "分红配送详情-港股-同花顺",
+            "description": "分红配送详情-港股-同花顺",
+            "route": "/stocks/collections/stock_hk_fhpx_detail_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_fund_flow_individual",
+            "display_name": "个股资金流",
+            "description": "个股资金流",
+            "route": "/stocks/collections/stock_fund_flow_individual",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_fund_flow_concept",
+            "display_name": "概念资金流",
+            "description": "概念资金流",
+            "route": "/stocks/collections/stock_fund_flow_concept",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_fund_flow_industry",
+            "display_name": "行业资金流",
+            "description": "行业资金流",
+            "route": "/stocks/collections/stock_fund_flow_industry",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_fund_flow_big_deal",
+            "display_name": "大单追踪",
+            "description": "大单追踪",
+            "route": "/stocks/collections/stock_fund_flow_big_deal",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_individual_fund_flow",
+            "display_name": "个股资金流",
+            "description": "个股资金流",
+            "route": "/stocks/collections/stock_individual_fund_flow",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_individual_fund_flow_rank",
+            "display_name": "个股资金流排名",
+            "description": "个股资金流排名",
+            "route": "/stocks/collections/stock_individual_fund_flow_rank",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_market_fund_flow",
+            "display_name": "大盘资金流",
+            "description": "大盘资金流",
+            "route": "/stocks/collections/stock_market_fund_flow",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_sector_fund_flow_rank",
+            "display_name": "板块资金流排名",
+            "description": "板块资金流排名",
+            "route": "/stocks/collections/stock_sector_fund_flow_rank",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_main_fund_flow",
+            "display_name": "主力净流入排名",
+            "description": "主力净流入排名",
+            "route": "/stocks/collections/stock_main_fund_flow",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_sector_fund_flow_summary",
+            "display_name": "行业个股资金流",
+            "description": "行业个股资金流",
+            "route": "/stocks/collections/stock_sector_fund_flow_summary",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_sector_fund_flow_hist",
+            "display_name": "行业历史资金流",
+            "description": "行业历史资金流",
+            "route": "/stocks/collections/stock_sector_fund_flow_hist",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_concept_fund_flow_hist",
+            "display_name": "概念历史资金流",
+            "description": "概念历史资金流",
+            "route": "/stocks/collections/stock_concept_fund_flow_hist",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_cyq_em",
+            "display_name": "筹码分布",
+            "description": "筹码分布",
+            "route": "/stocks/collections/stock_cyq_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gddh_em",
+            "display_name": "股东大会",
+            "description": "股东大会",
+            "route": "/stocks/collections/stock_gddh_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_zdhtmx_em",
+            "display_name": "重大合同",
+            "description": "重大合同",
+            "route": "/stocks/collections/stock_zdhtmx_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_research_report_em",
+            "display_name": "个股研报",
+            "description": "个股研报",
+            "route": "/stocks/collections/stock_research_report_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_notice_report",
+            "display_name": "沪深京A股公告",
+            "description": "沪深京A股公告",
+            "route": "/stocks/collections/stock_notice_report",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_report_sina",
+            "display_name": "财务报表-新浪",
+            "description": "财务报表-新浪",
+            "route": "/stocks/collections/stock_financial_report_sina",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_balance_sheet_by_report_em",
+            "display_name": "资产负债表-按报告期",
+            "description": "资产负债表-按报告期",
+            "route": "/stocks/collections/stock_balance_sheet_by_report_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_profit_sheet_by_quarterly_em",
+            "display_name": "利润表-按单季度",
+            "description": "利润表-按单季度",
+            "route": "/stocks/collections/stock_profit_sheet_by_quarterly_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_cash_flow_sheet_by_report_em",
+            "display_name": "现金流量表-按报告期",
+            "description": "现金流量表-按报告期",
+            "route": "/stocks/collections/stock_cash_flow_sheet_by_report_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_cash_flow_sheet_by_yearly_em",
+            "display_name": "现金流量表-按年度",
+            "description": "现金流量表-按年度",
+            "route": "/stocks/collections/stock_cash_flow_sheet_by_yearly_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_cash_flow_sheet_by_quarterly_em",
+            "display_name": "现金流量表-按单季度",
+            "description": "现金流量表-按单季度",
+            "route": "/stocks/collections/stock_cash_flow_sheet_by_quarterly_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_debt_ths",
+            "display_name": "资产负债表",
+            "description": "资产负债表",
+            "route": "/stocks/collections/stock_financial_debt_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_benefit_ths",
+            "display_name": "利润表",
+            "description": "利润表",
+            "route": "/stocks/collections/stock_financial_benefit_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_cash_ths",
+            "display_name": "现金流量表",
+            "description": "现金流量表",
+            "route": "/stocks/collections/stock_financial_cash_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_balance_sheet_by_report_delisted_em",
+            "display_name": "资产负债表-按报告期",
+            "description": "资产负债表-按报告期",
+            "route": "/stocks/collections/stock_balance_sheet_by_report_delisted_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_profit_sheet_by_report_delisted_em",
+            "display_name": "利润表-按报告期",
+            "description": "利润表-按报告期",
+            "route": "/stocks/collections/stock_profit_sheet_by_report_delisted_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_cash_flow_sheet_by_report_delisted_em",
+            "display_name": "现金流量表-按报告期",
+            "description": "现金流量表-按报告期",
+            "route": "/stocks/collections/stock_cash_flow_sheet_by_report_delisted_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_hk_report_em",
+            "display_name": "港股财务报表",
+            "description": "港股财务报表",
+            "route": "/stocks/collections/stock_financial_hk_report_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_us_report_em",
+            "display_name": "美股财务报表",
+            "description": "美股财务报表",
+            "route": "/stocks/collections/stock_financial_us_report_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_abstract",
+            "display_name": "关键指标-新浪",
+            "description": "关键指标-新浪",
+            "route": "/stocks/collections/stock_financial_abstract",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_abstract_ths",
+            "display_name": "关键指标-同花顺",
+            "description": "关键指标-同花顺",
+            "route": "/stocks/collections/stock_financial_abstract_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_analysis_indicator_em",
+            "display_name": "主要指标-东方财富",
+            "description": "主要指标-东方财富",
+            "route": "/stocks/collections/stock_financial_analysis_indicator_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_analysis_indicator",
+            "display_name": "财务指标",
+            "description": "财务指标",
+            "route": "/stocks/collections/stock_financial_analysis_indicator",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_hk_analysis_indicator_em",
+            "display_name": "港股财务指标",
+            "description": "港股财务指标",
+            "route": "/stocks/collections/stock_financial_hk_analysis_indicator_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_financial_us_analysis_indicator_em",
+            "display_name": "美股财务指标",
+            "description": "美股财务指标",
+            "route": "/stocks/collections/stock_financial_us_analysis_indicator_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_history_dividend",
+            "display_name": "历史分红",
+            "description": "历史分红",
+            "route": "/stocks/collections/stock_history_dividend",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_free_top_10_em",
+            "display_name": "十大流通股东(个股)",
+            "description": "十大流通股东(个股)",
+            "route": "/stocks/collections/stock_gdfx_free_top_10_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_top_10_em",
+            "display_name": "十大股东(个股)",
+            "description": "十大股东(个股)",
+            "route": "/stocks/collections/stock_gdfx_top_10_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_free_holding_change_em",
+            "display_name": "股东持股变动统计-十大流通股东",
+            "description": "股东持股变动统计-十大流通股东",
+            "route": "/stocks/collections/stock_gdfx_free_holding_change_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_holding_change_em",
+            "display_name": "股东持股变动统计-十大股东",
+            "description": "股东持股变动统计-十大股东",
+            "route": "/stocks/collections/stock_gdfx_holding_change_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_management_change_ths",
+            "display_name": "高管持股变动统计",
+            "description": "高管持股变动统计",
+            "route": "/stocks/collections/stock_management_change_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_shareholder_change_ths",
+            "display_name": "股东持股变动统计",
+            "description": "股东持股变动统计",
+            "route": "/stocks/collections/stock_shareholder_change_ths",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_free_holding_analyse_em",
+            "display_name": "股东持股分析-十大流通股东",
+            "description": "股东持股分析-十大流通股东",
+            "route": "/stocks/collections/stock_gdfx_free_holding_analyse_em",
+            "fields": ["代码"],
+        },
+        {
+            "name": "stock_gdfx_holding_analyse_em",
+            "display_name": "股东持股分析-十大股东",
+            "description": "股东持股分析-十大股东",
+            "route": "/stocks/collections/stock_gdfx_holding_analyse_em",
+            "fields": ["代码"],
+        },
     ]
     return collections
 
@@ -869,6 +1469,91 @@ async def get_stock_collection_data(
         "stock_daily": db["stock_daily"],
         "stock_weekly": db["stock_weekly"],
         "stock_monthly": db["stock_monthly"],
+        "stock_sgt_reference_exchange_rate_szse": db["stock_sgt_reference_exchange_rate_szse"],
+        "stock_sgt_reference_exchange_rate_sse": db["stock_sgt_reference_exchange_rate_sse"],
+        "stock_hk_ggt_components_em": db["stock_hk_ggt_components_em"],
+        "stock_hsgt_fund_min_em": db["stock_hsgt_fund_min_em"],
+        "stock_hsgt_board_rank_em": db["stock_hsgt_board_rank_em"],
+        "stock_hsgt_hold_stock_em": db["stock_hsgt_hold_stock_em"],
+        "stock_hsgt_stock_statistics_em": db["stock_hsgt_stock_statistics_em"],
+        "stock_hsgt_institution_statistics_em": db["stock_hsgt_institution_statistics_em"],
+        "stock_hsgt_sh_hk_spot_em": db["stock_hsgt_sh_hk_spot_em"],
+        "stock_hsgt_hist_em": db["stock_hsgt_hist_em"],
+        "stock_hsgt_individual_em": db["stock_hsgt_individual_em"],
+        "stock_hsgt_individual_detail_em": db["stock_hsgt_individual_detail_em"],
+        "stock_em_hsgt_north_net_flow_in": db["stock_em_hsgt_north_net_flow_in"],
+        "stock_em_hsgt_south_net_flow_in": db["stock_em_hsgt_south_net_flow_in"],
+        "stock_em_hsgt_hold_stock": db["stock_em_hsgt_hold_stock"],
+        "stock_tfp_em": db["stock_tfp_em"],
+        "stock_zh_a_new": db["stock_zh_a_new"],
+        "stock_ipo_info": db["stock_ipo_info"],
+        "stock_xgsglb_em": db["stock_xgsglb_em"],
+        "stock_dzjy_sctj": db["stock_dzjy_sctj"],
+        "stock_dzjy_mrmx": db["stock_dzjy_mrmx"],
+        "stock_dzjy_mrtj": db["stock_dzjy_mrtj"],
+        "stock_jgdy_tj_em": db["stock_jgdy_tj_em"],
+        "stock_jgdy_detail_em": db["stock_jgdy_detail_em"],
+        "stock_jgcyd_em": db["stock_jgcyd_em"],
+        "stock_gpzy_profile_em": db["stock_gpzy_profile_em"],
+        "stock_news_em": db["stock_news_em"],
+        "stock_js_weibo_nlp_time": db["stock_js_weibo_nlp_time"],
+        "stock_cjrl_em": db["stock_cjrl_em"],
+        "stock_yjfp_em": db["stock_yjfp_em"],
+        "stock_yjyg_em": db["stock_yjyg_em"],
+        "stock_yysj_em": db["stock_yysj_em"],
+        "stock_add_stock_cninfo": db["stock_add_stock_cninfo"],
+        "stock_restricted_release_queue_em": db["stock_restricted_release_queue_em"],
+        "stock_info_change_name_em": db["stock_info_change_name_em"],
+        "stock_board_industry_name_em": db["stock_board_industry_name_em"],
+        "stock_gpgk_em": db["stock_gpgk_em"],
+        "stock_fhps_detail_ths": db["stock_fhps_detail_ths"],
+        "stock_hk_fhpx_detail_ths": db["stock_hk_fhpx_detail_ths"],
+        "stock_fund_flow_individual": db["stock_fund_flow_individual"],
+        "stock_fund_flow_concept": db["stock_fund_flow_concept"],
+        "stock_fund_flow_industry": db["stock_fund_flow_industry"],
+        "stock_fund_flow_big_deal": db["stock_fund_flow_big_deal"],
+        "stock_individual_fund_flow": db["stock_individual_fund_flow"],
+        "stock_individual_fund_flow_rank": db["stock_individual_fund_flow_rank"],
+        "stock_market_fund_flow": db["stock_market_fund_flow"],
+        "stock_sector_fund_flow_rank": db["stock_sector_fund_flow_rank"],
+        "stock_main_fund_flow": db["stock_main_fund_flow"],
+        "stock_sector_fund_flow_summary": db["stock_sector_fund_flow_summary"],
+        "stock_sector_fund_flow_hist": db["stock_sector_fund_flow_hist"],
+        "stock_concept_fund_flow_hist": db["stock_concept_fund_flow_hist"],
+        "stock_cyq_em": db["stock_cyq_em"],
+        "stock_gddh_em": db["stock_gddh_em"],
+        "stock_zdhtmx_em": db["stock_zdhtmx_em"],
+        "stock_research_report_em": db["stock_research_report_em"],
+        "stock_notice_report": db["stock_notice_report"],
+        "stock_financial_report_sina": db["stock_financial_report_sina"],
+        "stock_balance_sheet_by_report_em": db["stock_balance_sheet_by_report_em"],
+        "stock_profit_sheet_by_quarterly_em": db["stock_profit_sheet_by_quarterly_em"],
+        "stock_cash_flow_sheet_by_report_em": db["stock_cash_flow_sheet_by_report_em"],
+        "stock_cash_flow_sheet_by_yearly_em": db["stock_cash_flow_sheet_by_yearly_em"],
+        "stock_cash_flow_sheet_by_quarterly_em": db["stock_cash_flow_sheet_by_quarterly_em"],
+        "stock_financial_debt_ths": db["stock_financial_debt_ths"],
+        "stock_financial_benefit_ths": db["stock_financial_benefit_ths"],
+        "stock_financial_cash_ths": db["stock_financial_cash_ths"],
+        "stock_balance_sheet_by_report_delisted_em": db["stock_balance_sheet_by_report_delisted_em"],
+        "stock_profit_sheet_by_report_delisted_em": db["stock_profit_sheet_by_report_delisted_em"],
+        "stock_cash_flow_sheet_by_report_delisted_em": db["stock_cash_flow_sheet_by_report_delisted_em"],
+        "stock_financial_hk_report_em": db["stock_financial_hk_report_em"],
+        "stock_financial_us_report_em": db["stock_financial_us_report_em"],
+        "stock_financial_abstract": db["stock_financial_abstract"],
+        "stock_financial_abstract_ths": db["stock_financial_abstract_ths"],
+        "stock_financial_analysis_indicator_em": db["stock_financial_analysis_indicator_em"],
+        "stock_financial_analysis_indicator": db["stock_financial_analysis_indicator"],
+        "stock_financial_hk_analysis_indicator_em": db["stock_financial_hk_analysis_indicator_em"],
+        "stock_financial_us_analysis_indicator_em": db["stock_financial_us_analysis_indicator_em"],
+        "stock_history_dividend": db["stock_history_dividend"],
+        "stock_gdfx_free_top_10_em": db["stock_gdfx_free_top_10_em"],
+        "stock_gdfx_top_10_em": db["stock_gdfx_top_10_em"],
+        "stock_gdfx_free_holding_change_em": db["stock_gdfx_free_holding_change_em"],
+        "stock_gdfx_holding_change_em": db["stock_gdfx_holding_change_em"],
+        "stock_management_change_ths": db["stock_management_change_ths"],
+        "stock_shareholder_change_ths": db["stock_shareholder_change_ths"],
+        "stock_gdfx_free_holding_analyse_em": db["stock_gdfx_free_holding_analyse_em"],
+        "stock_gdfx_holding_analyse_em": db["stock_gdfx_holding_analyse_em"],
     }
 
     collection = collection_map.get(collection_name)
@@ -925,5 +1610,114 @@ async def get_stock_collection_data(
         raise
     except Exception as e:
         logger.error(f"获取股票集合 {collection_name} 数据失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/collections/{collection_name}/refresh")
+async def refresh_stock_collection(
+    collection_name: str,
+    background_tasks: BackgroundTasks,
+    params: Dict[str, Any] = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """刷新股票数据集合"""
+    try:
+        task_id = str(uuid.uuid4())
+        task_manager = get_task_manager()
+        task_manager.create_task(task_id, f"刷新{collection_name}")
+        
+        # 异步执行刷新任务
+        refresh_service = StockRefreshService()
+        background_tasks.add_task(
+            refresh_service.refresh_collection,
+            collection_name,
+            task_id,
+            params
+        )
+        
+        return ok({
+            "task_id": task_id,
+            "message": f"刷新任务已启动"
+        })
+    except Exception as e:
+        logger.error(f"启动刷新任务失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/collections/{collection_name}/refresh/status/{task_id}")
+async def get_refresh_status(
+    collection_name: str,
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """查询刷新任务状态"""
+    try:
+        task_manager = get_task_manager()
+        task_info = task_manager.get_task(task_id)
+        
+        if not task_info:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
+        
+        return ok(task_info)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"查询任务状态失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/collections/{collection_name}/stats")
+async def get_collection_stats(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取集合数据统计信息"""
+    try:
+        db = get_mongo_db()
+        collection = db[collection_name]
+        
+        total_count = await collection.count_documents({})
+        
+        # 获取最新和最旧的记录时间（如果有时间字段）
+        stats = {
+            "total_count": total_count,
+            "collection_name": collection_name
+        }
+        
+        # 尝试获取最新更新时间
+        try:
+            latest = await collection.find_one(
+                {},
+                sort=[("_id", -1)]
+            )
+            if latest and "_id" in latest:
+                stats["latest_update"] = latest["_id"].generation_time.isoformat()
+        except:
+            pass
+        
+        return ok(stats)
+    except Exception as e:
+        logger.error(f"获取统计信息失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.delete("/collections/{collection_name}/clear")
+async def clear_collection(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """清空集合数据"""
+    try:
+        db = get_mongo_db()
+        collection = db[collection_name]
+        
+        result = await collection.delete_many({})
+        
+        return ok({
+            "deleted_count": result.deleted_count,
+            "message": f"已清空 {collection_name}"
+        })
+    except Exception as e:
+        logger.error(f"清空集合失败: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 

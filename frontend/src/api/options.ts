@@ -42,6 +42,22 @@ export const optionsApi = {
     return response.data
   },
 
+  // 刷新集合数据
+  async refreshCollection(collectionName: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/options/collections/${collectionName}/refresh`
+    )
+    return response.data
+  },
+
+  // 清空集合数据
+  async clearCollection(collectionName: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/options/collections/${collectionName}/clear`
+    )
+    return response.data
+  },
+
   // 搜索期权
   async searchOptions(keyword: string) {
     const response = await axios.get(`${API_BASE_URL}/api/options/search`, {

@@ -18,84 +18,121 @@
     </div>
 
     <div class="content">
-      <!-- 统计数据卡片 -->
+      <!-- 统计数据卡片：优化版 -->
       <el-card shadow="hover" class="stats-card" v-if="stats">
+        <!-- ... (stats content remains same) ... -->
         <template #header>
-          <div class="card-header">数据统计</div>
+          <div class="card-header">
+            <span>数据概览</span>
+            <el-tag size="small" type="info" effect="plain">更新于: {{ new Date().toLocaleDateString() }}</el-tag>
+          </div>
         </template>
-        <el-row :gutter="16">
-          <el-col :xs="12" :sm="8" :md="6" :lg="4">
-            <el-statistic title="总记录数" :value="stats.total_count">
-              <template #prefix>
-                <el-icon><Document /></el-icon>
-              </template>
-            </el-statistic>
-          </el-col>
-          <el-col :xs="12" :sm="8" :md="6" :lg="4" v-if="stats.earliest_date">
-            <el-statistic title="最早日期" :value="stats.earliest_date">
-              <template #prefix>
-                <el-icon><Calendar /></el-icon>
-              </template>
-            </el-statistic>
-          </el-col>
-          <el-col :xs="12" :sm="8" :md="6" :lg="4" v-if="stats.latest_date">
-            <el-statistic title="最新日期" :value="stats.latest_date">
-              <template #prefix>
-                <el-icon><Calendar /></el-icon>
-              </template>
-            </el-statistic>
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="12" :lg="12" v-if="stats.category_stats && stats.category_stats.length > 0">
-            <div class="category-stats">
-              <span class="stats-label">类别分布：</span>
-              <el-tag
-                v-for="cat in stats.category_stats"
-                :key="cat.category"
-                size="small"
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
-                {{ cat.category }}: {{ cat.count }}
-              </el-tag>
-            </div>
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="12" :lg="12" v-if="stats.exchange_stats && stats.exchange_stats.length > 0">
-            <div class="exchange-stats">
-              <span class="stats-label">交易所分布：</span>
-              <el-tag
-                v-for="ex in stats.exchange_stats"
-                :key="ex.exchange"
-                size="small"
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
-                {{ ex.exchange }}: {{ ex.count }}
-              </el-tag>
+        <el-row :gutter="24">
+          <!-- 核心指标 -->
+          <el-col :span="24">
+            <div class="stat-metric-group">
+              <div class="stat-metric-item">
+                <div class="metric-label">总记录数</div>
+                <div class="metric-value-large">{{ stats.total_count?.toLocaleString() }}</div>
+                <div class="metric-sub">条数据记录</div>
+              </div>
+              
+              <el-divider direction="vertical" style="height: 60px" />
+              
+              <div class="stat-metric-item">
+                <div class="metric-label">时间跨度</div>
+                <div class="metric-value-medium">{{ dataDuration }}</div>
+                <div class="metric-sub">
+                  <span v-if="stats.earliest_date">{{ stats.earliest_date }}</span>
+                  <span v-if="stats.earliest_date && stats.latest_date"> 至 </span>
+                  <span v-if="stats.latest_date">{{ stats.latest_date }}</span>
+                </div>
+              </div>
             </div>
           </el-col>
         </el-row>
       </el-card>
 
-      <!-- 字段说明 -->
-      <el-card shadow="hover" class="fields-card" v-if="fields && fields.length > 0">
-        <template #header>
-          <div class="card-header">字段说明</div>
-        </template>
-        <el-table :data="fields" stripe border size="small" style="width: 100%">
-          <el-table-column prop="name" label="字段名" width="200" />
-          <el-table-column prop="type" label="类型" width="120" />
-          <el-table-column prop="example" label="示例" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span v-if="row.example" class="example-text">{{ row.example }}</span>
-              <span v-else class="text-muted">-</span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+      <!-- 可视化分析 Tabs (仅 bond_info_cm 显示) -->
+      <el-tabs type="border-card" class="analysis-tabs" v-if="collectionName === 'bond_info_cm'">
+        <el-tab-pane label="结构分布分析">
+          <el-row :gutter="24">
+            <el-col :span="12">
+              <div class="chart-title">信用评级分布</div>
+              <div class="chart-wrapper-medium">
+                <v-chart
+                  v-if="gradePieOption"
+                  :option="gradePieOption"
+                  :autoresize="true"
+                  style="height: 320px; width: 100%"
+                />
+                <el-empty v-else description="暂无评级数据" />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div class="stat-distribution-group" style="border-left: none; padding-left: 0; height: 100%; display: flex; flex-direction: column;">
+                <div class="chart-title" style="margin-bottom: 12px; text-align: left;">{{ collectionName === 'bond_info_cm' ? '债券类型' : '主要构成' }}</div>
+                <div class="distribution-list" v-if="categoryDistribution.length > 0" style="max-height: 320px; overflow-y: auto; padding-right: 8px;">
+                  <div v-for="item in categoryDistribution" :key="item.category" class="distribution-item">
+                    <div class="dist-info">
+                      <span class="dist-name">{{ item.category }}</span>
+                      <span class="dist-count">{{ item.count?.toLocaleString() }} ({{ item.percentage }}%)</span>
+                    </div>
+                    <el-progress 
+                      :percentage="Number(item.percentage)" 
+                      :show-text="false" 
+                      :stroke-width="6" 
+                      :color="item.color"
+                    />
+                  </div>
+                </div>
+                <div v-else class="text-muted" style="text-align: center; margin-top: 20px;">暂无分类数据</div>
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        <el-tab-pane label="发行趋势分析">
+          <div class="chart-wrapper">
+            <v-chart
+              v-if="issuanceChartOption"
+              :option="issuanceChartOption"
+              :autoresize="true"
+              style="height: 360px; width: 100%"
+              v-loading="issuanceLoading"
+            />
+            <el-empty v-else description="暂无发行数据" />
+          </div>
+        </el-tab-pane>
+      </el-tabs>
 
       <!-- 数据列表 -->
       <el-card shadow="hover" class="data-card">
         <template #header>
           <div class="card-header">
-            <span>数据列表</span>
+            <div style="display: flex; align-items: center;">
+              <span>数据</span>
+              <el-popover
+                placement="right"
+                title="字段说明"
+                :width="600"
+                trigger="hover"
+                v-if="fields && fields.length > 0"
+              >
+                <template #reference>
+                  <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
+                </template>
+                <el-table :data="fields" stripe border size="small" style="width: 100%">
+                  <el-table-column prop="name" label="字段名" width="200" />
+                  <el-table-column prop="type" label="类型" width="120" />
+                  <el-table-column prop="example" label="示例" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <span v-if="row.example" class="example-text">{{ row.example }}</span>
+                      <span v-else class="text-muted">-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-popover>
+            </div>
             <div class="header-actions">
               <el-input
                 v-model="filterValue"
@@ -165,57 +202,6 @@
             @size-change="handleSizeChange"
             @current-change="handlePageChange"
           />
-        </div>
-      </el-card>
-
-      <!-- 年度发行量柱状图，仅 bond_info_cm 显示 -->
-      <el-card
-        v-if="collectionName === 'bond_info_cm' && issuanceChartOption"
-        shadow="hover"
-        class="issuance-card"
-      >
-        <template #header>
-          <div class="card-header">
-            <span>年度债券发行量</span>
-            <small class="text-muted">数据来源：bond_info_cm · 发行日期</small>
-          </div>
-        </template>
-        <div class="chart-wrapper">
-          <v-chart
-            :option="issuanceChartOption"
-            :autoresize="true"
-            style="height: 360px; width: 100%"
-            v-loading="issuanceLoading"
-          />
-        </div>
-      </el-card>
-
-      <!-- 债券类型与最新债项评级分布饼图，仅 bond_info_cm 显示 -->
-      <el-card
-        v-if="collectionName === 'bond_info_cm' && (bondTypePieOption || gradePieOption)"
-        shadow="hover"
-        class="distribution-card"
-      >
-        <template #header>
-          <div class="card-header">
-            <span>债券类型与评级分布</span>
-          </div>
-        </template>
-        <div class="distribution-row">
-          <div class="chart-wrapper-small" v-if="bondTypePieOption">
-            <v-chart
-              :option="bondTypePieOption"
-              :autoresize="true"
-              style="height: 320px; width: 100%"
-            />
-          </div>
-          <div class="chart-wrapper-small" v-if="gradePieOption">
-            <v-chart
-              :option="gradePieOption"
-              :autoresize="true"
-              style="height: 320px; width: 100%"
-            />
-          </div>
         </div>
       </el-card>
     </div>
@@ -762,7 +748,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Box, Refresh, Search, Document, Calendar, Download, Delete } from '@element-plus/icons-vue'
+import { Box, Refresh, Search, Document, Calendar, Download, Delete, QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -777,6 +763,65 @@ const route = useRoute()
 const router = useRouter()
 
 const collectionName = computed(() => route.params.collectionName as string)
+
+// 计算数据时间跨度
+const dataDuration = computed(() => {
+  if (!stats.value?.earliest_date || !stats.value?.latest_date) return '-'
+  
+  const start = new Date(stats.value.earliest_date)
+  const end = new Date(stats.value.latest_date)
+  const diffTime = Math.abs(end.getTime() - start.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays < 30) return `${diffDays} 天`
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30)
+    const days = diffDays % 30
+    return `${months} 个月 ${days > 0 ? days + ' 天' : ''}`
+  }
+  
+  const years = Math.floor(diffDays / 365)
+  const remainingDays = diffDays % 365
+  const months = Math.floor(remainingDays / 30)
+  
+  return `${years} 年 ${months > 0 ? months + ' 个月' : ''}`
+})
+
+// 计算分类分布（展示所有）
+const categoryDistribution = computed(() => {
+  // 优先使用 bondTypePieOption 中的数据 (针对 bond_info_cm 集合)
+  if (bondTypePieOption.value?.series?.[0]?.data && bondTypePieOption.value.series[0].data.length > 0) {
+    const data = bondTypePieOption.value.series[0].data
+    const total = data.reduce((sum: number, item: any) => sum + item.value, 0) || 1
+    
+    const sorted = [...data].sort((a: any, b: any) => b.value - a.value)
+    
+    const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#36CFC9', '#9254DE', '#F759AB', '#FF9C6E', '#FFC069']
+    
+    return sorted.map((item: any, index: number) => ({
+      category: item.name,
+      count: item.value,
+      percentage: ((item.value / total) * 100).toFixed(1),
+      color: colors[index % colors.length]
+    }))
+  }
+
+  // 否则使用 stats 中的 category_stats (默认)
+  if (!stats.value?.category_stats || stats.value.category_stats.length === 0) return []
+  
+  // 排序
+  const sorted = [...stats.value.category_stats].sort((a, b) => b.count - a.count)
+  const total = stats.value.total_count || 1 // Prevent division by zero
+  
+  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#36CFC9', '#9254DE', '#F759AB', '#FF9C6E', '#FFC069']
+  
+  return sorted.map((item, index) => ({
+    category: item.category,
+    count: item.count,
+    percentage: ((item.count / total) * 100).toFixed(1),
+    color: colors[index % colors.length]
+  }))
+})
 
 // 数据状态
 const loading = ref(false)
@@ -1836,9 +1881,24 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.chart-wrapper {
+.analysis-tabs {
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.chart-wrapper-medium {
   width: 100%;
-  height: 360px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stats-label {
@@ -1940,6 +2000,94 @@ onMounted(() => {
   font-size: 12px;
   color: #a0a4ab;
   line-height: 1.4;
+}
+
+.stat-metric-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.stat-metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.metric-value-large {
+  font-size: 32px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.metric-value-medium {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.metric-sub {
+  font-size: 12px;
+  color: #909399;
+}
+
+.stat-distribution-group {
+  padding-left: 24px;
+  border-left: 1px solid #ebeef5;
+}
+
+@media screen and (max-width: 768px) {
+  .stat-distribution-group {
+    padding-left: 0;
+    border-left: none;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #ebeef5;
+  }
+}
+
+.group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 16px;
+}
+
+.distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.distribution-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dist-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.dist-name {
+  color: #606266;
+}
+
+.dist-count {
+  color: #909399;
 }
 
 .batch-config-divider {
