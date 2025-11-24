@@ -2226,53 +2226,73 @@ class FundRefreshService:
                     task_id, 10, f"正在获取基金 {fund_code} 的历史行情数据..."
                 )
 
-                total_saved = 0
-                total_rows = 0
-                results = []
-
-                for idx, indicator in enumerate(indicators):
-                    try:
-                        progress = 10 + int((idx / len(indicators)) * 80)
+                try:
+                    # 只获取单位净值走势和累计净值走势两个指标
+                    required_indicators = ["单位净值走势", "累计净值走势"]
+                    
+                    # 获取单位净值走势
+                    await self._update_task_progress(
+                        task_id, 30, f"正在获取 {fund_code} - 单位净值走势..."
+                    )
+                    loop = asyncio.get_event_loop()
+                    df_unit = await loop.run_in_executor(
+                        _executor,
+                        self._fetch_fund_open_fund_info,
+                        fund_code,
+                        "单位净值走势",
+                        period,
+                    )
+                    
+                    # 获取累计净值走势
+                    await self._update_task_progress(
+                        task_id, 60, f"正在获取 {fund_code} - 累计净值走势..."
+                    )
+                    df_acc = await loop.run_in_executor(
+                        _executor,
+                        self._fetch_fund_open_fund_info,
+                        fund_code,
+                        "累计净值走势",
+                        period,
+                    )
+                    
+                    # 合并两个DataFrame
+                    if df_unit is not None and not df_unit.empty and df_acc is not None and not df_acc.empty:
                         await self._update_task_progress(
-                            task_id, progress, f"正在获取 {fund_code} - {indicator}..."
+                            task_id, 80, f"正在合并数据..."
                         )
-
-                        loop = asyncio.get_event_loop()
-                        df = await loop.run_in_executor(
-                            _executor,
-                            self._fetch_fund_open_fund_info,
-                            fund_code,
-                            indicator,
-                            period,
+                        
+                        # 保存合并后的数据
+                        saved = await self.data_service.save_fund_open_fund_info_merged_data(
+                            df_unit, df_acc, fund_code
                         )
-
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_open_fund_info_data(
-                                df, fund_code, indicator
-                            )
-                            total_saved += saved
-                            total_rows += len(df)
-                            results.append({"indicator": indicator, "saved": saved, "rows": len(df)})
-                        else:
-                            results.append({"indicator": indicator, "saved": 0, "rows": 0})
-
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning(f"获取 {fund_code} - {indicator} 失败: {e}")
-                        results.append({"indicator": indicator, "error": str(e), "saved": 0})
-
-                await self._update_task_progress(
-                    task_id, 100, f"基金 {fund_code} 历史行情更新完成，保存 {total_saved} 条记录"
-                )
-
-                return {
-                    "success": True,
-                    "mode": "single",
-                    "fund_code": fund_code,
-                    "total_saved": total_saved,
-                    "total_rows": total_rows,
-                    "indicators_result": results,
-                    "message": f"基金 {fund_code} 更新完成，保存 {total_saved} 条记录",
-                }
+                        
+                        await self._update_task_progress(
+                            task_id, 100, f"基金 {fund_code} 历史行情更新完成，保存 {saved} 条记录"
+                        )
+                        
+                        return {
+                            "success": True,
+                            "mode": "single",
+                            "fund_code": fund_code,
+                            "saved": saved,
+                            "rows": len(df_unit),
+                            "message": f"基金 {fund_code} 更新完成，保存 {saved} 条记录",
+                        }
+                    else:
+                        raise ValueError(f"基金 {fund_code} 数据获取失败或为空")
+                
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"单个更新基金 {fund_code} 失败: {e}")
+                    await self._update_task_progress(
+                        task_id, 100, f"基金 {fund_code} 更新失败: {str(e)}"
+                    )
+                    return {
+                        "success": False,
+                        "mode": "single",
+                        "fund_code": fund_code,
+                        "error": str(e),
+                        "message": f"基金 {fund_code} 更新失败: {str(e)}",
+                    }
 
             # 批量更新
             await self._update_task_progress(task_id, 5, "正在获取基金代码列表...")
@@ -2303,47 +2323,58 @@ class FundRefreshService:
                 batch_codes = fund_codes[i : i + batch_size]
 
                 async def worker(code: str) -> Dict[str, Any]:
-                    fund_saved = 0
-                    fund_rows = 0
-                    indicator_results = []
-
-                    for indicator in indicators:
-                        try:
-                            loop = asyncio.get_event_loop()
-                            df = await loop.run_in_executor(
-                                _executor,
-                                self._fetch_fund_open_fund_info,
-                                code,
-                                indicator,
-                                period,
+                    try:
+                        # 只获取单位净值走势和累计净值走势两个指标
+                        loop = asyncio.get_event_loop()
+                        
+                        # 获取单位净值走势
+                        df_unit = await loop.run_in_executor(
+                            _executor,
+                            self._fetch_fund_open_fund_info,
+                            code,
+                            "单位净值走势",
+                            period,
+                        )
+                        
+                        # 获取累计净值走势
+                        df_acc = await loop.run_in_executor(
+                            _executor,
+                            self._fetch_fund_open_fund_info,
+                            code,
+                            "累计净值走势",
+                            period,
+                        )
+                        
+                        # 合并并保存
+                        if df_unit is not None and not df_unit.empty and df_acc is not None and not df_acc.empty:
+                            saved = await self.data_service.save_fund_open_fund_info_merged_data(
+                                df_unit, df_acc, code
                             )
-
-                            if df is not None and not df.empty:
-                                saved = await self.data_service.save_fund_open_fund_info_data(
-                                    df, code, indicator
-                                )
-                                fund_saved += saved
-                                fund_rows += len(df)
-                                indicator_results.append(
-                                    {"indicator": indicator, "saved": saved, "rows": len(df)}
-                                )
-                            else:
-                                indicator_results.append(
-                                    {"indicator": indicator, "saved": 0, "rows": 0}
-                                )
-
-                        except Exception as e:  # noqa: BLE001
-                            logger.warning(f"获取 {code} - {indicator} 失败: {e}")
-                            indicator_results.append(
-                                {"indicator": indicator, "error": str(e), "saved": 0}
-                            )
-
-                    return {
-                        "fund_code": code,
-                        "saved": fund_saved,
-                        "rows": fund_rows,
-                        "indicators": indicator_results,
-                    }
+                            return {
+                                "fund_code": code,
+                                "saved": saved,
+                                "rows": len(df_unit),
+                                "success": True,
+                            }
+                        else:
+                            logger.warning(f"基金 {code} 数据获取失败或为空")
+                            return {
+                                "fund_code": code,
+                                "saved": 0,
+                                "rows": 0,
+                                "success": False,
+                                "error": "数据获取失败或为空",
+                            }
+                    
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(f"批量更新基金 {code} 失败: {e}")
+                        return {
+                            "fund_code": code,
+                            "saved": 0,
+                            "rows": 0,
+                            "success": False,
+                            "error": str(e),
+                        }
 
                 batch_tasks = [worker(code) for code in batch_codes]
                 batch_results = await asyncio.gather(*batch_tasks)

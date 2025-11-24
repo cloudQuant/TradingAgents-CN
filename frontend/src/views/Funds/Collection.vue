@@ -10,6 +10,7 @@
           <p class="page-description">{{ collectionInfo?.description || '' }}</p>
         </div>
         <div class="header-actions">
+          <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
           <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
           <el-button :icon="Download" type="primary" @click="handleRefreshData" :loading="refreshing">更新数据</el-button>
           <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
@@ -18,43 +19,6 @@
     </div>
 
     <div class="content">
-      <!-- 统计数据卡片：优化版 -->
-      <el-card shadow="hover" class="stats-card" v-if="stats">
-        <template #header>
-          <div class="card-header">
-            <span>数据概览</span>
-            <el-tag size="small" type="info" effect="plain">更新于: {{ new Date().toLocaleDateString() }}</el-tag>
-          </div>
-        </template>
-        <el-row :gutter="24">
-          <!-- 核心指标 -->
-          <el-col :span="24">
-            <div class="stat-metric-group">
-              <div class="stat-metric-item">
-                <div class="metric-label">总记录数</div>
-                <div class="metric-value-large">{{ stats.total_count?.toLocaleString() }}</div>
-                <div class="metric-sub">条数据记录</div>
-              </div>
-              
-              <!-- 如果有时间跨度数据，显示分割线和时间 -->
-              <template v-if="stats.earliest_date">
-                <el-divider direction="vertical" style="height: 60px" />
-                
-                <div class="stat-metric-item">
-                  <div class="metric-label">时间跨度</div>
-                  <div class="metric-value-medium">{{ dataDuration }}</div>
-                  <div class="metric-sub">
-                    <span v-if="stats.earliest_date">{{ stats.earliest_date }}</span>
-                    <span v-if="stats.earliest_date && stats.latest_date"> 至 </span>
-                    <span v-if="stats.latest_date">{{ stats.latest_date }}</span>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </el-col>
-        </el-row>
-      </el-card>
-
       <!-- 可视化分析 Tabs -->
       <el-tabs type="border-card" class="analysis-tabs" v-if="hasCharts">
         <el-tab-pane label="结构分布分析">
@@ -676,8 +640,8 @@
           </el-row>
         </template>
 
-        <!-- fund_name_em、fund_purchase_status、fund_etf_spot_em、fund_etf_spot_ths、fund_lof_spot_em、fund_spot_sina、fund_etf_hist_min_em、fund_etf_hist_em、fund_lof_hist_em、fund_hist_sina 和 fund_open_fund_daily_em 的文件导入和远程同步 -->
-        <template v-else-if="collectionName === 'fund_name_em' || collectionName === 'fund_purchase_status' || collectionName === 'fund_etf_spot_em' || collectionName === 'fund_etf_spot_ths' || collectionName === 'fund_lof_spot_em' || collectionName === 'fund_spot_sina' || collectionName === 'fund_etf_hist_min_em' || collectionName === 'fund_etf_hist_em' || collectionName === 'fund_lof_hist_em' || collectionName === 'fund_hist_sina' || collectionName === 'fund_open_fund_daily_em'">
+        <!-- fund_name_em、fund_purchase_status、fund_etf_spot_em、fund_etf_spot_ths、fund_lof_spot_em、fund_spot_sina、fund_etf_hist_min_em、fund_etf_hist_em、fund_lof_hist_em、fund_hist_sina、fund_open_fund_daily_em、fund_open_fund_info_em 和 fund_money_fund_daily_em 的文件导入和远程同步 -->
+        <template v-else-if="collectionName === 'fund_name_em' || collectionName === 'fund_purchase_status' || collectionName === 'fund_etf_spot_em' || collectionName === 'fund_etf_spot_ths' || collectionName === 'fund_lof_spot_em' || collectionName === 'fund_spot_sina' || collectionName === 'fund_etf_hist_min_em' || collectionName === 'fund_etf_hist_em' || collectionName === 'fund_lof_hist_em' || collectionName === 'fund_hist_sina' || collectionName === 'fund_open_fund_daily_em' || collectionName === 'fund_open_fund_info_em' || collectionName === 'fund_money_fund_daily_em'">
           <!-- 文件导入 -->
           <el-divider content-position="left">文件导入</el-divider>
           <div style="width: 100%">
@@ -706,6 +670,8 @@
                   <span v-else-if="collectionName === 'fund_lof_hist_em'">支持 CSV 或 Excel 文件，列结构需包含代码、日期、开盘、收盘、最高、最低、成交量、成交额、振幅、涨跌幅、涨跌额、换手率等字段</span>
                   <span v-else-if="collectionName === 'fund_hist_sina'">支持 CSV 或 Excel 文件，列结构需包含 code、date、open、high、low、close、volume 等字段</span>
                   <span v-else-if="collectionName === 'fund_open_fund_daily_em'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金简称、单位净值、累计净值等字段（列名格式如 "2024-01-01-单位净值"）</span>
+                  <span v-else-if="collectionName === 'fund_open_fund_info_em'">支持 CSV 或 Excel 文件，列结构需包含日期、基金代码、单位净值、日增长率、累计净值等字段</span>
+                  <span v-else-if="collectionName === 'fund_money_fund_daily_em'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金简称、每万份收益、7日年化收益率等字段</span>
                 </div>
               </template>
             </el-upload>
@@ -795,6 +761,47 @@
               {{ remoteSyncStats.synced_count }} 条
             </div>
           </div>
+
+          <!-- fund_open_fund_info_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_open_fund_info_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从开放式基金实时行情集合（fund_open_fund_daily_em）获取基金代码列表，并发更新历史行情数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
         </template>
 
         <!-- 指数型基金基本信息更新配置 -->
@@ -908,6 +915,102 @@
           </div>
         </template>
 
+        <!-- ETF/LOF分时行情参数配置 -->
+        <template v-if="collectionName === 'fund_etf_hist_min_em' || collectionName === 'fund_lof_hist_min_em'">
+          <!-- 单个更新 -->
+          <el-divider content-position="left">单个更新</el-divider>
+          <div style="width: 100%; margin-bottom: 16px;">
+            <el-form label-width="120px">
+              <el-form-item label="基金代码">
+                <el-input v-model="singleSymbol" placeholder="请输入基金代码（如 513500）" clearable />
+              </el-form-item>
+              <el-form-item label="时间周期">
+                <el-select v-model="singlePeriod" placeholder="选择时间周期" style="width: 100%">
+                  <el-option label="1分钟" value="1" />
+                  <el-option label="5分钟" value="5" />
+                  <el-option label="15分钟" value="15" />
+                  <el-option label="30分钟" value="30" />
+                  <el-option label="60分钟" value="60" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="复权方式">
+                <el-select v-model="singleAdjust" placeholder="选择复权方式" style="width: 100%">
+                  <el-option label="不复权" value="" />
+                  <el-option label="前复权" value="qfq" />
+                  <el-option label="后复权" value="hfq" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="开始时间">
+                <el-date-picker
+                  v-model="singleStartDate"
+                  type="datetime"
+                  placeholder="选择开始时间"
+                  format="YYYY-MM-DD HH:mm:ss"
+                  value-format="YYYY-MM-DD HH:mm:ss"
+                  style="width: 100%"
+                />
+              </el-form-item>
+              <el-form-item label="结束时间">
+                <el-date-picker
+                  v-model="singleEndDate"
+                  type="datetime"
+                  placeholder="选择结束时间"
+                  format="YYYY-MM-DD HH:mm:ss"
+                  value-format="YYYY-MM-DD HH:mm:ss"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-form>
+            <el-button
+              type="primary"
+              @click="refreshData('single')"
+              :loading="refreshing"
+              :disabled="!singleSymbol || refreshing"
+            >
+              更新单个基金
+            </el-button>
+          </div>
+
+          <!-- 批量更新配置 -->
+          <el-divider content-position="left">批量更新配置</el-divider>
+          <div style="width: 100%; margin-bottom: 16px;">
+            <el-form label-width="120px">
+              <el-form-item label="时间周期">
+                <el-select v-model="batchPeriod" placeholder="选择时间周期" style="width: 100%">
+                  <el-option label="1分钟" value="1" />
+                  <el-option label="5分钟（推荐）" value="5" />
+                  <el-option label="15分钟" value="15" />
+                  <el-option label="30分钟" value="30" />
+                  <el-option label="60分钟" value="60" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="复权方式">
+                <el-select v-model="batchAdjust" placeholder="选择复权方式" style="width: 100%">
+                  <el-option label="不复权" value="" />
+                  <el-option label="前复权" value="qfq" />
+                  <el-option label="后复权（推荐）" value="hfq" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="并发数">
+                <el-input-number v-model="batchConcurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+              </el-form-item>
+            </el-form>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div style="font-size: 12px; line-height: 1.6;">
+                <p>• 自动从{{ collectionName === 'fund_etf_hist_min_em' ? 'ETF基金实时行情' : 'LOF基金实时行情' }}集合获取基金代码</p>
+                <p>• 1分钟数据仅返回近5个交易日且不复权</p>
+                <p>• 其他周期支持复权，建议使用后复权</p>
+                <p>• 数据达到1000条自动保存一次，退出时不足1000条也会保存</p>
+              </div>
+            </el-alert>
+          </div>
+        </template>
+
         <!-- 基金类型选择（仅对fund_spot_sina显示） -->
         <template v-if="collectionName === 'fund_spot_sina'">
           <el-divider content-position="left">基金类型选择</el-divider>
@@ -959,7 +1062,12 @@
               <p v-else-if="collectionName === 'fund_basic_info'">将从雪球获取所有基金的详细基本信息数据（fund_individual_basic_info_xq接口）</p>
               <p v-else-if="collectionName === 'fund_info_index_em'">将从东方财富网获取指数型基金的基本信息数据（fund_info_index_em接口）</p>
               <p v-else-if="collectionName === 'fund_purchase_status'">将从东方财富网获取所有基金的申购赎回状态数据（fund_purchase_em接口）</p>
+              <p v-else-if="collectionName === 'fund_open_fund_daily_em'">将从东方财富网一次性获取所有开放式基金的实时净值数据（fund_open_fund_daily_em接口），每个交易日16:00-23:00更新当日最新数据</p>
+              <p v-else-if="collectionName === 'fund_open_fund_info_em'">支持单个更新和批量更新开放式基金历史行情数据。单个更新：获取指定基金的单位净值走势和累计净值走势。批量更新：从fund_open_fund_daily_em集合获取基金代码列表后批量更新（fund_open_fund_info_em接口）</p>
+              <p v-else-if="collectionName === 'fund_money_fund_daily_em'">将从东方财富网一次性获取所有货币型基金的实时行情数据（fund_money_fund_daily_em接口），包括每万份收益、7日年化收益率等指标</p>
               <p v-else-if="collectionName === 'fund_spot_sina'">将从新浪财经获取{{ selectedFundType === '全部' ? '三种类型' : selectedFundType }}的实时行情数据（fund_etf_category_sina接口）</p>
+              <p v-else-if="collectionName === 'fund_etf_hist_min_em'">支持单个更新和批量更新ETF基金分时行情数据（fund_etf_hist_min_em接口）</p>
+              <p v-else-if="collectionName === 'fund_lof_hist_min_em'">支持单个更新和批量更新LOF基金分时行情数据（fund_lof_hist_min_em接口）</p>
               <p v-else>该集合暂不支持自动更新，如需更新请联系管理员</p>
             </div>
           </template>
@@ -978,6 +1086,46 @@
         >
           {{ refreshing ? '更新中...' : '开始更新' }}
         </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 数据概览对话框 -->
+    <el-dialog
+      v-model="overviewDialogVisible"
+      title="数据概览"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 10px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="集合名称" label-align="right">
+            {{ currentCollectionInfo.name }}
+          </el-descriptions-item>
+          <el-descriptions-item label="显示名称" label-align="right">
+            {{ currentCollectionInfo.displayName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据总数" label-align="right">
+            {{ formatNumber(stats?.total_count || 0) }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="字段数量" label-align="right">
+            {{ currentCollectionInfo.fieldCount }} 个
+          </el-descriptions-item>
+          <el-descriptions-item label="最后更新" label-align="right" :span="2">
+            {{ stats?.latest_date || stats?.latest_time || '暂无数据' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据来源" label-align="right" :span="2">
+            <el-link :href="currentCollectionInfo.dataSource" target="_blank" type="primary" v-if="currentCollectionInfo.dataSource !== '暂无'">
+              {{ currentCollectionInfo.dataSource }}
+            </el-link>
+            <span v-else>{{ currentCollectionInfo.dataSource }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" label-align="right" :span="2">
+            {{ collectionInfo?.description || `数据集合：${collectionName}` }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="overviewDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -1863,6 +2011,18 @@ const indexIndicatorOptions = [
   { label: '增强指数型', value: '增强指数型' }
 ]
 
+// ETF/LOF分时行情参数 - 单个更新
+const singleSymbol = ref('')
+const singlePeriod = ref('5')
+const singleAdjust = ref('hfq')
+const singleStartDate = ref('')
+const singleEndDate = ref('')
+
+// ETF/LOF分时行情参数 - 批量更新
+const batchPeriod = ref('5')
+const batchAdjust = ref('hfq')
+const batchConcurrency = ref(5)
+
 // 文件导入相关
 const uploadRef = ref()
 const importFiles = ref<any[]>([])
@@ -1881,6 +2041,453 @@ const remoteSyncStats = ref<any>(null)
 
 // 清空数据相关
 const clearing = ref(false)
+
+// 数据概览对话框
+const overviewDialogVisible = ref(false)
+
+// 集合固定信息映射
+const collectionStaticInfo: Record<string, any> = {
+  fund_name_em: {
+    name: 'fund_name_em',
+    displayName: '基金基本信息',
+    fieldCount: 5,
+    dataSource: 'http://fund.eastmoney.com/fund.html'
+  },
+  fund_basic_info: {
+    name: 'fund_basic_info',
+    displayName: '雪球基金基本信息',
+    fieldCount: 10,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_info_index_em: {
+    name: 'fund_info_index_em',
+    displayName: '指数型基金基本信息',
+    fieldCount: 18,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_purchase_status: {
+    name: 'fund_purchase_status',
+    displayName: '基金申购状态',
+    fieldCount: 12,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_etf_spot_em: {
+    name: 'fund_etf_spot_em',
+    displayName: 'ETF基金实时行情-东财',
+    fieldCount: 37,
+    dataSource: 'https://quote.eastmoney.com/center/gridlist.html#fund_etf'
+  },
+  fund_etf_spot_ths: {
+    name: 'fund_etf_spot_ths',
+    displayName: 'ETF基金实时行情-同花顺',
+    fieldCount: 15,
+    dataSource: 'http://q.10jqka.com.cn/'
+  },
+  fund_lof_spot_em: {
+    name: 'fund_lof_spot_em',
+    displayName: 'LOF基金实时行情-东财',
+    fieldCount: 15,
+    dataSource: 'https://quote.eastmoney.com/center/gridlist.html#fund_lof'
+  },
+  fund_spot_sina: {
+    name: 'fund_spot_sina',
+    displayName: '基金实时行情-新浪',
+    fieldCount: 15,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_etf_hist_min_em: {
+    name: 'fund_etf_hist_min_em',
+    displayName: 'ETF基金分时行情-东财',
+    fieldCount: 14,
+    dataSource: 'https://quote.eastmoney.com/sz159707.html'
+  },
+  fund_lof_hist_min_em: {
+    name: 'fund_lof_hist_min_em',
+    displayName: 'LOF基金分时行情-东财',
+    fieldCount: 14,
+    dataSource: 'https://quote.eastmoney.com/'
+  },
+  fund_etf_hist_em: {
+    name: 'fund_etf_hist_em',
+    displayName: 'ETF基金历史行情-东财',
+    fieldCount: 14,
+    dataSource: 'https://quote.eastmoney.com/'
+  },
+  fund_lof_hist_em: {
+    name: 'fund_lof_hist_em',
+    displayName: 'LOF基金历史行情-东财',
+    fieldCount: 14,
+    dataSource: 'https://quote.eastmoney.com/'
+  },
+  fund_hist_sina: {
+    name: 'fund_hist_sina',
+    displayName: '基金历史行情-新浪',
+    fieldCount: 7,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_open_fund_daily_em: {
+    name: 'fund_open_fund_daily_em',
+    displayName: '开放式基金实时行情-东方财富',
+    fieldCount: 12,
+    dataSource: 'http://fund.eastmoney.com/fund.html#os_0;isall_0;ft_;pt_1'
+  },
+  fund_open_fund_info_em: {
+    name: 'fund_open_fund_info_em',
+    displayName: '开放式基金历史行情-东方财富',
+    fieldCount: 10,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_money_fund_daily_em: {
+    name: 'fund_money_fund_daily_em',
+    displayName: '货币型基金实时行情-东方财富',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_money_fund_info_em: {
+    name: 'fund_money_fund_info_em',
+    displayName: '货币型基金历史行情-东方财富',
+    fieldCount: 6,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_financial_fund_daily_em: {
+    name: 'fund_financial_fund_daily_em',
+    displayName: '理财型基金实时行情-东方财富',
+    fieldCount: 12,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_financial_fund_info_em: {
+    name: 'fund_financial_fund_info_em',
+    displayName: '理财型基金历史行情-东方财富',
+    fieldCount: 6,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_graded_fund_daily_em: {
+    name: 'fund_graded_fund_daily_em',
+    displayName: '分级基金实时数据-东方财富',
+    fieldCount: 15,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_etf_fund_daily_em: {
+    name: 'fund_etf_fund_daily_em',
+    displayName: '场内交易基金实时数据-东方财富',
+    fieldCount: 12,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_graded_fund_info_em: {
+    name: 'fund_graded_fund_info_em',
+    displayName: '分级基金历史数据-东方财富',
+    fieldCount: 8,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_hk_hist_em: {
+    name: 'fund_hk_hist_em',
+    displayName: '香港基金-历史数据',
+    fieldCount: 13,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_etf_fund_info_em: {
+    name: 'fund_etf_fund_info_em',
+    displayName: '场内交易基金-历史行情',
+    fieldCount: 8,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_etf_dividend_sina: {
+    name: 'fund_etf_dividend_sina',
+    displayName: '基金累计分红-新浪',
+    fieldCount: 6,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_fh_em: {
+    name: 'fund_fh_em',
+    displayName: '基金分红-东财',
+    fieldCount: 8,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_cf_em: {
+    name: 'fund_cf_em',
+    displayName: '基金拆分-东方财富',
+    fieldCount: 10,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_fh_rank_em: {
+    name: 'fund_fh_rank_em',
+    displayName: '基金分红排行-东方财富',
+    fieldCount: 10,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_open_fund_rank_em: {
+    name: 'fund_open_fund_rank_em',
+    displayName: '开放式基金排行-东方财富',
+    fieldCount: 22,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_exchange_rank_em: {
+    name: 'fund_exchange_rank_em',
+    displayName: '场内交易基金排行-东财',
+    fieldCount: 21,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_money_rank_em: {
+    name: 'fund_money_rank_em',
+    displayName: '货币型基金排行-东财',
+    fieldCount: 23,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_lcx_rank_em: {
+    name: 'fund_lcx_rank_em',
+    displayName: '理财基金排行-东财',
+    fieldCount: 22,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_hk_rank_em: {
+    name: 'fund_hk_rank_em',
+    displayName: '香港基金排行-东财',
+    fieldCount: 23,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_individual_achievement_xq: {
+    name: 'fund_individual_achievement_xq',
+    displayName: '基金业绩-雪球',
+    fieldCount: 12,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_value_estimation_em: {
+    name: 'fund_value_estimation_em',
+    displayName: '净值估算-东财',
+    fieldCount: 15,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_individual_analysis_xq: {
+    name: 'fund_individual_analysis_xq',
+    displayName: '基金数据分析-雪球',
+    fieldCount: 11,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_individual_profit_probability_xq: {
+    name: 'fund_individual_profit_probability_xq',
+    displayName: '基金盈利概率-雪球',
+    fieldCount: 9,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_individual_detail_hold_xq: {
+    name: 'fund_individual_detail_hold_xq',
+    displayName: '基金持仓资产比例-雪球',
+    fieldCount: 11,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_overview_em: {
+    name: 'fund_overview_em',
+    displayName: '基金基本概况-东财',
+    fieldCount: 15,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_fee_em: {
+    name: 'fund_fee_em',
+    displayName: '基金交易费率-东财',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_individual_detail_info_xq: {
+    name: 'fund_individual_detail_info_xq',
+    displayName: '基金交易规则-雪球',
+    fieldCount: 14,
+    dataSource: 'https://xueqiu.com/'
+  },
+  fund_portfolio_hold_em: {
+    name: 'fund_portfolio_hold_em',
+    displayName: '基金持仓-东财',
+    fieldCount: 15,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_portfolio_bond_hold_em: {
+    name: 'fund_portfolio_bond_hold_em',
+    displayName: '债券持仓-东财',
+    fieldCount: 15,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_portfolio_industry_allocation_em: {
+    name: 'fund_portfolio_industry_allocation_em',
+    displayName: '行业配置-东财',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_portfolio_change_em: {
+    name: 'fund_portfolio_change_em',
+    displayName: '重大变动-东财',
+    fieldCount: 16,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_rating_all_em: {
+    name: 'fund_rating_all_em',
+    displayName: '基金评级总汇-东财',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_rating_sh_em: {
+    name: 'fund_rating_sh_em',
+    displayName: '上海证券评级-东财',
+    fieldCount: 21,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_rating_zs_em: {
+    name: 'fund_rating_zs_em',
+    displayName: '招商证券评级-东财',
+    fieldCount: 21,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_rating_ja_em: {
+    name: 'fund_rating_ja_em',
+    displayName: '济安金信评级-东财',
+    fieldCount: 21,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_manager_em: {
+    name: 'fund_manager_em',
+    displayName: '基金经理-东财',
+    fieldCount: 13,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_new_found_em: {
+    name: 'fund_new_found_em',
+    displayName: '新发基金-东财',
+    fieldCount: 12,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_scale_open_sina: {
+    name: 'fund_scale_open_sina',
+    displayName: '开放式基金规模-新浪',
+    fieldCount: 12,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_scale_close_sina: {
+    name: 'fund_scale_close_sina',
+    displayName: '封闭式基金规模-新浪',
+    fieldCount: 12,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_scale_structured_sina: {
+    name: 'fund_scale_structured_sina',
+    displayName: '分级子基金规模-新浪',
+    fieldCount: 12,
+    dataSource: 'http://vip.stock.finance.sina.com.cn/'
+  },
+  fund_aum_em: {
+    name: 'fund_aum_em',
+    displayName: '基金规模详情-东财',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_aum_trend_em: {
+    name: 'fund_aum_trend_em',
+    displayName: '基金规模走势-东财',
+    fieldCount: 11,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_aum_hist_em: {
+    name: 'fund_aum_hist_em',
+    displayName: '基金公司历年管理规模-东财',
+    fieldCount: 14,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  reits_realtime_em: {
+    name: 'reits_realtime_em',
+    displayName: 'REITs实时行情-东财',
+    fieldCount: 17,
+    dataSource: 'https://quote.eastmoney.com/'
+  },
+  reits_hist_em: {
+    name: 'reits_hist_em',
+    displayName: 'REITs历史行情-东财',
+    fieldCount: 12,
+    dataSource: 'https://quote.eastmoney.com/'
+  },
+  fund_report_stock_cninfo: {
+    name: 'fund_report_stock_cninfo',
+    displayName: '基金重仓股-巨潮',
+    fieldCount: 15,
+    dataSource: 'http://www.cninfo.com.cn/'
+  },
+  fund_report_industry_allocation_cninfo: {
+    name: 'fund_report_industry_allocation_cninfo',
+    displayName: '基金行业配置-巨潮',
+    fieldCount: 15,
+    dataSource: 'http://www.cninfo.com.cn/'
+  },
+  fund_report_asset_allocation_cninfo: {
+    name: 'fund_report_asset_allocation_cninfo',
+    displayName: '基金资产配置-巨潮',
+    fieldCount: 13,
+    dataSource: 'http://www.cninfo.com.cn/'
+  },
+  fund_scale_change_em: {
+    name: 'fund_scale_change_em',
+    displayName: '规模变动-东财',
+    fieldCount: 10,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_hold_structure_em: {
+    name: 'fund_hold_structure_em',
+    displayName: '持有人结构-东财',
+    fieldCount: 10,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_stock_position_lg: {
+    name: 'fund_stock_position_lg',
+    displayName: '股票型基金仓位-乐咕乐股',
+    fieldCount: 5,
+    dataSource: 'https://www.legulegu.com/'
+  },
+  fund_balance_position_lg: {
+    name: 'fund_balance_position_lg',
+    displayName: '平衡混合型基金仓位-乐咕乐股',
+    fieldCount: 5,
+    dataSource: 'https://www.legulegu.com/'
+  },
+  fund_linghuo_position_lg: {
+    name: 'fund_linghuo_position_lg',
+    displayName: '灵活配置型基金仓位-乐咕乐股',
+    fieldCount: 5,
+    dataSource: 'https://www.legulegu.com/'
+  },
+  fund_announcement_dividend_em: {
+    name: 'fund_announcement_dividend_em',
+    displayName: '基金公告分红配送-东财',
+    fieldCount: 6,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_announcement_report_em: {
+    name: 'fund_announcement_report_em',
+    displayName: '基金公告定期报告-东财',
+    fieldCount: 6,
+    dataSource: 'http://fund.eastmoney.com/'
+  },
+  fund_announcement_personnel_em: {
+    name: 'fund_announcement_personnel_em',
+    displayName: '基金公告人事调整-东财',
+    fieldCount: 6,
+    dataSource: 'http://fund.eastmoney.com/'
+  }
+}
+
+// 显示数据概览对话框
+const showOverviewDialog = () => {
+  overviewDialogVisible.value = true
+}
+
+// 获取当前集合的固定信息
+const currentCollectionInfo = computed(() => {
+  return collectionStaticInfo[collectionName.value] || {
+    name: collectionName.value,
+    displayName: collectionInfo.value?.display_name || collectionName.value,
+    fieldCount: fields.value.length,
+    dataSource: '暂无'
+  }
+})
+
+// 格式化数字
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('zh-CN')
+}
 
 // 加载数据
 const loadData = async () => {
@@ -1976,8 +2583,29 @@ const refreshData = async (mode: string = 'batch') => {
   progressStatus.value = ''
   
   try {
-    // 创建任务
+    // 构建参数
     const params: any = {}
+    
+    // ETF/LOF分时行情的参数处理
+    if (collectionName.value === 'fund_etf_hist_min_em' || collectionName.value === 'fund_lof_hist_min_em') {
+      if (mode === 'single') {
+        // 单个更新模式
+        if (!singleSymbol.value) {
+          ElMessage.warning('请输入基金代码')
+          return
+        }
+        params.symbol = singleSymbol.value
+        params.period = singlePeriod.value
+        params.adjust = singleAdjust.value
+        if (singleStartDate.value) params.start_date = singleStartDate.value
+        if (singleEndDate.value) params.end_date = singleEndDate.value
+      } else {
+        // 批量更新模式
+        params.period = batchPeriod.value
+        params.adjust = batchAdjust.value
+        params.concurrency = batchConcurrency.value
+      }
+    }
     if (collectionName.value === 'fund_basic_info') {
       if (mode === 'single' && singleFundCode.value) {
         params.fund_code = singleFundCode.value
@@ -1991,6 +2619,13 @@ const refreshData = async (mode: string = 'batch') => {
       params.indicator = indexIndicator.value || '全部'
     } else if (collectionName.value === 'fund_spot_sina') {
       params.symbol = selectedFundType.value || '全部'
+    } else if (collectionName.value === 'fund_open_fund_info_em') {
+      if (mode === 'single' && singleFundCode.value) {
+        params.fund_code = singleFundCode.value
+      } else {
+        // 批量更新模式
+        params.concurrency = concurrency.value
+      }
     }
     
     const res = await fundsApi.refreshCollectionData(collectionName.value, params)
@@ -2055,8 +2690,7 @@ const pollTaskStatus = async () => {
             message = `成功更新 ${task.result.saved} 条数据`
           }
           
-          progressMessage.value = message
-          ElMessage.success(message)
+          progressMessage.value = message + ' - 正在刷新数据...'
           
           // 清除轮询定时器
           if (progressTimer) {
@@ -2067,14 +2701,10 @@ const pollTaskStatus = async () => {
           // 刷新页面数据
           await loadData()
           
-          // 延迟1.5秒后关闭对话框
-          setTimeout(() => {
-            refreshDialogVisible.value = false
-            refreshing.value = false
-            progressPercentage.value = 0
-            progressStatus.value = ''
-            progressMessage.value = ''
-          }, 1500)
+          // 数据刷新完成后更新提示信息，但不关闭对话框
+          progressMessage.value = message + ' - 数据已刷新，请手动关闭对话框'
+          ElMessage.success(message)
+          refreshing.value = false
           
         } else if (task.status === 'failed') {
           progressStatus.value = 'exception'

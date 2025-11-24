@@ -41,7 +41,7 @@
             </div>
           </template>
           <div class="fields-list">
-             <el-tag v-for="field in collectionDef.fields" :key="field" class="field-tag">{{ field }}</el-tag>
+             <el-tag v-for="field in displayFields" :key="field" class="field-tag">{{ field }}</el-tag>
           </div>
        </el-card>
 
@@ -72,13 +72,88 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 更新数据对话框 -->
+    <el-dialog
+      v-model="updateDialogVisible"
+      title="更新数据"
+      width="500px"
+      @close="closeUpdateDialog"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="更新方式">
+          <el-radio-group v-model="updateMethod">
+            <el-radio label="file">文件导入</el-radio>
+            <el-radio label="remote">远程同步</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        
+        <el-form-item v-if="updateMethod === 'file'" label="选择文件">
+          <el-upload
+            class="upload-demo"
+            drag
+            action="#"
+            :auto-upload="false"
+            :on-change="handleFileChange"
+            :limit="1"
+          >
+            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+            <div class="el-upload__text">
+              拖拽文件到此处或 <em>点击上传</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持 CSV, JSON 格式的文件
+              </div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        
+        <el-form-item v-if="updateMethod === 'remote'" label="远程源">
+          <el-input v-model="remoteSource" placeholder="请输入远程数据源URL" />
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="closeUpdateDialog">关闭</el-button>
+          <el-button type="primary" @click="startUpdate" :loading="updating">
+            开始更新
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 数据概览对话框 -->
+    <el-dialog
+      v-model="overviewDialogVisible"
+      title="数据概览"
+      width="80%"
+    >
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="集合名称">{{ collectionName }}</el-descriptions-item>
+        <el-descriptions-item label="显示名称">{{ collectionDef?.display_name }}</el-descriptions-item>
+        <el-descriptions-item label="数据总数">{{ stats.total_count || 0 }} 条</el-descriptions-item>
+        <el-descriptions-item label="最后更新">
+          {{ stats.latest_update ? formatTime(stats.latest_update) : '暂无数据' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="字段数量">{{ collectionDef?.fields.length || 0 }} 个</el-descriptions-item>
+        <el-descriptions-item label="描述" :span="2">
+          {{ collectionDef?.description }}
+        </el-descriptions-item>
+      </el-descriptions>
+      
+      <template #footer>
+        <el-button type="primary" @click="overviewDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Box, ArrowLeft, Refresh, Delete } from '@element-plus/icons-vue'
+import { Box, ArrowLeft, Refresh, Delete, Document, Upload, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { optionsApi } from '@/api/options'
 

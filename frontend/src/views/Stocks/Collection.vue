@@ -2,29 +2,19 @@
   <div class="collection-page">
     <!-- 顶部信息区域 -->
     <div class="page-header">
-      <div class="header-content" v-if="collectionDef">
+      <div class="header-content">
         <div class="title-section">
           <h1 class="page-title">
             <el-icon class="title-icon"><Box /></el-icon>
-            {{ collectionDef.display_name }}
-            <span class="collection-name-en">({{ collectionName }})</span>
+            {{ collectionDef?.display_name || collectionName }}
           </h1>
-          <p class="page-description">{{ collectionDef.description }}</p>
+          <p class="page-description">{{ collectionDef?.description || '' }}</p>
         </div>
         <div class="header-actions">
-          <el-button @click="goBack" icon="ArrowLeft" round>返回数据集合列表</el-button>
-        </div>
-      </div>
-      <div class="header-content" v-else>
-        <div class="title-section">
-          <h1 class="page-title">
-            <el-icon class="title-icon"><Box /></el-icon>
-            未找到数据集合
-          </h1>
-          <p class="page-description">集合名称：{{ collectionName }}</p>
-        </div>
-        <div class="header-actions">
-          <el-button @click="goBack" icon="ArrowLeft" round>返回数据集合列表</el-button>
+          <el-button :icon="Box" @click="showOverview">数据概览</el-button>
+          <el-button :icon="Refresh" @click="refreshData" :loading="loading">刷新</el-button>
+          <el-button :icon="Download" type="primary" @click="handleRefreshData" :loading="refreshing">更新数据</el-button>
+          <el-button :icon="Delete" type="danger" @click="handleClearData">清空数据</el-button>
         </div>
       </div>
     </div>
@@ -36,132 +26,74 @@
       />
 
       <template v-else>
-        <!-- 操作按钮栏 -->
-        <div class="action-bar">
-          <el-button type="info" @click="showOverview">
-            <el-icon><Document /></el-icon>
-            数据概览
-          </el-button>
-          <el-button @click="refreshData">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
-          <el-button type="primary" @click="showUpdateDialog">
-            <el-icon><Upload /></el-icon>
-            更新数据
-          </el-button>
-          <el-button type="danger" @click="handleClearData">
-            <el-icon><Delete /></el-icon>
-            清空数据
-          </el-button>
-        </div>
-
-        <!-- 数据统计卡片 -->
-        <el-card shadow="hover" class="stats-card">
-          <template #header>
-            <div class="card-header">
-              <span>数据统计</span>
-              <div class="card-actions">
-                <el-button 
-                  type="primary" 
-                  size="small" 
-                  :loading="refreshing"
-                  @click="handleRefreshData"
-                >
-                  <el-icon><Refresh /></el-icon>
-                  更新数据
-                </el-button>
-                <el-button 
-                  type="danger" 
-                  size="small" 
-                  @click="handleClearData"
-                >
-                  <el-icon><Delete /></el-icon>
-                  清空数据
-                </el-button>
-              </div>
-            </div>
-          </template>
-          
-          <el-row :gutter="20" v-loading="statsLoading">
-            <el-col :span="8">
-              <el-statistic title="数据总数" :value="stats.total_count || 0">
-                <template #suffix>条</template>
-              </el-statistic>
-            </el-col>
-            <el-col :span="8">
-              <el-statistic title="最后更新">
-                <template #default>
-                  <span v-if="stats.latest_update">{{ formatTime(stats.latest_update) }}</span>
-                  <span v-else class="text-muted">暂无数据</span>
-                </template>
-              </el-statistic>
-            </el-col>
-            <el-col :span="8">
-              <el-statistic title="刷新状态">
-                <template #default>
-                  <el-tag v-if="refreshStatus" :type="getStatusType(refreshStatus.status)">
-                    {{ getStatusText(refreshStatus.status) }}
-                  </el-tag>
-                  <span v-else class="text-muted">无任务</span>
-                </template>
-              </el-statistic>
-            </el-col>
-          </el-row>
-          
-          <!-- 刷新进度条 -->
-          <div v-if="refreshing && refreshStatus" class="refresh-progress">
-            <el-progress 
-              :percentage="getProgressPercentage(refreshStatus)" 
-              :status="refreshStatus.status === 'failed' ? 'exception' : undefined"
-            >
-              <template #default="{ percentage }">
-                <span class="progress-text">{{ refreshStatus.message }} - {{ percentage }}%</span>
-              </template>
-            </el-progress>
-          </div>
-        </el-card>
-
-        <!-- 字段说明 -->
-        <el-card shadow="hover" class="fields-card">
-          <template #header>
-            <div class="card-header">
-              <span>字段说明</span>
-            </div>
-          </template>
-
-          <el-table :data="fieldRows" size="small" style="width: 100%">
-            <el-table-column prop="name" label="字段名" width="180" />
-            <el-table-column prop="description" label="说明" />
-            <el-table-column prop="example" label="示例值" width="200">
-              <template #default="{ row }">
-                <span v-if="row.example !== null && row.example !== undefined">{{ row.example }}</span>
-                <span v-else class="example-placeholder">-</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-
         <!-- 数据表格 -->
         <el-card shadow="hover" class="data-card">
           <template #header>
             <div class="card-header">
-              <span>数据预览</span>
+              <div style="display: flex; align-items: center;">
+                <span>数据预览</span>
+                <el-popover
+                  placement="right"
+                  title="字段说明"
+                  :width="600"
+                  trigger="hover"
+                  v-if="fieldRows && fieldRows.length > 0"
+                >
+                  <template #reference>
+                    <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
+                  </template>
+                  <el-table :data="fieldRows" stripe border size="small" style="width: 100%">
+                    <el-table-column prop="name" label="字段名" width="180" />
+                    <el-table-column prop="description" label="说明" />
+                    <el-table-column prop="example" label="示例值" width="200">
+                      <template #default="{ row }">
+                        <span v-if="row.example !== null && row.example !== undefined">{{ row.example }}</span>
+                        <span v-else class="example-placeholder">-</span>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </el-popover>
+              </div>
               <div class="card-actions">
+                <el-input
+                  v-model="filterValue"
+                  placeholder="搜索..."
+                  size="small"
+                  style="width: 200px; margin-right: 8px;"
+                  clearable
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="filterField"
+                  placeholder="搜索字段"
+                  size="small"
+                  style="width: 150px; margin-right: 8px;"
+                  clearable
+                >
+                  <el-option
+                    v-for="field in displayFields"
+                    :key="field"
+                    :label="field"
+                    :value="field"
+                  />
+                </el-select>
                 <el-button size="small" @click="refreshData">刷新</el-button>
               </div>
             </div>
           </template>
 
           <el-table
-            :data="rows"
+            :data="filteredRows"
             size="small"
             stripe
             v-loading="loading"
             style="width: 100%"
           >
             <el-table-column
-              v-for="field in collectionDef.fields"
+              v-for="field in displayFields"
               :key="field"
               :prop="field"
               :label="field"
@@ -182,18 +114,57 @@
         </el-card>
       </template>
     </div>
+
+    <!-- 数据概览对话框 -->
+    <el-dialog
+      v-model="overviewDialogVisible"
+      title="数据概览"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 10px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="集合名称" label-align="right">
+            {{ currentCollectionInfo.name }}
+          </el-descriptions-item>
+          <el-descriptions-item label="显示名称" label-align="right">
+            {{ currentCollectionInfo.displayName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据总数" label-align="right">
+            {{ formatNumber(stats.total_count || 0) }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="字段数量" label-align="right">
+            {{ currentCollectionInfo.fieldCount }} 个
+          </el-descriptions-item>
+          <el-descriptions-item label="最后更新" label-align="right" :span="2">
+            {{ stats.latest_update ? formatTime(stats.latest_update) : '暂无数据' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据来源" label-align="right" :span="2">
+            <el-link :href="currentCollectionInfo.dataSource" target="_blank" type="primary" v-if="currentCollectionInfo.dataSource !== '暂无'">
+              {{ currentCollectionInfo.dataSource }}
+            </el-link>
+            <span v-else>{{ currentCollectionInfo.dataSource }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" label-align="right" :span="2">
+            {{ collectionDef?.description || `数据集合：${collectionName}` }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="overviewDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Box, Refresh, Delete } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
+import { Box, Refresh, Delete, Download, Search, QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { stocksApi, type CollectionStatsResponse, type RefreshStatusResponse } from '@/api/stocks'
 
 const route = useRoute()
-const router = useRouter()
 
 const collectionName = computed(() => (route.params.collectionName as string) || '')
 
@@ -245,16 +216,61 @@ const collectionDefinitions: Record<string, CollectionDefinition> = {
 
 const collectionDef = computed<CollectionDefinition | null>(() => {
   const name = collectionName.value
-  return collectionDefinitions[name] || null
+  // 如果有预定义的集合定义则使用，否则创建默认定义
+  if (collectionDefinitions[name]) {
+    return collectionDefinitions[name]
+  }
+  
+  // 为未定义的集合创建默认定义
+  if (name) {
+    return {
+      display_name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: `数据集合: ${name}`,
+      fields: [] // 字段将从实际数据中获取
+    }
+  }
+  
+  return null
 })
 
 const fieldRows = computed<FieldRow[]>(() => {
   if (!collectionDef.value) return []
-  return collectionDef.value.fields.map((name) => ({
-    name,
-    description: '',
-    example: null,
-  }))
+
+  // 优先使用预定义的字段
+  if (collectionDef.value.fields && collectionDef.value.fields.length > 0) {
+    return collectionDef.value.fields.map((name) => ({
+      name,
+      description: '',
+      example: null,
+    }))
+  }
+
+  // 如果没有预定义字段，从实际数据中获取
+  if (rows.value.length > 0) {
+    const firstRow = rows.value[0]
+    return Object.keys(firstRow).map((name) => ({
+      name,
+      description: '',
+      example: firstRow[name],
+    }))
+  }
+
+  return []
+})
+
+// 用于表格显示的字段列表
+const displayFields = computed<string[]>(() => {
+  // 优先使用预定义的字段
+  if (collectionDef.value?.fields && collectionDef.value.fields.length > 0) {
+    return collectionDef.value.fields
+  }
+  
+  // 从实际数据中获取字段
+  if (rows.value.length > 0) {
+    return Object.keys(rows.value[0])
+  }
+  
+  return []
 })
 
 const rows = ref<any[]>([])
@@ -262,6 +278,39 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+
+// 本地过滤条件
+const filterField = ref('')
+const filterValue = ref('')
+
+// 过滤后的行数据（前端模糊搜索）
+const filteredRows = computed(() => {
+  if (!filterValue.value) {
+    return rows.value
+  }
+
+  const keyword = filterValue.value.toLowerCase()
+
+  return rows.value.filter((row) => {
+    if (filterField.value) {
+      const value = row[filterField.value]
+      return (
+        value !== null &&
+        value !== undefined &&
+        String(value).toLowerCase().includes(keyword)
+      )
+    }
+
+    // 未选择字段时，在所有字段中模糊搜索
+    return Object.values(row).some((value) => {
+      return (
+        value !== null &&
+        value !== undefined &&
+        String(value).toLowerCase().includes(keyword)
+      )
+    })
+  })
+})
 
 // 统计信息
 const stats = ref<CollectionStatsResponse>({
@@ -275,6 +324,88 @@ const refreshing = ref(false)
 const refreshStatus = ref<RefreshStatusResponse | null>(null)
 const currentTaskId = ref<string | null>(null)
 let statusCheckInterval: number | null = null
+
+// 对话框相关
+const overviewDialogVisible = ref(false)
+
+// 集合固定信息映射
+const collectionStaticInfo: Record<string, any> = {
+  stock_individual_info_em: {
+    name: 'stock_individual_info_em',
+    displayName: '个股信息查询-东财',
+    fieldCount: 15,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_individual_basic_info_xq: {
+    name: 'stock_individual_basic_info_xq',
+    displayName: '个股信息查询-雪球',
+    fieldCount: 12,
+    dataSource: 'https://xueqiu.com/'
+  },
+  stock_zh_a_spot_em: {
+    name: 'stock_zh_a_spot_em',
+    displayName: '沪深京A股实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/center/gridlist.html#hs_a_board'
+  },
+  stock_zh_a_hist: {
+    name: 'stock_zh_a_hist',
+    displayName: 'A股历史行情-东财',
+    fieldCount: 13,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_zh_a_hist_min_em: {
+    name: 'stock_zh_a_hist_min_em',
+    displayName: 'A股分时数据-东财',
+    fieldCount: 5,
+    dataSource: 'http://push2.eastmoney.com/'
+  },
+  stock_sh_a_spot_em: {
+    name: 'stock_sh_a_spot_em',
+    displayName: '沪A股实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_sz_a_spot_em: {
+    name: 'stock_sz_a_spot_em',
+    displayName: '深A股实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_cyb_spot_em: {
+    name: 'stock_cyb_spot_em',
+    displayName: '创业板实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_kcb_spot_em: {
+    name: 'stock_kcb_spot_em',
+    displayName: '科创板实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/'
+  },
+  stock_bj_a_spot_em: {
+    name: 'stock_bj_a_spot_em',
+    displayName: '京A股实时行情-东财',
+    fieldCount: 35,
+    dataSource: 'http://quote.eastmoney.com/'
+  }
+}
+
+// 获取当前集合的固定信息
+const currentCollectionInfo = computed(() => {
+  return collectionStaticInfo[collectionName.value] || {
+    name: collectionName.value,
+    displayName: collectionDef.value?.display_name || collectionName.value,
+    fieldCount: displayFields.value.length,
+    dataSource: '暂无'
+  }
+})
+
+// 格式化数字
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('zh-CN')
+}
 
 const loadCollectionPage = async () => {
   const name = collectionName.value
@@ -311,9 +442,6 @@ const handlePageChange = (page: number) => {
   refreshData()
 }
 
-const goBack = () => {
-  router.push('/stocks/collections')
-}
 
 // 加载统计信息
 const loadStats = async () => {
@@ -439,41 +567,20 @@ const formatTime = (timeStr: string) => {
   }
 }
 
-// 获取状态类型
-const getStatusType = (status: string) => {
-  const typeMap: Record<string, any> = {
-    pending: 'info',
-    running: 'warning',
-    completed: 'success',
-    failed: 'danger'
-  }
-  return typeMap[status] || 'info'
-}
 
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const textMap: Record<string, string> = {
-    pending: '等待中',
-    running: '进行中',
-    completed: '已完成',
-    failed: '失败'
-  }
-  return textMap[status] || status
-}
-
-// 获取进度百分比
-const getProgressPercentage = (status: RefreshStatusResponse) => {
-  if (!status.total || status.total === 0) return 0
-  return Math.round((status.progress / status.total) * 100)
+// 显示数据概览
+const showOverview = () => {
+  overviewDialogVisible.value = true
 }
 
 onMounted(() => {
-  if (!collectionDef.value) {
-    ElMessage.warning('未找到对应的数据集合定义')
-    return
+  // 即使没有预定义的集合，也尝试加载数据
+  if (collectionName.value) {
+    // 加载统计信息和数据
+    Promise.all([loadStats(), refreshData()])
+  } else {
+    ElMessage.warning('集合名称不能为空')
   }
-  // 加载统计信息和数据
-  Promise.all([loadStats(), refreshData()])
 })
 
 onUnmounted(() => {
@@ -485,60 +592,56 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .collection-page {
   padding: 20px;
-  background: #f5f7fa;
-  min-height: calc(100vh - 60px);
 }
 
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
 
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 24px;
-    background: linear-gradient(135deg, #409eff 0%, #3a8ee6 100%);
-    border-radius: 12px;
-    color: white;
-    box-shadow: 0 4px 20px rgba(64, 158, 255, 0.4);
-  }
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
 
-  .title-section {
-    flex: 1;
-  }
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
 
-  .page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 26px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
+.title-icon {
+  font-size: 28px;
+  color: #409eff;
+}
 
-    .title-icon {
-      font-size: 32px;
-    }
+.page-description {
+  margin: 8px 0 0 0;
+  color: #909399;
+  font-size: 14px;
+}
 
-    .collection-name-en {
-      font-size: 16px;
-      opacity: 0.9;
-    }
-  }
-
-  .page-description {
-    font-size: 14px;
-    opacity: 0.9;
-    margin: 0;
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-  }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .content {
   margin-top: 8px;
+}
+
+.action-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .fields-card {

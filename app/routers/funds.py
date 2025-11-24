@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, Body, UploadFile, File
 from pydantic import BaseModel
@@ -117,7 +117,19 @@ async def list_fund_collections(current_user: dict = Depends(get_current_user)):
                 "display_name": "ETF基金实时行情-东财",
                 "description": "东方财富网-ETF实时行情数据，包括最新价、涨跌幅、成交量、资金流向等",
                 "route": "/funds/collections/fund_etf_spot_em",
-                "fields": ["代码", "名称", "最新价", "IOPV实时估值", "基金折价率", "涨跌额", "涨跌幅", "成交量", "成交额", "开盘价", "最高价", "最低价", "昨收", "换手率", "量比", "委比", "主力净流入-净额", "主力净流入-净占比", "数据日期", "更新时间"],
+                "fields": [
+                    "代码", "名称", "最新价", "IOPV实时估值", "基金折价率", "涨跌额", "涨跌幅", 
+                    "成交量", "成交额", "开盘价", "最高价", "最低价", "昨收", "换手率", 
+                    "量比", "委比", "外盘", "内盘",
+                    "主力净流入-净额", "主力净流入-净占比", 
+                    "超大单净流入-净额", "超大单净流入-净占比",
+                    "大单净流入-净额", "大单净流入-净占比", 
+                    "中单净流入-净额", "中单净流入-净占比",
+                    "小单净流入-净额", "小单净流入-净占比",
+                    "现手", "买一", "卖一",
+                    "最新份额", "流通市值", "总市值",
+                    "数据日期", "更新时间"
+                ],
             },
             {
                 "name": "fund_etf_spot_ths",
@@ -2579,4 +2591,139 @@ async def sync_fund_fh_em(
         }
     except Exception as e:
         logger.error(f"同步基金分红数据失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+# ==================== 基金公告人事调整批量更新 API ====================
+
+@router.post("/collections/fund_announcement_personnel_em/update/single")
+async def update_single_fund_personnel(
+    background_tasks: BackgroundTasks,
+    fund_code: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user),
+):
+    """更新单个基金的公告人事调整数据"""
+    try:
+        from app.services.fund_announcement_personnel_batch_service import FundAnnouncementPersonnelBatchService
+        
+        task_manager = get_task_manager()
+        
+        # 创建任务
+        task_id = task_manager.create_task(
+            task_type="update_single_fund_personnel",
+            description=f"更新基金 {fund_code} 公告人事调整数据"
+        )
+        
+        # 在后台异步执行
+        async def do_update():
+            try:
+                service = FundAnnouncementPersonnelBatchService(task_manager)
+                await service.update_single_fund(task_id, fund_code)
+            except Exception as e:
+                logger.error(f"后台更新任务失败: {e}", exc_info=True)
+                try:
+                    task_manager.fail_task(task_id, str(e))
+                except Exception as inner_e:
+                    logger.error(f"更新任务状态失败: {inner_e}", exc_info=True)
+        
+        background_tasks.add_task(do_update)
+        
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"更新任务已创建"
+            }
+        }
+    except Exception as e:
+        logger.error(f"创建更新任务失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/fund_announcement_personnel_em/update/batch")
+async def update_batch_fund_personnel(
+    background_tasks: BackgroundTasks,
+    fund_codes: List[str] = Body(..., embed=True),
+    batch_size: int = Body(100, embed=True),
+    current_user: dict = Depends(get_current_user),
+):
+    """批量更新多个基金的公告人事调整数据"""
+    try:
+        from app.services.fund_announcement_personnel_batch_service import FundAnnouncementPersonnelBatchService
+        
+        task_manager = get_task_manager()
+        
+        # 创建任务
+        task_id = task_manager.create_task(
+            task_type="update_batch_fund_personnel",
+            description=f"批量更新 {len(fund_codes)} 个基金的公告人事调整数据"
+        )
+        
+        # 在后台异步执行
+        async def do_update():
+            try:
+                service = FundAnnouncementPersonnelBatchService(task_manager)
+                await service.update_batch_funds(task_id, fund_codes, batch_size)
+            except Exception as e:
+                logger.error(f"后台更新任务失败: {e}", exc_info=True)
+                try:
+                    task_manager.fail_task(task_id, str(e))
+                except Exception as inner_e:
+                    logger.error(f"更新任务状态失败: {inner_e}", exc_info=True)
+        
+        background_tasks.add_task(do_update)
+        
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"批量更新任务已创建"
+            }
+        }
+    except Exception as e:
+        logger.error(f"创建批量更新任务失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/fund_announcement_personnel_em/update/incremental")
+async def update_incremental_fund_personnel(
+    background_tasks: BackgroundTasks,
+    limit: int = Body(None, embed=True),
+    current_user: dict = Depends(get_current_user),
+):
+    """增量更新：从fund_name_em获取基金代码并批量更新"""
+    try:
+        from app.services.fund_announcement_personnel_batch_service import FundAnnouncementPersonnelBatchService
+        
+        task_manager = get_task_manager()
+        
+        # 创建任务
+        task_id = task_manager.create_task(
+            task_type="update_incremental_fund_personnel",
+            description="增量更新基金公告人事调整数据"
+        )
+        
+        # 在后台异步执行
+        async def do_update():
+            try:
+                service = FundAnnouncementPersonnelBatchService(task_manager)
+                await service.update_incremental(task_id, limit)
+            except Exception as e:
+                logger.error(f"后台更新任务失败: {e}", exc_info=True)
+                try:
+                    task_manager.fail_task(task_id, str(e))
+                except Exception as inner_e:
+                    logger.error(f"更新任务状态失败: {inner_e}", exc_info=True)
+        
+        background_tasks.add_task(do_update)
+        
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"增量更新任务已创建"
+            }
+        }
+    except Exception as e:
+        logger.error(f"创建增量更新任务失败: {e}", exc_info=True)
         return {"success": False, "error": str(e)}

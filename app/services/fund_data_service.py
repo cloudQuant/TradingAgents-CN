@@ -1483,6 +1483,42 @@ class FundDataService:
             async for doc in self.col_fund_etf_spot.aggregate(pipeline_date):
                 latest_date = doc.get('latest')
             
+            # 统计基金类型分布（基于名称关键词分类）
+            type_keywords = {
+                '行业ETF': ['芯片', '半导体', '医药', '消费', '金融', '地产', '能源', '化工', '军工', '汽车', '通信', '传媒', '电子', '计算机', '机械', '电气', '建筑', '钢铁', '有色', '煤炭', '石油', '银行', '证券', '保险'],
+                '宽基ETF': ['沪深300', '中证500', '创业板', '科创50', '上证50', '中证1000', '红利', '价值', '成长', '质量', '低波'],
+                '主题ETF': ['新能源', '科技', '碳中和', '数字经济', '大数据', '人工智能', '5G', '物联网', '云计算', '智能', '创新', '转型'],
+                '行业指数ETF': ['证券公司', '非银金融', '房地产', '国防军工', '食品饮料', '家用电器', '纺织服装', '农林牧渔'],
+                '港股ETF': ['港股', '恒生', '香港', 'H股', 'HKEX'],
+                '债券ETF': ['债', '国债', '地方债', '企业债', '可转债', '信用债'],
+                '商品ETF': ['黄金', '白银', '原油', '商品', '有色金属', '贵金属'],
+                '跨境ETF': ['美股', '纳斯达克', '标普', '德国', '法国', '日本', '印度', '越南', '全球'],
+            }
+            
+            type_counts: Dict[str, int] = {}
+            
+            # 获取所有基金名称并分类
+            async for doc in self.col_fund_etf_spot.find({}, {'名称': 1}):
+                name = doc.get('名称', '')
+                classified = False
+                
+                # 按关键词匹配类型
+                for fund_type, keywords in type_keywords.items():
+                    if any(keyword in name for keyword in keywords):
+                        type_counts[fund_type] = type_counts.get(fund_type, 0) + 1
+                        classified = True
+                        break
+                
+                # 未匹配的归为其他类型
+                if not classified:
+                    type_counts['其他ETF'] = type_counts.get('其他ETF', 0) + 1
+            
+            # 转换为列表格式
+            type_stats = [
+                {'type': fund_type, 'count': count}
+                for fund_type, count in sorted(type_counts.items(), key=lambda x: x[1], reverse=True)
+            ]
+            
             return {
                 'total_count': total_count,
                 'rise_count': rise_count,
@@ -1490,7 +1526,8 @@ class FundDataService:
                 'flat_count': flat_count,
                 'top_volume': top_volume,
                 'top_gainers': top_gainers,
-                'latest_date': latest_date
+                'latest_date': latest_date,
+                'type_stats': type_stats
             }
         except Exception as e:
             logger.error(f"获取ETF基金实时行情统计失败: {e}", exc_info=True)
@@ -2174,7 +2211,7 @@ class FundDataService:
             df = df.where(pd.notnull(df), None)
 
             total_count = len(df)
-            batch_size = 500
+            batch_size = 1000  # 达到1000条保存一次，退出时不足1000条也保存
             total_saved = 0
 
             for batch_start in range(0, total_count, batch_size):
@@ -2343,7 +2380,7 @@ class FundDataService:
             df = df.where(pd.notnull(df), None)
 
             total_count = len(df)
-            batch_size = 500
+            batch_size = 1000  # 达到1000条保存一次，退出时不足1000条也保存
             total_saved = 0
 
             for batch_start in range(0, total_count, batch_size):
@@ -3097,6 +3134,8 @@ class FundDataService:
 
             ops = []
             total = len(df)
+            batch_size = 1000  # 每批处理1000条
+            total_saved = 0
 
             for idx, row in df.iterrows():
                 fund_code = str(row.get("fund_code", "")).strip()
@@ -3128,19 +3167,31 @@ class FundDataService:
                     )
                 )
 
+                # 批量保存：每1000条保存一次
+                if len(ops) >= batch_size:
+                    result = await self.col_fund_open_fund_daily_em.bulk_write(ops, ordered=False)
+                    batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                    total_saved += batch_saved
+                    logger.info(f"已保存 {len(ops)} 条数据，累计保存 {total_saved} 条")
+                    ops = []  # 清空已处理的操作
+
                 # 进度回调
                 if progress_callback and (idx + 1) % 100 == 0:
                     await progress_callback(idx + 1, total)
 
-            if not ops:
+            # 保存剩余数据
+            if ops:
+                result = await self.col_fund_open_fund_daily_em.bulk_write(ops, ordered=False)
+                batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                total_saved += batch_saved
+                logger.info(f"已保存剩余 {len(ops)} 条数据")
+
+            if total_saved == 0:
                 logger.warning("没有有效数据可保存")
                 return 0
 
-            result = await self.col_fund_open_fund_daily_em.bulk_write(ops, ordered=False)
-            saved_count = (result.upserted_count or 0) + (result.modified_count or 0)
-
-            logger.info(f"成功保存 {saved_count} 条开放式基金实时行情数据（日期: {date_str}）")
-            return saved_count
+            logger.info(f"成功保存 {total_saved} 条开放式基金实时行情数据（日期: {date_str}）")
+            return total_saved
 
         except Exception as e:
             logger.error(f"保存开放式基金实时行情数据失败: {e}", exc_info=True)
@@ -3314,6 +3365,107 @@ class FundDataService:
 
         except Exception as e:
             logger.error(f"保存开放式基金历史行情数据失败: {e}", exc_info=True)
+            raise
+
+    async def save_fund_open_fund_info_merged_data(
+        self, df_unit: pd.DataFrame, df_acc: pd.DataFrame, fund_code: str, progress_callback=None
+    ) -> int:
+        """合并单位净值走势和累计净值走势，保存到数据库
+        
+        Args:
+            df_unit: 单位净值走势DataFrame
+            df_acc: 累计净值走势DataFrame
+            fund_code: 基金代码
+            progress_callback: 进度回调函数
+            
+        Returns:
+            保存的记录数
+        """
+        if df_unit is None or df_unit.empty or df_acc is None or df_acc.empty:
+            logger.warning(f"单位净值或累计净值数据为空（{fund_code}）")
+            return 0
+            
+        try:
+            df_unit = df_unit.copy()
+            df_acc = df_acc.copy()
+            
+            # 确保两个DataFrame都有日期字段
+            if "净值日期" not in df_unit.columns or "净值日期" not in df_acc.columns:
+                logger.error(f"数据缺少净值日期字段: df_unit columns={df_unit.columns.tolist()}, df_acc columns={df_acc.columns.tolist()}")
+                return 0
+            
+            # 重命名列以便区分
+            df_unit = df_unit.rename(columns={"单位净值": "unit_net_value", "日增长率": "daily_growth_rate"})
+            df_acc = df_acc.rename(columns={"累计净值": "cumulative_net_value"})
+            
+            # 按日期合并
+            merged_df = pd.merge(
+                df_unit[["净值日期", "unit_net_value", "daily_growth_rate"]],
+                df_acc[["净值日期", "cumulative_net_value"]],
+                on="净值日期",
+                how="inner"
+            )
+            
+            if merged_df.empty:
+                logger.warning(f"合并后数据为空（{fund_code}）")
+                return 0
+            
+            # 批量保存
+            ops = []
+            total = len(merged_df)
+            batch_size = 1000
+            total_saved = 0
+            
+            for idx, row in merged_df.iterrows():
+                date_value = str(row.get("净值日期", "")).strip()
+                if not date_value or date_value == "nan":
+                    continue
+                
+                record = {
+                    "fund_code": fund_code,
+                    "date": date_value,
+                    "unit_net_value": float(row["unit_net_value"]) if pd.notna(row.get("unit_net_value")) else None,
+                    "daily_growth_rate": float(row["daily_growth_rate"]) if pd.notna(row.get("daily_growth_rate")) else None,
+                    "cumulative_net_value": float(row["cumulative_net_value"]) if pd.notna(row.get("cumulative_net_value")) else None,
+                }
+                
+                # 唯一键：fund_code + date
+                ops.append(
+                    UpdateOne(
+                        {"fund_code": fund_code, "date": date_value},
+                        {"$set": record},
+                        upsert=True,
+                    )
+                )
+                
+                # 批量保存：每1000条保存一次
+                if len(ops) >= batch_size:
+                    result = await self.col_fund_open_fund_info_em.bulk_write(ops, ordered=False)
+                    batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                    total_saved += batch_saved
+                    logger.info(f"已保存 {len(ops)} 条数据，累计保存 {total_saved} 条（{fund_code}）")
+                    ops = []
+                
+                # 进度回调
+                if progress_callback and (idx + 1) % 100 == 0:
+                    await progress_callback(idx + 1, total)
+            
+            # 保存剩余数据
+            if ops:
+                result = await self.col_fund_open_fund_info_em.bulk_write(ops, ordered=False)
+                batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                total_saved += batch_saved
+                logger.info(f"已保存剩余 {len(ops)} 条数据（{fund_code}）")
+            
+            if total_saved == 0:
+                logger.warning("没有有效数据可保存")
+                return 0
+            
+            logger.info(f"成功保存 {total_saved} 条开放式基金历史行情数据（{fund_code}）")
+            return total_saved
+            
+        except Exception as e:
+            logger.error(f"保存合并后的开放式基金历史行情数据失败: {e}", exc_info=True)
             raise
 
     async def clear_fund_open_fund_info_data(self) -> int:
@@ -11605,24 +11757,28 @@ class FundDataService:
                             doc[key] = value.strftime('%Y-%m-%d')
                     
                     # 添加元数据
-                    # 假设字段包含：公告日期、公告标题、公告内容等
+                    # 字段：基金代码、公告标题、基金名称、公告日期、报告ID
                     
-                    fund_code = str(doc.get('code', '')) or str(doc.get('symbol', ''))
+                    fund_code = str(doc.get('基金代码', '')) or str(doc.get('code', ''))
                     title = str(doc.get('公告标题', '')) or str(doc.get('title', ''))
+                    fund_name = str(doc.get('基金名称', '')) or str(doc.get('name', ''))
                     date_str = str(doc.get('公告日期', '')) or str(doc.get('date', ''))
+                    report_id = str(doc.get('报告ID', '')) or str(doc.get('report_id', ''))
                     
                     doc['fund_code'] = fund_code
                     doc['title'] = title
+                    doc['fund_name'] = fund_name
                     doc['date'] = date_str
+                    doc['report_id'] = report_id
                     doc['source'] = 'akshare'
                     doc['endpoint'] = 'fund_announcement_personnel_em'
                     doc['updated_at'] = datetime.now().isoformat()
                     
-                    # 唯一标识：fund_code + title + date
-                    if fund_code and title and date_str:
+                    # 唯一标识：fund_code + report_id（报告ID是唯一的）
+                    if fund_code and report_id:
                         ops.append(
                             UpdateOne(
-                                {'fund_code': fund_code, 'title': title, 'date': date_str},
+                                {'fund_code': fund_code, 'report_id': report_id},
                                 {'$set': doc},
                                 upsert=True
                             )

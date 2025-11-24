@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     MONGO_MIN_CONNECTIONS: int = Field(default=10)
     # MongoDB超时参数（毫秒）- 用于处理大量历史数据
     MONGO_CONNECT_TIMEOUT_MS: int = Field(default=30000)  # 连接超时：30秒（原为10秒）
-    MONGO_SOCKET_TIMEOUT_MS: int = Field(default=60000)   # 套接字超时：60秒（原为20秒）
+    MONGO_SOCKET_TIMEOUT_MS: int = Field(default=300000)  # 套接字超时：300秒（5分钟，用于批量保存大数据）
     MONGO_SERVER_SELECTION_TIMEOUT_MS: int = Field(default=5000)  # 服务器选择超时：5秒
 
     @property
