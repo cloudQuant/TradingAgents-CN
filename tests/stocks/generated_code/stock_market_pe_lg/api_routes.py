@@ -1,0 +1,42 @@
+
+# 主板市盈率 - stock_market_pe_lg
+@router.get("/collections/stock_market_pe_lg")
+async def get_stock_market_pe_lg(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    """获取主板市盈率数据"""
+    from app.services.stock.stock_market_pe_lg_service import StockMarketPeLgService
+    service = StockMarketPeLgService(db)
+    return await service.get_data(skip=skip, limit=limit)
+
+
+@router.get("/collections/stock_market_pe_lg/overview")
+async def get_stock_market_pe_lg_overview(
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    """获取主板市盈率数据概览"""
+    from app.services.stock.stock_market_pe_lg_service import StockMarketPeLgService
+    service = StockMarketPeLgService(db)
+    return await service.get_overview()
+
+
+@router.post("/collections/stock_market_pe_lg/refresh")
+async def refresh_stock_market_pe_lg(
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    """刷新主板市盈率数据"""
+    from app.services.stock.stock_market_pe_lg_service import StockMarketPeLgService
+    service = StockMarketPeLgService(db)
+    return await service.refresh_data()
+
+
+@router.delete("/collections/stock_market_pe_lg/clear")
+async def clear_stock_market_pe_lg(
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    """清空主板市盈率数据"""
+    from app.services.stock.stock_market_pe_lg_service import StockMarketPeLgService
+    service = StockMarketPeLgService(db)
+    return await service.clear_data()

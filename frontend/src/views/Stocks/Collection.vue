@@ -36,6 +36,26 @@
       />
 
       <template v-else>
+        <!-- 操作按钮栏 -->
+        <div class="action-bar">
+          <el-button type="info" @click="showOverview">
+            <el-icon><Document /></el-icon>
+            数据概览
+          </el-button>
+          <el-button @click="refreshData">
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+          <el-button type="primary" @click="showUpdateDialog">
+            <el-icon><Upload /></el-icon>
+            更新数据
+          </el-button>
+          <el-button type="danger" @click="handleClearData">
+            <el-icon><Delete /></el-icon>
+            清空数据
+          </el-button>
+        </div>
+
         <!-- 数据统计卡片 -->
         <el-card shadow="hover" class="stats-card">
           <template #header>

@@ -49,6 +49,7 @@ Thumbs.db
 config/*.json
 !config/*.json.example
 data/**/*.json
+data/db/*
 eval_results/**/*.json
 web/data/**/*.json
 web/eval_results/**/*.json

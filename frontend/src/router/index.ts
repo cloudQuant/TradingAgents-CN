@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
         name: 'BondCollections',
         component: () => import('@/views/Bonds/Collections.vue'),
         meta: {
-          title: '数据集合',
+          title: '债券数据集合',
           requiresAuth: true
         }
       },
@@ -83,7 +83,7 @@ const routes: RouteRecordRaw[] = [
         name: 'BondCollection',
         component: () => import('@/views/Bonds/Collection.vue'),
         meta: {
-          title: '数据集合详情',
+          title: '债券数据集合详情',
           requiresAuth: true
         }
       },
@@ -119,7 +119,7 @@ const routes: RouteRecordRaw[] = [
         name: 'FundCollections',
         component: () => import('@/views/Funds/Collections.vue'),
         meta: {
-          title: '数据集合',
+          title: '基金数据集合',
           requiresAuth: true
         }
       },
@@ -128,7 +128,7 @@ const routes: RouteRecordRaw[] = [
         name: 'FundCollection',
         component: () => import('@/views/Funds/Collection.vue'),
         meta: {
-          title: '数据集合详情',
+          title: '基金数据集合详情',
           requiresAuth: true
         }
       },
@@ -173,7 +173,7 @@ const routes: RouteRecordRaw[] = [
         name: 'FuturesCollections',
         component: () => import('@/views/Futures/Collections.vue'),
         meta: {
-          title: '数据集合',
+          title: '期货数据集合',
           requiresAuth: true
         }
       },
@@ -182,7 +182,7 @@ const routes: RouteRecordRaw[] = [
         name: 'FuturesCollection',
         component: () => import('@/views/Futures/Collection.vue'),
         meta: {
-          title: '数据集合详情',
+          title: '期货数据集合详情',
           requiresAuth: true,
           hideInMenu: true
         }
@@ -228,8 +228,18 @@ const routes: RouteRecordRaw[] = [
         name: 'OptionsCollections',
         component: () => import('@/views/Options/Collections.vue'),
         meta: {
-          title: '数据集合',
+          title: '期权数据集合',
           requiresAuth: true
+        }
+      },
+      {
+        path: 'collections/:collectionName',
+        name: 'OptionsCollectionDetail',
+        component: () => import('@/views/Options/Collection.vue'),
+        meta: {
+          title: '期权数据集合详情',
+          requiresAuth: true,
+          hideInMenu: true
         }
       },
       {
@@ -255,8 +265,8 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '外汇投研', icon: 'TrendCharts', requiresAuth: true, transition: 'slide-up' },
     children: [
       { path: 'overview', name: 'CurrenciesHome', component: () => import('@/views/Currencies/index.vue'), meta: { title: '外汇概览', requiresAuth: true } },
-      { path: 'collections', name: 'CurrenciesCollections', component: () => import('@/views/Currencies/Collections.vue'), meta: { title: '数据集合', requiresAuth: true } },
-      { path: 'collections/:collectionName', name: 'CurrenciesCollectionDetail', component: () => import('@/views/Currencies/Collection.vue'), meta: { title: '数据集合详情', requiresAuth: true, hideInMenu: true } },
+      { path: 'collections', name: 'CurrenciesCollections', component: () => import('@/views/Currencies/Collections.vue'), meta: { title: '外汇数据集合', requiresAuth: true } },
+      { path: 'collections/:collectionName', name: 'CurrenciesCollectionDetail', component: () => import('@/views/Currencies/Collection.vue'), meta: { title: '外汇数据集合详情', requiresAuth: true, hideInMenu: true } },
       { path: 'analysis', name: 'CurrenciesAnalysis', component: () => import('@/views/Currencies/CurrenciesAnalysis.vue'), meta: { title: '外汇分析', requiresAuth: true } },
       { path: '', redirect: { name: 'CurrenciesHome' } }
     ]
@@ -269,7 +279,7 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '数字货币投研', icon: 'TrendCharts', requiresAuth: true, transition: 'slide-up' },
     children: [
       { path: 'overview', name: 'CryptosHome', component: () => import('@/views/Cryptos/index.vue'), meta: { title: '数字货币概览', requiresAuth: true } },
-      { path: 'collections', name: 'CryptosCollections', component: () => import('@/views/Cryptos/Collections.vue'), meta: { title: '数据集合', requiresAuth: true } },
+      { path: 'collections', name: 'CryptosCollections', component: () => import('@/views/Cryptos/Collections.vue'), meta: { title: '数字货币数据集合', requiresAuth: true } },
       { path: 'analysis', name: 'CryptosAnalysis', component: () => import('@/views/Cryptos/CryptosAnalysis.vue'), meta: { title: '数字货币分析', requiresAuth: true } },
       { path: '', redirect: { name: 'CryptosHome' } }
     ]
@@ -386,7 +396,7 @@ const routes: RouteRecordRaw[] = [
         name: 'StocksCollections',
         component: () => import('@/views/Stocks/Collections.vue'),
         meta: {
-          title: '数据集合',
+          title: '股票数据集合',
           requiresAuth: true,
           transition: 'fade'
         }
@@ -396,7 +406,7 @@ const routes: RouteRecordRaw[] = [
         name: 'StocksCollectionDetail',
         component: () => import('@/views/Stocks/Collection.vue'),
         meta: {
-          title: '数据集合详情',
+          title: '股票数据集合详情',
           requiresAuth: true,
           hideInMenu: true,
           transition: 'fade',

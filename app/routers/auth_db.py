@@ -113,6 +113,26 @@ async def get_current_user(authorization: Optional[str] = Header(default=None)) 
         "preferences": user.preferences.model_dump() if user.preferences else {}
     }
 
+
+async def get_current_user_optional(authorization: Optional[str] = Header(default=None)) -> Optional[dict]:
+    """Optional authentication dependency.
+
+    - If Authorization header is missing, return None (treat as guest).
+    - If Authorization is provided, try to validate it; if invalid, return None.
+    """
+    if not authorization:
+        return None
+    try:
+        # Reuse strict validator when header is present
+        return await get_current_user(authorization)
+    except Exception as e:
+        # For optional auth, swallow validation errors and proceed as guest
+        try:
+            logger.info(f"🔓 Optional auth ignored invalid token: {e}")
+        except Exception:
+            pass
+        return None
+
 @router.post("/login")
 async def login(payload: LoginRequest, request: Request):
     """用户登录"""

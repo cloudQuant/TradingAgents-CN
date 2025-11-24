@@ -37,6 +37,70 @@ class BondDataService:
         self.col_cb_list_jsl = db.get_collection("bond_cb_list_jsl")
         self.col_cov_list = db.get_collection("bond_cov_list")
         self.col_minute = db.get_collection("bond_minute_quotes")
+        # 03号需求：沪深债券实时行情
+        self.col_zh_hs_spot = db.get_collection("bond_zh_hs_spot")
+        # 04号需求：沪深债券历史行情
+        self.col_zh_hs_daily = db.get_collection("bond_zh_hs_daily")
+        # 05号需求：可转债实时行情-沪深
+        self.col_zh_hs_cov_spot = db.get_collection("bond_zh_hs_cov_spot")
+        # 06号需求：可转债历史行情-日频
+        self.col_zh_hs_cov_daily = db.get_collection("bond_zh_hs_cov_daily")
+        # 07号需求：可转债数据一览表-东财
+        self.col_zh_cov = db.get_collection("bond_zh_cov")
+        # 08号需求：债券现券市场概览-上交所
+        self.col_cash_summary_sse = db.get_collection("bond_cash_summary_sse")
+        # 09号需求：债券成交概览-上交所
+        self.col_deal_summary_sse = db.get_collection("bond_deal_summary_sse")
+        # 10号需求：银行间市场债券发行数据
+        self.col_debt_nafmii = db.get_collection("bond_debt_nafmii")
+        # 11号需求：现券市场做市报价
+        self.col_spot_quote = db.get_collection("bond_spot_quote")
+        # 12号需求：现券市场成交行情
+        self.col_spot_deal = db.get_collection("bond_spot_deal")
+        # 13号需求：可转债分时行情
+        self.col_zh_hs_cov_min = db.get_collection("bond_zh_hs_cov_min")
+        # 14号需求：可转债盘前分时
+        self.col_zh_hs_cov_pre_min = db.get_collection("bond_zh_hs_cov_pre_min")
+        # 15号需求：可转债详情-东财
+        self.col_zh_cov_info = db.get_collection("bond_zh_cov_info")
+        # 16号需求：可转债详情-同花顺
+        self.col_zh_cov_info_ths = db.get_collection("bond_zh_cov_info_ths")
+        # 17号需求：可转债比价表
+        self.col_cov_comparison = db.get_collection("bond_cov_comparison")
+        # 18号需求：可转债价值分析
+        self.col_zh_cov_value_analysis = db.get_collection("bond_zh_cov_value_analysis")
+        # 19号需求：上证质押式回购
+        self.col_sh_buy_back = db.get_collection("bond_sh_buy_back")
+        # 20号需求：深证质押式回购
+        self.col_sz_buy_back = db.get_collection("bond_sz_buy_back")
+        # 21号需求：质押式回购历史数据
+        self.col_repo_hist = db.get_collection("bond_repo_hist")
+        # 22号需求：可转债实时数据-集思录
+        self.col_cov_jsl = db.get_collection("bond_cov_jsl")
+        # 23号需求：可转债强赎-集思录
+        self.col_cov_redeem_jsl = db.get_collection("bond_cov_redeem_jsl")
+        # 24号需求：可转债等权指数-集思录
+        self.col_cov_index_jsl = db.get_collection("bond_cov_index_jsl")
+        # 25号需求：转股价调整记录-集思录
+        self.col_cov_adj_jsl = db.get_collection("bond_cov_adj_jsl")
+        # 26号需求：收益率曲线历史数据
+        self.col_yield_curve_hist = db.get_collection("bond_yield_curve_hist")
+        # 27号需求：中美国债收益率
+        self.col_cn_us_yield = db.get_collection("bond_cn_us_yield")
+        # 28号需求：国债发行
+        self.col_treasury_issue = db.get_collection("bond_treasury_issue")
+        # 29号需求：地方债发行
+        self.col_local_issue = db.get_collection("bond_local_issue")
+        # 30号需求：企业债发行
+        self.col_corporate_issue = db.get_collection("bond_corporate_issue")
+        # 31号需求：可转债发行
+        self.col_cov_issue = db.get_collection("bond_cov_issue")
+        # 32号需求：可转债转股
+        self.col_cov_convert = db.get_collection("bond_cov_convert")
+        # 33号需求：中债新综合指数
+        self.col_zh_bond_new_index = db.get_collection("bond_zh_bond_new_index")
+        # 34号需求：中债综合指数
+        self.col_zh_bond_index = db.get_collection("bond_zh_bond_index")
 
     async def _safe_create_index(self, collection, index_spec, unique=False, sparse=False, name=None):
         """安全创建索引，如果索引已存在则跳过"""
@@ -320,6 +384,181 @@ class BondDataService:
             unique=False,
             name="code_1_datetime_1_query"
         )
+        # 03号需求：沪深债券实时行情索引
+        await self._safe_create_index(
+            self.col_zh_hs_spot,
+            "代码",
+            unique=True,
+            name="zh_hs_spot_code_1"
+        )
+        await self.col_zh_hs_spot.create_index("涨跌幅")
+        await self.col_zh_hs_spot.create_index("成交额")
+        await self.col_zh_hs_spot.create_index("成交量")
+        await self.col_zh_hs_spot.create_index("更新时间")
+        # 04号需求：沪深债券历史行情索引（联合主键：债券代码+日期）
+        await self._safe_create_index(
+            self.col_zh_hs_daily,
+            [("symbol", 1), ("date", 1)],
+            unique=True,
+            name="zh_hs_daily_symbol_1_date_1"
+        )
+        await self.col_zh_hs_daily.create_index("symbol")
+        await self.col_zh_hs_daily.create_index("date")
+        # 05号需求：可转债实时行情索引
+        await self._safe_create_index(
+            self.col_zh_hs_cov_spot,
+            "code",
+            unique=True,
+            name="zh_hs_cov_spot_code_1"
+        )
+        await self.col_zh_hs_cov_spot.create_index("symbol")
+        await self.col_zh_hs_cov_spot.create_index("changepercent")
+        await self.col_zh_hs_cov_spot.create_index("amount")
+        # 06号需求：可转债历史行情索引（联合主键：债券代码+日期）
+        await self._safe_create_index(
+            self.col_zh_hs_cov_daily,
+            [("symbol", 1), ("date", 1)],
+            unique=True,
+            name="zh_hs_cov_daily_symbol_1_date_1"
+        )
+        await self.col_zh_hs_cov_daily.create_index("symbol")
+        await self.col_zh_hs_cov_daily.create_index("date")
+        # 07号需求：可转债数据一览表索引
+        await self._safe_create_index(
+            self.col_zh_cov,
+            "债券代码",
+            unique=True,
+            name="zh_cov_bond_code_1"
+        )
+        await self.col_zh_cov.create_index("债券简称")
+        await self.col_zh_cov.create_index("转股溢价率")
+        await self.col_zh_cov.create_index("上市时间")
+        # 08号需求：债券现券市场概览-上交所索引（联合主键：债券类型+日期）
+        await self._safe_create_index(
+            self.col_cash_summary_sse,
+            [("债券现货", 1), ("数据日期", 1)],
+            unique=True,
+            name="cash_summary_sse_type_1_date_1"
+        )
+        await self.col_cash_summary_sse.create_index("数据日期")
+        await self.col_cash_summary_sse.create_index("债券现货")
+        # 09号需求：债券成交概览-上交所索引（联合主键：债券类型+日期）
+        await self._safe_create_index(
+            self.col_deal_summary_sse,
+            [("债券类型", 1), ("数据日期", 1)],
+            unique=True,
+            name="deal_summary_sse_type_1_date_1"
+        )
+        await self.col_deal_summary_sse.create_index("数据日期")
+        await self.col_deal_summary_sse.create_index("债券类型")
+        # 10号需求：银行间市场债券发行数据索引（联合主键：债券名称+注册通知书文号）
+        await self._safe_create_index(
+            self.col_debt_nafmii,
+            [("债券名称", 1), ("注册通知书文号", 1)],
+            unique=True,
+            name="debt_nafmii_name_1_doc_1"
+        )
+        await self.col_debt_nafmii.create_index("品种")
+        await self.col_debt_nafmii.create_index("更新日期")
+        await self.col_debt_nafmii.create_index("项目状态")
+        # 11号需求：现券市场做市报价索引（联合主键：报价机构+债券简称）
+        await self._safe_create_index(
+            self.col_spot_quote,
+            [("报价机构", 1), ("债券简称", 1)],
+            unique=True,
+            name="spot_quote_org_1_bond_1"
+        )
+        await self.col_spot_quote.create_index("报价机构")
+        await self.col_spot_quote.create_index("债券简称")
+        await self.col_spot_quote.create_index("更新时间")
+        # 12号需求：现券市场成交行情索引
+        await self._safe_create_index(
+            self.col_spot_deal,
+            "债券简称",
+            unique=True,
+            name="spot_deal_bond_1"
+        )
+        await self.col_spot_deal.create_index("最新收益率")
+        await self.col_spot_deal.create_index("涨跌")
+        await self.col_spot_deal.create_index("交易量")
+        await self.col_spot_deal.create_index("更新时间")
+        # 13号需求：可转债分时行情索引（联合主键：债券代码+时间+周期+复权方式）
+        await self._safe_create_index(
+            self.col_zh_hs_cov_min,
+            [("债券代码", 1), ("时间", 1), ("周期", 1), ("复权方式", 1)],
+            unique=True,
+            name="zh_hs_cov_min_symbol_1_time_1_period_1_adjust_1"
+        )
+        await self.col_zh_hs_cov_min.create_index("债券代码")
+        await self.col_zh_hs_cov_min.create_index("时间")
+        await self.col_zh_hs_cov_min.create_index([("债券代码", 1), ("时间", -1)])
+        # 14号需求：可转债盘前分时索引（联合主键：债券代码+时间）
+        await self._safe_create_index(
+            self.col_zh_hs_cov_pre_min,
+            [("债券代码", 1), ("时间", 1)],
+            unique=True,
+            name="zh_hs_cov_pre_min_symbol_1_time_1"
+        )
+        await self.col_zh_hs_cov_pre_min.create_index("债券代码")
+        await self.col_zh_hs_cov_pre_min.create_index("时间")
+        # 15号需求：可转债详情索引（联合主键：债券代码+指标类型）
+        await self._safe_create_index(
+            self.col_zh_cov_info,
+            [("债券代码", 1), ("指标类型", 1)],
+            unique=True,
+            name="zh_cov_info_symbol_1_indicator_1"
+        )
+        await self.col_zh_cov_info.create_index("债券代码")
+        await self.col_zh_cov_info.create_index("指标类型")
+        # 16号需求：可转债详情-同花顺索引
+        await self._safe_create_index(
+            self.col_zh_cov_info_ths,
+            "债券代码",
+            unique=True,
+            name="zh_cov_info_ths_symbol_1"
+        )
+        await self.col_zh_cov_info_ths.create_index("债券简称")
+        await self.col_zh_cov_info_ths.create_index("上市日期")
+        # 17号需求：可转债比价表索引
+        await self._safe_create_index(
+            self.col_cov_comparison,
+            "转债代码",
+            unique=True,
+            name="cov_comparison_symbol_1"
+        )
+        await self.col_cov_comparison.create_index("转股溢价率")
+        await self.col_cov_comparison.create_index("双低值")
+        # 18号需求：可转债价值分析索引
+        await self._safe_create_index(
+            self.col_zh_cov_value_analysis,
+            [("债券代码", 1), ("日期", 1)],
+            unique=True,
+            name="zh_cov_value_analysis_symbol_1_date_1"
+        )
+        await self.col_zh_cov_value_analysis.create_index("债券代码")
+        await self.col_zh_cov_value_analysis.create_index("日期")
+        # 19号需求：上证质押式回购索引
+        await self._safe_create_index(self.col_sh_buy_back, "代码", unique=True, name="sh_buy_back_code_1")
+        # 20号需求：深证质押式回购索引
+        await self._safe_create_index(self.col_sz_buy_back, "代码", unique=True, name="sz_buy_back_code_1")
+        # 21号需求：质押式回购历史数据索引
+        await self._safe_create_index(self.col_repo_hist, [("代码", 1), ("日期", 1)], unique=True, name="repo_hist_code_1_date_1")
+        await self.col_repo_hist.create_index("代码")
+        # 22号需求：可转债实时数据-集思录索引
+        await self._safe_create_index(self.col_cov_jsl, "代码", unique=True, name="cov_jsl_code_1")
+        # 23-34号需求：批量索引
+        await self._safe_create_index(self.col_cov_redeem_jsl, "代码", unique=True, name="cov_redeem_jsl_code_1")
+        await self._safe_create_index(self.col_cov_index_jsl, [("日期", 1)], unique=True, name="cov_index_jsl_date_1")
+        await self._safe_create_index(self.col_cov_adj_jsl, [("代码", 1), ("日期", 1)], unique=True, name="cov_adj_jsl_code_1_date_1")
+        await self._safe_create_index(self.col_yield_curve_hist, [("曲线名称", 1), ("日期", 1)], unique=True, name="yield_curve_hist_name_1_date_1")
+        await self._safe_create_index(self.col_cn_us_yield, "日期", unique=True, name="cn_us_yield_date_1")
+        await self._safe_create_index(self.col_treasury_issue, "债券代码", unique=True, name="treasury_issue_code_1")
+        await self._safe_create_index(self.col_local_issue, "债券代码", unique=True, name="local_issue_code_1")
+        await self._safe_create_index(self.col_corporate_issue, "债券代码", unique=True, name="corporate_issue_code_1")
+        await self._safe_create_index(self.col_cov_issue, "债券代码", unique=True, name="cov_issue_code_1")
+        await self._safe_create_index(self.col_cov_convert, [("债券代码", 1), ("日期", 1)], unique=True, name="cov_convert_code_1_date_1")
+        await self._safe_create_index(self.col_zh_bond_new_index, "日期", unique=True, name="zh_bond_new_index_date_1")
+        await self._safe_create_index(self.col_zh_bond_index, "日期", unique=True, name="zh_bond_index_date_1")
 
     async def save_yield_curve(self, df: pd.DataFrame) -> int:
         """保存收益率曲线数据到数据库（过滤非数值数据）"""
@@ -2280,3 +2519,1864 @@ class BondDataService:
             保存数量
         """
         return await self.save_bond_daily(code, df)
+    
+    # ==================== 03号需求：沪深债券实时行情 ====================
+    
+    async def save_bond_zh_hs_spot(self, data: list) -> int:
+        """保存沪深债券实时行情数据
+        
+        Args:
+            data: 实时行情数据列表，每项包含：代码、名称、最新价、涨跌额、涨跌幅等
+            
+        Returns:
+            保存数量
+        """
+        if not data:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for item in data:
+                if not isinstance(item, dict) or '代码' not in item:
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "代码": item.get("代码"),
+                    "名称": item.get("名称"),
+                    "最新价": float(item.get("最新价", 0)) if item.get("最新价") else 0,
+                    "涨跌额": float(item.get("涨跌额", 0)) if item.get("涨跌额") else 0,
+                    "涨跌幅": float(item.get("涨跌幅", 0)) if item.get("涨跌幅") else 0,
+                    "买入": float(item.get("买入", 0)) if item.get("买入") else 0,
+                    "卖出": float(item.get("卖出", 0)) if item.get("卖出") else 0,
+                    "昨收": float(item.get("昨收", 0)) if item.get("昨收") else 0,
+                    "今开": float(item.get("今开", 0)) if item.get("今开") else 0,
+                    "最高": float(item.get("最高", 0)) if item.get("最高") else 0,
+                    "最低": float(item.get("最低", 0)) if item.get("最低") else 0,
+                    "成交量": int(item.get("成交量", 0)) if item.get("成交量") else 0,
+                    "成交额": int(item.get("成交额", 0)) if item.get("成交额") else 0,
+                    "更新时间": current_time,
+                    "数据来源": "sina"
+                }
+                
+                # 使用代码作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"代码": doc["代码"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_spot.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [沪深债券实时行情] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [沪深债券实时行情] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_spot(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询沪深债券实时行情
+        
+        Args:
+            q: 关键词（代码或名称）
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段（涨跌幅、成交量、成交额等）
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["$or"] = [
+                    {"代码": {"$regex": q, "$options": "i"}},
+                    {"名称": {"$regex": q, "$options": "i"}}
+                ]
+            
+            # 计算总数
+            total = await self.col_zh_hs_spot.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "涨跌幅"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_spot.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [沪深债券实时行情] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [沪深债券实时行情] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 04号需求：沪深债券历史行情 ====================
+    
+    async def save_bond_zh_hs_daily(self, symbol: str, df: pd.DataFrame) -> int:
+        """保存沪深债券历史行情数据
+        
+        Args:
+            symbol: 债券代码（如sh010107）
+            df: 历史行情数据DataFrame，包含date, open, high, low, close, volume
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("date"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "symbol": symbol,
+                    "date": str(row["date"]),
+                    "open": float(row.get("open", 0)) if pd.notna(row.get("open")) else 0,
+                    "high": float(row.get("high", 0)) if pd.notna(row.get("high")) else 0,
+                    "low": float(row.get("low", 0)) if pd.notna(row.get("low")) else 0,
+                    "close": float(row.get("close", 0)) if pd.notna(row.get("close")) else 0,
+                    "volume": float(row.get("volume", 0)) if pd.notna(row.get("volume")) else 0,
+                    "更新时间": current_time,
+                    "数据来源": "sina"
+                }
+                
+                # 使用symbol+date作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"symbol": doc["symbol"], "date": doc["date"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_daily.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [沪深债券历史行情] {symbol} 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [沪深债券历史行情] {symbol} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_daily(
+        self,
+        symbol: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询沪深债券历史行情
+        
+        Args:
+            symbol: 债券代码
+            start_date: 开始日期（YYYY-MM-DD）
+            end_date: 结束日期（YYYY-MM-DD）
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {"symbol": symbol}
+            
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter["$gte"] = start_date
+                if end_date:
+                    date_filter["$lte"] = end_date
+                filt["date"] = date_filter
+            
+            # 计算总数
+            total = await self.col_zh_hs_daily.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按日期倒序）
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_daily.find(filt).sort("date", -1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [沪深债券历史行情] {symbol} 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [沪深债券历史行情] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 05号需求：可转债实时行情-沪深 ====================
+    
+    async def save_bond_zh_hs_cov_spot(self, data: list) -> int:
+        """保存可转债实时行情数据
+        
+        Args:
+            data: 可转债实时行情数据列表
+            
+        Returns:
+            保存数量
+        """
+        if not data:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for item in data:
+                if not isinstance(item, dict) or 'code' not in item:
+                    continue
+                
+                # 准备数据 - 保留所有字段
+                doc = dict(item)
+                doc["更新时间"] = current_time
+                doc["数据来源"] = "sina"
+                
+                # 确保数值类型正确
+                numeric_fields = ['trade', 'pricechange', 'changepercent', 'buy', 'sell', 
+                                'open', 'high', 'low', 'settlement', 'volume', 'amount']
+                for field in numeric_fields:
+                    if field in doc and doc[field] is not None:
+                        try:
+                            doc[field] = float(doc[field])
+                        except (ValueError, TypeError):
+                            doc[field] = 0.0
+                
+                # 使用code作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"code": doc["code"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_cov_spot.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债实时行情] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债实时行情] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_cov_spot(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询可转债实时行情
+        
+        Args:
+            q: 关键词（代码或名称）
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["$or"] = [
+                    {"code": {"$regex": q, "$options": "i"}},
+                    {"name": {"$regex": q, "$options": "i"}},
+                    {"symbol": {"$regex": q, "$options": "i"}}
+                ]
+            
+            # 计算总数
+            total = await self.col_zh_hs_cov_spot.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "changepercent"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_cov_spot.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债实时行情] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债实时行情] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 06号需求：可转债历史行情-日频 ====================
+    
+    async def save_bond_zh_hs_cov_daily(self, symbol: str, df: pd.DataFrame) -> int:
+        """保存可转债历史行情数据
+        
+        Args:
+            symbol: 可转债代码（如sz128039）
+            df: 历史行情数据DataFrame，包含date, open, high, low, close, volume
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("date"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "symbol": symbol,
+                    "date": str(row["date"]),
+                    "open": float(row.get("open", 0)) if pd.notna(row.get("open")) else 0,
+                    "high": float(row.get("high", 0)) if pd.notna(row.get("high")) else 0,
+                    "low": float(row.get("low", 0)) if pd.notna(row.get("low")) else 0,
+                    "close": float(row.get("close", 0)) if pd.notna(row.get("close")) else 0,
+                    "volume": float(row.get("volume", 0)) if pd.notna(row.get("volume")) else 0,
+                    "更新时间": current_time,
+                    "数据来源": "sina"
+                }
+                
+                # 使用symbol+date作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"symbol": doc["symbol"], "date": doc["date"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_cov_daily.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债历史行情] {symbol} 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债历史行情] {symbol} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_cov_daily(
+        self,
+        symbol: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询可转债历史行情
+        
+        Args:
+            symbol: 可转债代码
+            start_date: 开始日期（YYYY-MM-DD）
+            end_date: 结束日期（YYYY-MM-DD）
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {"symbol": symbol}
+            
+            if start_date or end_date:
+                date_filter = {}
+                if start_date:
+                    date_filter["$gte"] = start_date
+                if end_date:
+                    date_filter["$lte"] = end_date
+                filt["date"] = date_filter
+            
+            # 计算总数
+            total = await self.col_zh_hs_cov_daily.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按日期倒序）
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_cov_daily.find(filt).sort("date", -1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债历史行情] {symbol} 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债历史行情] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 07号需求：可转债数据一览表-东财 ====================
+    
+    async def save_bond_zh_cov(self, data: list) -> int:
+        """保存可转债数据一览表
+        
+        Args:
+            data: 可转债数据列表（来自东财）
+            
+        Returns:
+            保存数量
+        """
+        if not data:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for item in data:
+                if not isinstance(item, dict) or '债券代码' not in item:
+                    continue
+                
+                # 准备数据 - 保留所有字段
+                doc = dict(item)
+                doc["更新时间"] = current_time
+                doc["数据来源"] = "eastmoney"
+                
+                # 确保数值类型正确
+                numeric_fields = ['申购上限', '正股价', '转股价', '转股价值', '债现价', 
+                                '转股溢价率', '发行规模', '中签率']
+                for field in numeric_fields:
+                    if field in doc and doc[field] is not None:
+                        try:
+                            doc[field] = float(doc[field])
+                        except (ValueError, TypeError):
+                            doc[field] = None
+                
+                # 处理日期字段
+                date_fields = ['申购日期', '上市时间', '中签号发布日']
+                for field in date_fields:
+                    if field in doc and pd.notna(doc[field]):
+                        try:
+                            doc[field] = str(doc[field])
+                        except:
+                            doc[field] = None
+                
+                # 使用债券代码作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券代码": doc["债券代码"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_cov.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债一览表] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债一览表] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_cov(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询可转债数据一览表
+        
+        Args:
+            q: 关键词（代码或名称）
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["$or"] = [
+                    {"债券代码": {"$regex": q, "$options": "i"}},
+                    {"债券简称": {"$regex": q, "$options": "i"}},
+                    {"正股代码": {"$regex": q, "$options": "i"}},
+                    {"正股简称": {"$regex": q, "$options": "i"}}
+                ]
+            
+            # 计算总数
+            total = await self.col_zh_cov.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "转股溢价率"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_cov.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债一览表] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债一览表] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 08号需求：债券现券市场概览-上交所 ====================
+    
+    async def save_bond_cash_summary_sse(self, date: str, df: pd.DataFrame) -> int:
+        """保存债券现券市场概览数据
+        
+        Args:
+            date: 数据日期（格式：20210111）
+            df: 市场概览数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("债券现货"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券现货": str(row["债券现货"]),
+                    "数据日期": str(row.get("数据日期", date)),
+                    "托管只数": int(row.get("托管只数", 0)) if pd.notna(row.get("托管只数")) else 0,
+                    "托管市值": float(row.get("托管市值", 0)) if pd.notna(row.get("托管市值")) else 0.0,
+                    "托管面值": float(row.get("托管面值", 0)) if pd.notna(row.get("托管面值")) else 0.0,
+                    "更新时间": current_time,
+                    "数据来源": "sse"
+                }
+                
+                # 使用债券类型+日期作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券现货": doc["债券现货"], "数据日期": doc["数据日期"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_cash_summary_sse.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [现券市场概览] {date} 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [现券市场概览] {date} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_cash_summary_sse(
+        self,
+        date: Optional[str] = None,
+        bond_type: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询债券现券市场概览数据
+        
+        Args:
+            date: 数据日期（格式：2021-01-11）
+            bond_type: 债券类型
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if date:
+                filt["数据日期"] = date
+            if bond_type:
+                filt["债券现货"] = {"$regex": bond_type, "$options": "i"}
+            
+            # 计算总数
+            total = await self.col_cash_summary_sse.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按日期倒序、托管市值倒序）
+            skip = (page - 1) * page_size
+            cursor = self.col_cash_summary_sse.find(filt).sort([("数据日期", -1), ("托管市值", -1)]).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [现券市场概览] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [现券市场概览] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 09号需求：债券成交概览-上交所 ====================
+    
+    async def save_bond_deal_summary_sse(self, date: str, df: pd.DataFrame) -> int:
+        """保存债券成交概览数据
+        
+        Args:
+            date: 数据日期（格式：20210104）
+            df: 成交概览数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("债券类型"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券类型": str(row["债券类型"]),
+                    "数据日期": str(row.get("数据日期", date)),
+                    "当日成交笔数": int(row.get("当日成交笔数", 0)) if pd.notna(row.get("当日成交笔数")) else 0,
+                    "当日成交金额": float(row.get("当日成交金额", 0)) if pd.notna(row.get("当日成交金额")) else 0.0,
+                    "当年成交笔数": int(row.get("当年成交笔数", 0)) if pd.notna(row.get("当年成交笔数")) else 0,
+                    "当年成交金额": float(row.get("当年成交金额", 0)) if pd.notna(row.get("当年成交金额")) else 0.0,
+                    "更新时间": current_time,
+                    "数据来源": "sse"
+                }
+                
+                # 使用债券类型+日期作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券类型": doc["债券类型"], "数据日期": doc["数据日期"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_deal_summary_sse.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [债券成交概览] {date} 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [债券成交概览] {date} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_deal_summary_sse(
+        self,
+        date: Optional[str] = None,
+        bond_type: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询债券成交概览数据
+        
+        Args:
+            date: 数据日期（格式：2021-01-04）
+            bond_type: 债券类型
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if date:
+                filt["数据日期"] = date
+            if bond_type:
+                filt["债券类型"] = {"$regex": bond_type, "$options": "i"}
+            
+            # 计算总数
+            total = await self.col_deal_summary_sse.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按日期倒序、当日成交金额倒序）
+            skip = (page - 1) * page_size
+            cursor = self.col_deal_summary_sse.find(filt).sort([("数据日期", -1), ("当日成交金额", -1)]).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [债券成交概览] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [债券成交概览] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 10号需求：银行间市场债券发行数据 ====================
+    
+    async def save_bond_debt_nafmii(self, df: pd.DataFrame) -> int:
+        """保存银行间市场债券发行数据
+        
+        Args:
+            df: 债券发行数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("债券名称"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券名称": str(row["债券名称"]),
+                    "品种": str(row.get("品种", "")) if pd.notna(row.get("品种")) else "",
+                    "注册或备案": str(row.get("注册或备案", "")) if pd.notna(row.get("注册或备案")) else "",
+                    "金额": float(row.get("金额", 0)) if pd.notna(row.get("金额")) else 0.0,
+                    "注册通知书文号": str(row.get("注册通知书文号", "")) if pd.notna(row.get("注册通知书文号")) else "",
+                    "更新日期": str(row.get("更新日期", "")) if pd.notna(row.get("更新日期")) else "",
+                    "项目状态": str(row.get("项目状态", "")) if pd.notna(row.get("项目状态")) else "",
+                    "更新时间": current_time,
+                    "数据来源": "nafmii"
+                }
+                
+                # 使用债券名称+注册通知书文号作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券名称": doc["债券名称"], "注册通知书文号": doc["注册通知书文号"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_debt_nafmii.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [银行间债券发行] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [银行间债券发行] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_debt_nafmii(
+        self,
+        q: Optional[str] = None,
+        bond_type: Optional[str] = None,
+        status: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询银行间市场债券发行数据
+        
+        Args:
+            q: 关键词（债券名称）
+            bond_type: 品种（SCP、MTN等）
+            status: 项目状态
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["债券名称"] = {"$regex": q, "$options": "i"}
+            if bond_type:
+                filt["品种"] = {"$regex": bond_type, "$options": "i"}
+            if status:
+                filt["项目状态"] = {"$regex": status, "$options": "i"}
+            
+            # 计算总数
+            total = await self.col_debt_nafmii.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "更新日期"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_debt_nafmii.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [银行间债券发行] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [银行间债券发行] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 11号需求：现券市场做市报价 ====================
+    
+    async def save_bond_spot_quote(self, df: pd.DataFrame) -> int:
+        """保存现券市场做市报价数据
+        
+        Args:
+            df: 做市报价数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("报价机构") or not row.get("债券简称"):
+                    continue
+                
+                # 准备数据
+                买入净价 = float(row.get("买入净价", 0)) if pd.notna(row.get("买入净价")) else 0.0
+                卖出净价 = float(row.get("卖出净价", 0)) if pd.notna(row.get("卖出净价")) else 0.0
+                
+                doc = {
+                    "报价机构": str(row["报价机构"]),
+                    "债券简称": str(row["债券简称"]),
+                    "买入净价": 买入净价,
+                    "卖出净价": 卖出净价,
+                    "买入收益率": float(row.get("买入收益率", 0)) if pd.notna(row.get("买入收益率")) else 0.0,
+                    "卖出收益率": float(row.get("卖出收益率", 0)) if pd.notna(row.get("卖出收益率")) else 0.0,
+                    "价差": 卖出净价 - 买入净价,  # 计算买卖价差
+                    "更新时间": current_time,
+                    "数据来源": "cfets"
+                }
+                
+                # 使用报价机构+债券简称作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"报价机构": doc["报价机构"], "债券简称": doc["债券简称"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_spot_quote.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [现券做市报价] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [现券做市报价] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_spot_quote(
+        self,
+        q: Optional[str] = None,
+        organization: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询现券市场做市报价数据
+        
+        Args:
+            q: 关键词（债券简称）
+            organization: 报价机构
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["债券简称"] = {"$regex": q, "$options": "i"}
+            if organization:
+                filt["报价机构"] = {"$regex": organization, "$options": "i"}
+            
+            # 计算总数
+            total = await self.col_spot_quote.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "更新时间"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_spot_quote.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [现券做市报价] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [现券做市报价] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 12号需求：现券市场成交行情 ====================
+    
+    async def save_bond_spot_deal(self, df: pd.DataFrame) -> int:
+        """保存现券市场成交行情数据
+        
+        Args:
+            df: 成交行情数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("债券简称"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券简称": str(row["债券简称"]),
+                    "成交净价": float(row.get("成交净价", 0)) if pd.notna(row.get("成交净价")) else 0.0,
+                    "最新收益率": float(row.get("最新收益率", 0)) if pd.notna(row.get("最新收益率")) else 0.0,
+                    "涨跌": float(row.get("涨跌", 0)) if pd.notna(row.get("涨跌")) else 0.0,
+                    "加权收益率": float(row.get("加权收益率", 0)) if pd.notna(row.get("加权收益率")) else 0.0,
+                    "交易量": float(row.get("交易量", 0)) if pd.notna(row.get("交易量")) else 0.0,
+                    "更新时间": current_time,
+                    "数据来源": "cfets"
+                }
+                
+                # 使用债券简称作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券简称": doc["债券简称"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_spot_deal.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [现券成交行情] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [现券成交行情] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_spot_deal(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
+    ) -> Dict[str, Any]:
+        """查询现券市场成交行情数据
+        
+        Args:
+            q: 关键词（债券简称）
+            page: 页码
+            page_size: 每页数量
+            sort_by: 排序字段
+            sort_dir: 排序方向
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["债券简称"] = {"$regex": q, "$options": "i"}
+            
+            # 计算总数
+            total = await self.col_spot_deal.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 构建排序
+            sort_field = sort_by if sort_by else "交易量"
+            sort_direction = -1 if sort_dir == "desc" else 1
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_spot_deal.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [现券成交行情] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [现券成交行情] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 13号需求：可转债分时行情 ====================
+    
+    async def save_bond_zh_hs_cov_min(self, symbol: str, period: str, adjust: str, df: pd.DataFrame) -> int:
+        """保存可转债分时行情数据
+        
+        Args:
+            symbol: 债券代码
+            period: 周期（1/5/15/30/60）
+            adjust: 复权方式（''/qfq/hfq）
+            df: 分时数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("时间"):
+                    continue
+                
+                # 准备基础数据
+                doc = {
+                    "债券代码": symbol,
+                    "时间": str(row["时间"]),
+                    "开盘": float(row.get("开盘", 0)) if pd.notna(row.get("开盘")) else 0.0,
+                    "收盘": float(row.get("收盘", 0)) if pd.notna(row.get("收盘")) else 0.0,
+                    "最高": float(row.get("最高", 0)) if pd.notna(row.get("最高")) else 0.0,
+                    "最低": float(row.get("最低", 0)) if pd.notna(row.get("最低")) else 0.0,
+                    "成交量": float(row.get("成交量", 0)) if pd.notna(row.get("成交量")) else 0.0,
+                    "成交额": float(row.get("成交额", 0)) if pd.notna(row.get("成交额")) else 0.0,
+                    "周期": period,
+                    "复权方式": adjust if adjust else "不复权",
+                    "更新时间": current_time,
+                    "数据来源": "eastmoney"
+                }
+                
+                # 非1分钟数据的额外字段
+                if period != "1":
+                    doc["涨跌幅"] = float(row.get("涨跌幅", 0)) if pd.notna(row.get("涨跌幅")) else 0.0
+                    doc["涨跌额"] = float(row.get("涨跌额", 0)) if pd.notna(row.get("涨跌额")) else 0.0
+                    doc["振幅"] = float(row.get("振幅", 0)) if pd.notna(row.get("振幅")) else 0.0
+                    doc["换手率"] = float(row.get("换手率", 0)) if pd.notna(row.get("换手率")) else 0.0
+                else:
+                    # 1分钟数据可能有最新价字段
+                    if "最新价" in row:
+                        doc["最新价"] = float(row.get("最新价", 0)) if pd.notna(row.get("最新价")) else 0.0
+                
+                # 使用联合主键：债券代码+时间+周期+复权方式
+                operations.append(
+                    UpdateOne(
+                        {
+                            "债券代码": doc["债券代码"],
+                            "时间": doc["时间"],
+                            "周期": doc["周期"],
+                            "复权方式": doc["复权方式"]
+                        },
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_cov_min.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债分时] {symbol} {period}分钟 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债分时] {symbol} {period}分钟 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_cov_min(
+        self,
+        symbol: str,
+        period: Optional[str] = None,
+        adjust: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 1000
+    ) -> Dict[str, Any]:
+        """查询可转债分时行情数据
+        
+        Args:
+            symbol: 债券代码
+            period: 周期（1/5/15/30/60）
+            adjust: 复权方式（''/qfq/hfq）
+            start_time: 开始时间
+            end_time: 结束时间
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {"债券代码": symbol}
+            if period:
+                filt["周期"] = period
+            if adjust is not None:
+                filt["复权方式"] = adjust if adjust else "不复权"
+            if start_time or end_time:
+                time_filter = {}
+                if start_time:
+                    time_filter["$gte"] = start_time
+                if end_time:
+                    time_filter["$lte"] = end_time
+                if time_filter:
+                    filt["时间"] = time_filter
+            
+            # 计算总数
+            total = await self.col_zh_hs_cov_min.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按时间升序）
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_cov_min.find(filt).sort("时间", 1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债分时] {symbol} 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债分时] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 14号需求：可转债盘前分时 ====================
+    
+    async def save_bond_zh_hs_cov_pre_min(self, symbol: str, df: pd.DataFrame) -> int:
+        """保存可转债盘前分时数据
+        
+        Args:
+            symbol: 债券代码
+            df: 盘前分时数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("时间"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券代码": symbol,
+                    "时间": str(row["时间"]),
+                    "开盘": float(row.get("开盘", 0)) if pd.notna(row.get("开盘")) else 0.0,
+                    "收盘": float(row.get("收盘", 0)) if pd.notna(row.get("收盘")) else 0.0,
+                    "最高": float(row.get("最高", 0)) if pd.notna(row.get("最高")) else 0.0,
+                    "最低": float(row.get("最低", 0)) if pd.notna(row.get("最低")) else 0.0,
+                    "成交量": float(row.get("成交量", 0)) if pd.notna(row.get("成交量")) else 0.0,
+                    "成交额": float(row.get("成交额", 0)) if pd.notna(row.get("成交额")) else 0.0,
+                    "最新价": float(row.get("最新价", 0)) if pd.notna(row.get("最新价")) else 0.0,
+                    "更新时间": current_time,
+                    "数据来源": "eastmoney"
+                }
+                
+                # 使用债券代码+时间作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券代码": doc["债券代码"], "时间": doc["时间"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_hs_cov_pre_min.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债盘前] {symbol} 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债盘前] {symbol} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_hs_cov_pre_min(
+        self,
+        symbol: str,
+        page: int = 1,
+        page_size: int = 1000
+    ) -> Dict[str, Any]:
+        """查询可转债盘前分时数据
+        
+        Args:
+            symbol: 债券代码
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {"债券代码": symbol}
+            
+            # 计算总数
+            total = await self.col_zh_hs_cov_pre_min.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据（按时间升序）
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_hs_cov_pre_min.find(filt).sort("时间", 1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债盘前] {symbol} 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债盘前] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 15号需求：可转债详情-东财 ====================
+    
+    async def save_bond_zh_cov_info(self, symbol: str, indicator: str, df: pd.DataFrame) -> int:
+        """保存可转债详情数据
+        
+        Args:
+            symbol: 债券代码
+            indicator: 指标类型（基本信息/中签号/筹资用途/重要日期）
+            df: 详情数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            current_time = datetime.now()
+            
+            # 将DataFrame转换为字典（第一行数据）
+            detail_data = df.iloc[0].to_dict() if len(df) > 0 else {}
+            
+            # 清理NaN值
+            import numpy as np
+            detail_data = {k: (None if pd.isna(v) else v) for k, v in detail_data.items()}
+            
+            # 准备文档
+            doc = {
+                "债券代码": symbol,
+                "指标类型": indicator,
+                "详情数据": detail_data,
+                "更新时间": current_time,
+                "数据来源": "eastmoney"
+            }
+            
+            # 使用债券代码+指标类型作为唯一标识
+            result = await self.col_zh_cov_info.update_one(
+                {"债券代码": symbol, "指标类型": indicator},
+                {"$set": doc},
+                upsert=True
+            )
+            
+            saved_count = 1 if result.upserted_id or result.modified_count > 0 else 0
+            if saved_count > 0:
+                logger.info(f"✅ [可转债详情] {symbol} {indicator} 保存成功")
+            return saved_count
+            
+        except Exception as e:
+            logger.error(f"❌ [可转债详情] {symbol} {indicator} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_cov_info(
+        self,
+        symbol: Optional[str] = None,
+        indicator: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询可转债详情数据
+        
+        Args:
+            symbol: 债券代码
+            indicator: 指标类型
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if symbol:
+                filt["债券代码"] = symbol
+            if indicator:
+                filt["指标类型"] = indicator
+            
+            # 计算总数
+            total = await self.col_zh_cov_info.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_cov_info.find(filt).sort("更新时间", -1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债详情] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债详情] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 16号需求：可转债详情-同花顺 ====================
+    
+    async def save_bond_zh_cov_info_ths(self, df: pd.DataFrame) -> int:
+        """保存可转债详情数据（同花顺）
+        
+        Args:
+            df: 可转债详情数据DataFrame
+            
+        Returns:
+            保存数量
+        """
+        if df is None or df.empty:
+            return 0
+        
+        try:
+            operations = []
+            current_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                if not row.get("债券代码"):
+                    continue
+                
+                # 准备数据
+                doc = {
+                    "债券代码": str(row["债券代码"]),
+                    "债券简称": str(row.get("债券简称", "")) if pd.notna(row.get("债券简称")) else "",
+                    "申购日期": str(row.get("申购日期", "")) if pd.notna(row.get("申购日期")) else "",
+                    "申购代码": str(row.get("申购代码", "")) if pd.notna(row.get("申购代码")) else "",
+                    "原股东配售码": str(row.get("原股东配售码", "")) if pd.notna(row.get("原股东配售码")) else "",
+                    "每股获配额": float(row.get("每股获配额", 0)) if pd.notna(row.get("每股获配额")) else 0.0,
+                    "计划发行量": float(row.get("计划发行量", 0)) if pd.notna(row.get("计划发行量")) else 0.0,
+                    "实际发行量": float(row.get("实际发行量", 0)) if pd.notna(row.get("实际发行量")) else 0.0,
+                    "中签公布日": str(row.get("中签公布日", "")) if pd.notna(row.get("中签公布日")) else "",
+                    "中签号": str(row.get("中签号", "")) if pd.notna(row.get("中签号")) else "",
+                    "上市日期": str(row.get("上市日期", "")) if pd.notna(row.get("上市日期")) else "",
+                    "正股代码": str(row.get("正股代码", "")) if pd.notna(row.get("正股代码")) else "",
+                    "正股简称": str(row.get("正股简称", "")) if pd.notna(row.get("正股简称")) else "",
+                    "转股价格": float(row.get("转股价格", 0)) if pd.notna(row.get("转股价格")) else 0.0,
+                    "到期时间": str(row.get("到期时间", "")) if pd.notna(row.get("到期时间")) else "",
+                    "中签率": str(row.get("中签率", "")) if pd.notna(row.get("中签率")) else "",
+                    "更新时间": current_time,
+                    "数据来源": "ths"
+                }
+                
+                # 使用债券代码作为唯一标识
+                operations.append(
+                    UpdateOne(
+                        {"债券代码": doc["债券代码"]},
+                        {"$set": doc},
+                        upsert=True
+                    )
+                )
+            
+            if operations:
+                result = await self.col_zh_cov_info_ths.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债详情THS] 保存{saved_count}条数据")
+                return saved_count
+            
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债详情THS] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_cov_info_ths(
+        self,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """查询可转债详情数据（同花顺）
+        
+        Args:
+            q: 关键词（债券代码或简称）
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            查询结果
+        """
+        try:
+            # 构建查询条件
+            filt = {}
+            if q:
+                filt["$or"] = [
+                    {"债券代码": {"$regex": q, "$options": "i"}},
+                    {"债券简称": {"$regex": q, "$options": "i"}}
+                ]
+            
+            # 计算总数
+            total = await self.col_zh_cov_info_ths.count_documents(filt)
+            
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            
+            # 查询数据
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_cov_info_ths.find(filt).sort("上市日期", -1).skip(skip).limit(page_size)
+            
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            
+            logger.debug(f"📊 [可转债详情THS] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债详情THS] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 17号需求：可转债比价表 ====================
+    
+    async def save_bond_cov_comparison(self, df: pd.DataFrame) -> int:
+        if df is None or df.empty:
+            return 0
+        try:
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not row.get("转债代码"):
+                    continue
+                doc = {
+                    "序号": int(row.get("序号", 0)) if pd.notna(row.get("序号")) else 0,
+                    "转债代码": str(row["转债代码"]),
+                    "转债名称": str(row.get("转债名称", "")) if pd.notna(row.get("转债名称")) else "",
+                    "转债最新价": float(row.get("转债最新价", 0)) if pd.notna(row.get("转债最新价")) else 0.0,
+                    "转债涨跌幅": float(row.get("转债涨跌幅", 0)) if pd.notna(row.get("转债涨跌幅")) else 0.0,
+                    "正股代码": str(row.get("正股代码", "")) if pd.notna(row.get("正股代码")) else "",
+                    "正股名称": str(row.get("正股名称", "")) if pd.notna(row.get("正股名称")) else "",
+                    "正股最新价": float(row.get("正股最新价", 0)) if pd.notna(row.get("正股最新价")) else 0.0,
+                    "正股涨跌幅": float(row.get("正股涨跌幅", 0)) if pd.notna(row.get("正股涨跌幅")) else 0.0,
+                    "转股价": float(row.get("转股价", 0)) if pd.notna(row.get("转股价")) else 0.0,
+                    "转股价值": float(row.get("转股价值", 0)) if pd.notna(row.get("转股价值")) else 0.0,
+                    "转股溢价率": float(row.get("转股溢价率", 0)) if pd.notna(row.get("转股溢价率")) else 0.0,
+                    "纯债溢价率": float(row.get("纯债溢价率", 0)) if pd.notna(row.get("纯债溢价率")) else 0.0,
+                    "纯债价值": float(row.get("纯债价值", 0)) if pd.notna(row.get("纯债价值")) else 0.0,
+                    "回售触发价": float(row.get("回售触发价", 0)) if pd.notna(row.get("回售触发价")) else 0.0,
+                    "强赎触发价": float(row.get("强赎触发价", 0)) if pd.notna(row.get("强赎触发价")) else 0.0,
+                    "到期赎回价": float(row.get("到期赎回价", 0)) if pd.notna(row.get("到期赎回价")) else 0.0,
+                    "开始转股日": str(row.get("开始转股日", "")) if pd.notna(row.get("开始转股日")) else "",
+                    "上市日期": str(row.get("上市日期", "")) if pd.notna(row.get("上市日期")) else "",
+                    "申购日期": str(row.get("申购日期", "")) if pd.notna(row.get("申购日期")) else "",
+                    "更新时间": current_time,
+                    "数据来源": "eastmoney"
+                }
+                价格 = doc["转债最新价"]
+                溢价率 = doc["转股溢价率"]
+                doc["双低值"] = 价格 + 溢价率 if 价格 > 0 and 溢价率 > 0 else 0.0
+                operations.append(UpdateOne({"转债代码": doc["转债代码"]}, {"$set": doc}, upsert=True))
+            if operations:
+                result = await self.col_cov_comparison.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债比价表] 保存{saved_count}条数据")
+                return saved_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债比价表] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_cov_comparison(self, q: Optional[str] = None, page: int = 1, page_size: int = 100, sort_by: Optional[str] = None, sort_dir: str = "asc") -> Dict[str, Any]:
+        try:
+            filt = {}
+            if q:
+                filt["$or"] = [{"转债代码": {"$regex": q, "$options": "i"}}, {"转债名称": {"$regex": q, "$options": "i"}}]
+            total = await self.col_cov_comparison.count_documents(filt)
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            sort_field = sort_by if sort_by else "双低值"
+            sort_direction = 1 if sort_dir == "asc" else -1
+            skip = (page - 1) * page_size
+            cursor = self.col_cov_comparison.find(filt).sort(sort_field, sort_direction).skip(skip).limit(page_size)
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            logger.debug(f"📊 [可转债比价表] 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债比价表] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 18号需求：可转债价值分析 ====================
+    
+    async def save_bond_zh_cov_value_analysis(self, symbol: str, df: pd.DataFrame) -> int:
+        if df is None or df.empty:
+            return 0
+        try:
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not row.get("日期"):
+                    continue
+                doc = {
+                    "债券代码": symbol,
+                    "日期": str(row["日期"]),
+                    "收盘价": float(row.get("收盘价", 0)) if pd.notna(row.get("收盘价")) else None,
+                    "纯债价值": float(row.get("纯债价值", 0)) if pd.notna(row.get("纯债价值")) else 0.0,
+                    "转股价值": float(row.get("转股价值", 0)) if pd.notna(row.get("转股价值")) else 0.0,
+                    "纯债溢价率": float(row.get("纯债溢价率", 0)) if pd.notna(row.get("纯债溢价率")) else 0.0,
+                    "转股溢价率": float(row.get("转股溢价率", 0)) if pd.notna(row.get("转股溢价率")) else 0.0,
+                    "更新时间": current_time,
+                    "数据来源": "eastmoney"
+                }
+                operations.append(UpdateOne({"债券代码": symbol, "日期": doc["日期"]}, {"$set": doc}, upsert=True))
+            if operations:
+                result = await self.col_zh_cov_value_analysis.bulk_write(operations)
+                saved_count = result.upserted_count + result.modified_count
+                logger.info(f"✅ [可转债价值分析] {symbol} 保存{saved_count}条数据")
+                return saved_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债价值分析] {symbol} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_zh_cov_value_analysis(self, symbol: str, start_date: Optional[str] = None, end_date: Optional[str] = None, page: int = 1, page_size: int = 100) -> Dict[str, Any]:
+        try:
+            filt = {"债券代码": symbol}
+            if start_date:
+                filt["日期"] = {"$gte": start_date}
+            if end_date:
+                if "日期" in filt:
+                    filt["日期"]["$lte"] = end_date
+                else:
+                    filt["日期"] = {"$lte": end_date}
+            total = await self.col_zh_cov_value_analysis.count_documents(filt)
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            skip = (page - 1) * page_size
+            cursor = self.col_zh_cov_value_analysis.find(filt).sort("日期", -1).skip(skip).limit(page_size)
+            items = []
+            async for doc in cursor:
+                if "_id" in doc:
+                    doc.pop("_id", None)
+                items.append(doc)
+            logger.debug(f"📊 [可转债价值分析] {symbol} 查询成功: {len(items)}/{total}")
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债价值分析] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 19-22号需求：回购和集思录数据 ====================
+    
+    async def save_bond_buy_back(self, df: pd.DataFrame, market: str) -> int:
+        """保存质押式回购数据（上证/深证）"""
+        if df is None or df.empty:
+            return 0
+        try:
+            col = self.col_sh_buy_back if market == "sh" else self.col_sz_buy_back
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not row.get("代码"):
+                    continue
+                doc = {k: (float(v) if pd.notna(v) and isinstance(v, (int, float)) else str(v) if pd.notna(v) else None) for k, v in row.items()}
+                doc["更新时间"] = current_time
+                doc["市场"] = market
+                operations.append(UpdateOne({"代码": doc["代码"]}, {"$set": doc}, upsert=True))
+            if operations:
+                result = await col.bulk_write(operations)
+                return result.upserted_count + result.modified_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [质押式回购{market}] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_buy_back(self, market: str, page: int = 1, page_size: int = 100) -> Dict[str, Any]:
+        """查询质押式回购数据"""
+        try:
+            col = self.col_sh_buy_back if market == "sh" else self.col_sz_buy_back
+            total = await col.count_documents({})
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            skip = (page - 1) * page_size
+            cursor = col.find({}).sort("代码", 1).skip(skip).limit(page_size)
+            items = []
+            async for doc in cursor:
+                doc.pop("_id", None)
+                items.append(doc)
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [质押式回购{market}] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    async def save_bond_repo_hist(self, symbol: str, df: pd.DataFrame) -> int:
+        """保存质押式回购历史数据"""
+        if df is None or df.empty:
+            return 0
+        try:
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not row.get("日期"):
+                    continue
+                doc = {k: (float(v) if pd.notna(v) and isinstance(v, (int, float)) else str(v) if pd.notna(v) else None) for k, v in row.items()}
+                doc["代码"] = symbol
+                doc["更新时间"] = current_time
+                operations.append(UpdateOne({"代码": symbol, "日期": doc["日期"]}, {"$set": doc}, upsert=True))
+            if operations:
+                result = await self.col_repo_hist.bulk_write(operations)
+                return result.upserted_count + result.modified_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [回购历史] {symbol} 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_repo_hist(self, symbol: str, page: int = 1, page_size: int = 100) -> Dict[str, Any]:
+        """查询质押式回购历史数据"""
+        try:
+            filt = {"代码": symbol}
+            total = await self.col_repo_hist.count_documents(filt)
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            skip = (page - 1) * page_size
+            cursor = self.col_repo_hist.find(filt).sort("日期", -1).skip(skip).limit(page_size)
+            items = []
+            async for doc in cursor:
+                doc.pop("_id", None)
+                items.append(doc)
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [回购历史] {symbol} 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    async def save_bond_cov_jsl(self, df: pd.DataFrame) -> int:
+        """保存可转债实时数据-集思录"""
+        if df is None or df.empty:
+            return 0
+        try:
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not row.get("代码"):
+                    continue
+                doc = {k: (float(v) if pd.notna(v) and isinstance(v, (int, float)) else str(v) if pd.notna(v) else None) for k, v in row.items()}
+                doc["更新时间"] = current_time
+                doc["数据来源"] = "jisilu"
+                operations.append(UpdateOne({"代码": doc["代码"]}, {"$set": doc}, upsert=True))
+            if operations:
+                result = await self.col_cov_jsl.bulk_write(operations)
+                return result.upserted_count + result.modified_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [可转债JSL] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_bond_cov_jsl(self, q: Optional[str] = None, page: int = 1, page_size: int = 100) -> Dict[str, Any]:
+        """查询可转债实时数据-集思录"""
+        try:
+            filt = {}
+            if q:
+                filt["$or"] = [{"代码": {"$regex": q, "$options": "i"}}, {"名称": {"$regex": q, "$options": "i"}}]
+            total = await self.col_cov_jsl.count_documents(filt)
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            skip = (page - 1) * page_size
+            cursor = self.col_cov_jsl.find(filt).sort("代码", 1).skip(skip).limit(page_size)
+            items = []
+            async for doc in cursor:
+                doc.pop("_id", None)
+                items.append(doc)
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [可转债JSL] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 23-34号需求：通用方法 ====================
+    
+    async def save_generic_bond_data(self, df: pd.DataFrame, collection, unique_fields: list, tag: str) -> int:
+        """通用保存方法"""
+        if df is None or df.empty:
+            return 0
+        try:
+            operations = []
+            current_time = datetime.now()
+            for _, row in df.iterrows():
+                if not all(row.get(f) for f in unique_fields):
+                    continue
+                doc = {k: (float(v) if pd.notna(v) and isinstance(v, (int, float)) else str(v) if pd.notna(v) else None) for k, v in row.items()}
+                doc["更新时间"] = current_time
+                filt = {f: doc[f] for f in unique_fields}
+                operations.append(UpdateOne(filt, {"$set": doc}, upsert=True))
+            if operations:
+                result = await collection.bulk_write(operations)
+                logger.info(f"✅ [{tag}] 保存{result.upserted_count + result.modified_count}条")
+                return result.upserted_count + result.modified_count
+            return 0
+        except Exception as e:
+            logger.error(f"❌ [{tag}] 保存失败: {e}", exc_info=True)
+            return 0
+    
+    async def query_generic_bond_data(self, collection, filt: dict, tag: str, page: int = 1, page_size: int = 100, sort_field: str = None) -> Dict[str, Any]:
+        """通用查询方法"""
+        try:
+            total = await collection.count_documents(filt)
+            if total == 0:
+                return {"total": 0, "items": [], "page": page, "page_size": page_size}
+            skip = (page - 1) * page_size
+            cursor = collection.find(filt).skip(skip).limit(page_size)
+            if sort_field:
+                cursor = cursor.sort(sort_field, -1)
+            items = []
+            async for doc in cursor:
+                doc.pop("_id", None)
+                items.append(doc)
+            return {"total": total, "items": items, "page": page, "page_size": page_size}
+        except Exception as e:
+            logger.error(f"❌ [{tag}] 查询失败: {e}", exc_info=True)
+            return {"total": 0, "items": [], "page": page, "page_size": page_size}

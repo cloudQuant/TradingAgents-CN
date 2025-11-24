@@ -8,7 +8,7 @@ import uuid
 import asyncio
 from fastapi.responses import JSONResponse
 
-from app.routers.auth_db import get_current_user
+from app.routers.auth_db import get_current_user, get_current_user_optional
 from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
 
@@ -74,7 +74,7 @@ _cache_ttl_seconds = 300  # 5分钟缓存
 
 
 @router.get("/overview")
-async def get_futures_overview(current_user: dict = Depends(get_current_user)):
+async def get_futures_overview(current_user: Optional[dict] = Depends(get_current_user_optional)):
     """获取期货概览数据"""
     try:
         db = get_mongo_db()
@@ -97,7 +97,7 @@ async def get_futures_overview(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/collections")
-async def list_futures_collections(current_user: dict = Depends(get_current_user)):
+async def list_futures_collections(current_user: Optional[dict] = Depends(get_current_user_optional)):
     """获取期货数据集合列表"""
     try:
         # 定义期货数据集合
@@ -512,7 +512,7 @@ async def get_futures_collection_data(
     sort_dir: str = Query("desc", description="排序方向：asc|desc"),
     filter_field: Optional[str] = Query(None, description="过滤字段"),
     filter_value: Optional[str] = Query(None, description="过滤值"),
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """获取指定期货集合的数据（分页）"""
     db = get_mongo_db()
@@ -653,7 +653,7 @@ async def get_futures_collection_data(
 @router.get("/collections/{collection_name}/stats")
 async def get_futures_collection_stats(
     collection_name: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """获取期货集合的统计信息"""
     db = get_mongo_db()
