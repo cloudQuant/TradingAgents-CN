@@ -1,6 +1,7 @@
 """
 基金数据刷新服务 V2
 重构版：使用funds目录中的provider和service模块
+包含全部70个基金数据集合
 """
 import logging
 from typing import Dict, Any
@@ -41,6 +42,45 @@ from app.services.data_sources.funds.services.fund_fh_rank_em_service import Fun
 from app.services.data_sources.funds.services.fund_open_fund_rank_em_service import FundOpenFundRankEmService
 from app.services.data_sources.funds.services.fund_exchange_rank_em_service import FundExchangeRankEmService
 from app.services.data_sources.funds.services.fund_money_rank_em_service import FundMoneyRankEmService
+from app.services.data_sources.funds.services.fund_lcx_rank_em_service import FundLcxRankEmService
+from app.services.data_sources.funds.services.fund_hk_rank_em_service import FundHkRankEmService
+from app.services.data_sources.funds.services.fund_individual_achievement_xq_service import FundIndividualAchievementXqService
+from app.services.data_sources.funds.services.fund_value_estimation_em_service import FundValueEstimationEmService
+from app.services.data_sources.funds.services.fund_individual_analysis_xq_service import FundIndividualAnalysisXqService
+from app.services.data_sources.funds.services.fund_individual_profit_probability_xq_service import FundIndividualProfitProbabilityXqService
+from app.services.data_sources.funds.services.fund_individual_detail_hold_xq_service import FundIndividualDetailHoldXqService
+from app.services.data_sources.funds.services.fund_overview_em_service import FundOverviewEmService
+from app.services.data_sources.funds.services.fund_fee_em_service import FundFeeEmService
+from app.services.data_sources.funds.services.fund_individual_detail_info_xq_service import FundIndividualDetailInfoXqService
+from app.services.data_sources.funds.services.fund_portfolio_hold_em_service import FundPortfolioHoldEmService
+from app.services.data_sources.funds.services.fund_portfolio_bond_hold_em_service import FundPortfolioBondHoldEmService
+from app.services.data_sources.funds.services.fund_portfolio_industry_allocation_em_service import FundPortfolioIndustryAllocationEmService
+from app.services.data_sources.funds.services.fund_portfolio_change_em_service import FundPortfolioChangeEmService
+from app.services.data_sources.funds.services.fund_rating_all_em_service import FundRatingAllEmService
+from app.services.data_sources.funds.services.fund_rating_sh_em_service import FundRatingShEmService
+from app.services.data_sources.funds.services.fund_rating_zs_em_service import FundRatingZsEmService
+from app.services.data_sources.funds.services.fund_rating_ja_em_service import FundRatingJaEmService
+from app.services.data_sources.funds.services.fund_manager_em_service import FundManagerEmService
+from app.services.data_sources.funds.services.fund_new_found_em_service import FundNewFoundEmService
+from app.services.data_sources.funds.services.fund_scale_open_sina_service import FundScaleOpenSinaService
+from app.services.data_sources.funds.services.fund_scale_close_sina_service import FundScaleCloseSinaService
+from app.services.data_sources.funds.services.fund_scale_structured_sina_service import FundScaleStructuredSinaService
+from app.services.data_sources.funds.services.fund_aum_em_service import FundAumEmService
+from app.services.data_sources.funds.services.fund_aum_trend_em_service import FundAumTrendEmService
+from app.services.data_sources.funds.services.fund_aum_hist_em_service import FundAumHistEmService
+from app.services.data_sources.funds.services.reits_realtime_em_service import ReitsRealtimeEmService
+from app.services.data_sources.funds.services.reits_hist_em_service import ReitsHistEmService
+from app.services.data_sources.funds.services.fund_report_stock_cninfo_service import FundReportStockCninfoService
+from app.services.data_sources.funds.services.fund_report_industry_allocation_cninfo_service import FundReportIndustryAllocationCninfoService
+from app.services.data_sources.funds.services.fund_report_asset_allocation_cninfo_service import FundReportAssetAllocationCninfoService
+from app.services.data_sources.funds.services.fund_scale_change_em_service import FundScaleChangeEmService
+from app.services.data_sources.funds.services.fund_hold_structure_em_service import FundHoldStructureEmService
+from app.services.data_sources.funds.services.fund_stock_position_lg_service import FundStockPositionLgService
+from app.services.data_sources.funds.services.fund_balance_position_lg_service import FundBalancePositionLgService
+from app.services.data_sources.funds.services.fund_linghuo_position_lg_service import FundLinghuoPositionLgService
+from app.services.data_sources.funds.services.fund_announcement_dividend_em_service import FundAnnouncementDividendEmService
+from app.services.data_sources.funds.services.fund_announcement_report_em_service import FundAnnouncementReportEmService
+from app.services.data_sources.funds.services.fund_announcement_personnel_em_service import FundAnnouncementPersonnelEmService
 
 logger = logging.getLogger("webapi")
 
@@ -52,7 +92,7 @@ class FundRefreshServiceV2:
         self.db = db if db is not None else get_mongo_db()
         self.task_manager = get_task_manager()
         
-        # 初始化所有服务
+        # 初始化所有70个服务
         self.services = {
             "fund_name_em": FundNameEmService(self.db),
             "fund_basic_info": FundBasicInfoService(self.db),
@@ -85,6 +125,45 @@ class FundRefreshServiceV2:
             "fund_open_fund_rank_em": FundOpenFundRankEmService(self.db),
             "fund_exchange_rank_em": FundExchangeRankEmService(self.db),
             "fund_money_rank_em": FundMoneyRankEmService(self.db),
+            "fund_lcx_rank_em": FundLcxRankEmService(self.db),
+            "fund_hk_rank_em": FundHkRankEmService(self.db),
+            "fund_individual_achievement_xq": FundIndividualAchievementXqService(self.db),
+            "fund_value_estimation_em": FundValueEstimationEmService(self.db),
+            "fund_individual_analysis_xq": FundIndividualAnalysisXqService(self.db),
+            "fund_individual_profit_probability_xq": FundIndividualProfitProbabilityXqService(self.db),
+            "fund_individual_detail_hold_xq": FundIndividualDetailHoldXqService(self.db),
+            "fund_overview_em": FundOverviewEmService(self.db),
+            "fund_fee_em": FundFeeEmService(self.db),
+            "fund_individual_detail_info_xq": FundIndividualDetailInfoXqService(self.db),
+            "fund_portfolio_hold_em": FundPortfolioHoldEmService(self.db),
+            "fund_portfolio_bond_hold_em": FundPortfolioBondHoldEmService(self.db),
+            "fund_portfolio_industry_allocation_em": FundPortfolioIndustryAllocationEmService(self.db),
+            "fund_portfolio_change_em": FundPortfolioChangeEmService(self.db),
+            "fund_rating_all_em": FundRatingAllEmService(self.db),
+            "fund_rating_sh_em": FundRatingShEmService(self.db),
+            "fund_rating_zs_em": FundRatingZsEmService(self.db),
+            "fund_rating_ja_em": FundRatingJaEmService(self.db),
+            "fund_manager_em": FundManagerEmService(self.db),
+            "fund_new_found_em": FundNewFoundEmService(self.db),
+            "fund_scale_open_sina": FundScaleOpenSinaService(self.db),
+            "fund_scale_close_sina": FundScaleCloseSinaService(self.db),
+            "fund_scale_structured_sina": FundScaleStructuredSinaService(self.db),
+            "fund_aum_em": FundAumEmService(self.db),
+            "fund_aum_trend_em": FundAumTrendEmService(self.db),
+            "fund_aum_hist_em": FundAumHistEmService(self.db),
+            "reits_realtime_em": ReitsRealtimeEmService(self.db),
+            "reits_hist_em": ReitsHistEmService(self.db),
+            "fund_report_stock_cninfo": FundReportStockCninfoService(self.db),
+            "fund_report_industry_allocation_cninfo": FundReportIndustryAllocationCninfoService(self.db),
+            "fund_report_asset_allocation_cninfo": FundReportAssetAllocationCninfoService(self.db),
+            "fund_scale_change_em": FundScaleChangeEmService(self.db),
+            "fund_hold_structure_em": FundHoldStructureEmService(self.db),
+            "fund_stock_position_lg": FundStockPositionLgService(self.db),
+            "fund_balance_position_lg": FundBalancePositionLgService(self.db),
+            "fund_linghuo_position_lg": FundLinghuoPositionLgService(self.db),
+            "fund_announcement_dividend_em": FundAnnouncementDividendEmService(self.db),
+            "fund_announcement_report_em": FundAnnouncementReportEmService(self.db),
+            "fund_announcement_personnel_em": FundAnnouncementPersonnelEmService(self.db),
         }
     
     async def refresh_collection(
@@ -165,3 +244,11 @@ class FundRefreshServiceV2:
         
         service = self.services[collection_name]
         return await service.clear_data()
+    
+    def get_supported_collections(self) -> list:
+        """获取支持的所有数据集合列表"""
+        return list(self.services.keys())
+    
+    def get_collection_count(self) -> int:
+        """获取支持的数据集合数量"""
+        return len(self.services)

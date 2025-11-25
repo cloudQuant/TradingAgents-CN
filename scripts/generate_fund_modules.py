@@ -163,6 +163,201 @@ FUND_COLLECTIONS = {
         "display_name": "货币型基金排行-东财",
         "description": "获取货币型基金排行数据"
     },
+    "fund_lcx_rank_em": {
+        "akshare_func": "fund_lcx_rank_em",
+        "display_name": "理财型基金排行-东财",
+        "description": "获取理财型基金排行数据"
+    },
+    "fund_hk_rank_em": {
+        "akshare_func": "fund_hk_rank_em",
+        "display_name": "香港基金排行-东财",
+        "description": "获取香港基金排行数据"
+    },
+    "fund_individual_achievement_xq": {
+        "akshare_func": "fund_individual_achievement_xq",
+        "display_name": "基金业绩表现-雪球",
+        "description": "获取雪球基金业绩表现数据"
+    },
+    "fund_value_estimation_em": {
+        "akshare_func": "fund_value_estimation_em",
+        "display_name": "基金净值估算-东财",
+        "description": "获取基金净值估算数据"
+    },
+    "fund_individual_analysis_xq": {
+        "akshare_func": "fund_individual_analysis_xq",
+        "display_name": "基金分析数据-雪球",
+        "description": "获取雪球基金分析数据"
+    },
+    "fund_individual_profit_probability_xq": {
+        "akshare_func": "fund_individual_profit_probability_xq",
+        "display_name": "基金盈利概率-雪球",
+        "description": "获取雪球基金盈利概率数据"
+    },
+    "fund_individual_detail_hold_xq": {
+        "akshare_func": "fund_individual_detail_hold_xq",
+        "display_name": "基金持仓明细-雪球",
+        "description": "获取雪球基金持仓明细数据"
+    },
+    "fund_overview_em": {
+        "akshare_func": "fund_overview_em",
+        "display_name": "基金概况-东财",
+        "description": "获取基金概况数据"
+    },
+    "fund_fee_em": {
+        "akshare_func": "fund_fee_em",
+        "display_name": "基金费率-东财",
+        "description": "获取基金费率数据"
+    },
+    "fund_individual_detail_info_xq": {
+        "akshare_func": "fund_individual_detail_info_xq",
+        "display_name": "基金详细信息-雪球",
+        "description": "获取雪球基金详细信息数据"
+    },
+    "fund_portfolio_hold_em": {
+        "akshare_func": "fund_portfolio_hold_em",
+        "display_name": "基金持仓股票-东财",
+        "description": "获取基金持仓股票数据"
+    },
+    "fund_portfolio_bond_hold_em": {
+        "akshare_func": "fund_portfolio_bond_hold_em",
+        "display_name": "基金持仓债券-东财",
+        "description": "获取基金持仓债券数据"
+    },
+    "fund_portfolio_industry_allocation_em": {
+        "akshare_func": "fund_portfolio_industry_allocation_em",
+        "display_name": "基金行业配置-东财",
+        "description": "获取基金行业配置数据"
+    },
+    "fund_portfolio_change_em": {
+        "akshare_func": "fund_portfolio_change_em",
+        "display_name": "基金持仓变动-东财",
+        "description": "获取基金持仓变动数据"
+    },
+    "fund_rating_all_em": {
+        "akshare_func": "fund_rating_all_em",
+        "display_name": "基金评级汇总-东财",
+        "description": "获取基金评级汇总数据"
+    },
+    "fund_rating_sh_em": {
+        "akshare_func": "fund_rating_sh_em",
+        "display_name": "基金评级-上海证券-东财",
+        "description": "获取上海证券基金评级数据"
+    },
+    "fund_rating_zs_em": {
+        "akshare_func": "fund_rating_zs_em",
+        "display_name": "基金评级-招商证券-东财",
+        "description": "获取招商证券基金评级数据"
+    },
+    "fund_rating_ja_em": {
+        "akshare_func": "fund_rating_ja_em",
+        "display_name": "基金评级-济安金信-东财",
+        "description": "获取济安金信基金评级数据"
+    },
+    "fund_manager_em": {
+        "akshare_func": "fund_manager_em",
+        "display_name": "基金经理-东财",
+        "description": "获取基金经理数据"
+    },
+    "fund_new_found_em": {
+        "akshare_func": "fund_new_found_em",
+        "display_name": "新发基金-东财",
+        "description": "获取新发基金数据"
+    },
+    "fund_scale_open_sina": {
+        "akshare_func": "fund_scale_open_sina",
+        "display_name": "开放式基金规模-新浪",
+        "description": "获取开放式基金规模数据"
+    },
+    "fund_scale_close_sina": {
+        "akshare_func": "fund_scale_close_sina",
+        "display_name": "封闭式基金规模-新浪",
+        "description": "获取封闭式基金规模数据"
+    },
+    "fund_scale_structured_sina": {
+        "akshare_func": "fund_scale_structured_sina",
+        "display_name": "分级基金规模-新浪",
+        "description": "获取分级基金规模数据"
+    },
+    "fund_aum_em": {
+        "akshare_func": "fund_aum_em",
+        "display_name": "基金管理规模-东财",
+        "description": "获取基金管理规模数据"
+    },
+    "fund_aum_trend_em": {
+        "akshare_func": "fund_aum_trend_em",
+        "display_name": "基金规模趋势-东财",
+        "description": "获取基金规模趋势数据"
+    },
+    "fund_aum_hist_em": {
+        "akshare_func": "fund_aum_hist_em",
+        "display_name": "基金规模历史-东财",
+        "description": "获取基金规模历史数据"
+    },
+    "reits_realtime_em": {
+        "akshare_func": "reits_realtime_em",
+        "display_name": "REITs实时行情-东财",
+        "description": "获取REITs实时行情数据"
+    },
+    "reits_hist_em": {
+        "akshare_func": "reits_hist_em",
+        "display_name": "REITs历史行情-东财",
+        "description": "获取REITs历史行情数据"
+    },
+    "fund_report_stock_cninfo": {
+        "akshare_func": "fund_report_stock_cninfo",
+        "display_name": "基金报告持股-巨潮",
+        "description": "获取基金报告持股数据"
+    },
+    "fund_report_industry_allocation_cninfo": {
+        "akshare_func": "fund_report_industry_allocation_cninfo",
+        "display_name": "基金报告行业配置-巨潮",
+        "description": "获取基金报告行业配置数据"
+    },
+    "fund_report_asset_allocation_cninfo": {
+        "akshare_func": "fund_report_asset_allocation_cninfo",
+        "display_name": "基金报告资产配置-巨潮",
+        "description": "获取基金报告资产配置数据"
+    },
+    "fund_scale_change_em": {
+        "akshare_func": "fund_scale_change_em",
+        "display_name": "基金规模变动-东财",
+        "description": "获取基金规模变动数据"
+    },
+    "fund_hold_structure_em": {
+        "akshare_func": "fund_hold_structure_em",
+        "display_name": "基金持有结构-东财",
+        "description": "获取基金持有结构数据"
+    },
+    "fund_stock_position_lg": {
+        "akshare_func": "fund_stock_position_lg",
+        "display_name": "股票型基金仓位-理杏仁",
+        "description": "获取股票型基金仓位数据"
+    },
+    "fund_balance_position_lg": {
+        "akshare_func": "fund_balance_position_lg",
+        "display_name": "平衡型基金仓位-理杏仁",
+        "description": "获取平衡型基金仓位数据"
+    },
+    "fund_linghuo_position_lg": {
+        "akshare_func": "fund_linghuo_position_lg",
+        "display_name": "灵活配置型基金仓位-理杏仁",
+        "description": "获取灵活配置型基金仓位数据"
+    },
+    "fund_announcement_dividend_em": {
+        "akshare_func": "fund_announcement_dividend_em",
+        "display_name": "基金分红公告-东财",
+        "description": "获取基金分红公告数据"
+    },
+    "fund_announcement_report_em": {
+        "akshare_func": "fund_announcement_report_em",
+        "display_name": "基金报告公告-东财",
+        "description": "获取基金报告公告数据"
+    },
+    "fund_announcement_personnel_em": {
+        "akshare_func": "fund_announcement_personnel_em",
+        "display_name": "基金人事公告-东财",
+        "description": "获取基金人事公告数据"
+    },
 }
 
 

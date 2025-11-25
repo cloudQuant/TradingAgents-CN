@@ -1,0 +1,9 @@
+Refactor fund data services to modular provider-service architecture
+
+- Created 62 new files: 31 providers + 31 services
+- Added FundRefreshServiceV2 for unified refresh operations
+- Added FundDataServiceV2 for common data operations
+- Generated using scripts/generate_fund_modules.py
+- Backward compatible with existing fund_refresh_service.py and fund_data_service.py
+- Following the pattern from app/services/data_sources/stocks
+- Added comprehensive documentation and test scripts
