@@ -1631,221 +1631,25 @@ async def get_fund_collection_stats(
     current_user: dict = Depends(get_current_user),
 ):
     """获取基金集合统计信息"""
-    db = get_mongo_db()
-    
-    # 支持的集合列表
-    collection_map = {
-        "fund_name_em": db.get_collection("fund_name_em"),
-        "fund_basic_info": db.get_collection("fund_basic_info"),
-        "fund_info_index_em": db.get_collection("fund_info_index_em"),
-        "fund_net_value": db.get_collection("fund_net_value"),
-        "fund_ranking": db.get_collection("fund_ranking"),
-        "fund_purchase_status": db.get_collection("fund_purchase_status"),
-        "fund_etf_spot_em": db.get_collection("fund_etf_spot_em"),
-        "fund_etf_spot_ths": db.get_collection("fund_etf_spot_ths"),
-        "fund_lof_spot_em": db.get_collection("fund_lof_spot_em"),
-        "fund_spot_sina": db.get_collection("fund_spot_sina"),
-        "fund_etf_hist_min_em": db.get_collection("fund_etf_hist_min_em"),
-        "fund_lof_hist_min_em": db.get_collection("fund_lof_hist_min_em"),
-        "fund_etf_hist_em": db.get_collection("fund_etf_hist_em"),
-        "fund_lof_hist_em": db.get_collection("fund_lof_hist_em"),
-        "fund_hist_sina": db.get_collection("fund_hist_sina"),
-        "fund_open_fund_daily_em": db.get_collection("fund_open_fund_daily_em"),
-        "fund_open_fund_info_em": db.get_collection("fund_open_fund_info_em"),
-        "fund_money_fund_daily_em": db.get_collection("fund_money_fund_daily_em"),
-        "fund_money_fund_info_em": db.get_collection("fund_money_fund_info_em"),
-        "fund_financial_fund_daily_em": db.get_collection("fund_financial_fund_daily_em"),
-        "fund_financial_fund_info_em": db.get_collection("fund_financial_fund_info_em"),
-        "fund_graded_fund_daily_em": db.get_collection("fund_graded_fund_daily_em"),
-        "fund_graded_fund_info_em": db.get_collection("fund_graded_fund_info_em"),
-        "fund_etf_fund_daily_em": db.get_collection("fund_etf_fund_daily_em"),
-        "fund_hk_hist_em": db.get_collection("fund_hk_hist_em"),
-        "fund_etf_fund_info_em": db.get_collection("fund_etf_fund_info_em"),
-        "fund_etf_dividend_sina": db.get_collection("fund_etf_dividend_sina"),
-        "fund_fh_em": db.get_collection("fund_fh_em"),
-        "fund_cf_em": db.get_collection("fund_cf_em"),
-        "fund_fh_rank_em": db.get_collection("fund_fh_rank_em"),
-        "fund_open_fund_rank_em": db.get_collection("fund_open_fund_rank_em"),
-        "fund_exchange_rank_em": db.get_collection("fund_exchange_rank_em"),
-        "fund_money_rank_em": db.get_collection("fund_money_rank_em"),
-        "fund_lcx_rank_em": db.get_collection("fund_lcx_rank_em"),
-        "fund_hk_rank_em": db.get_collection("fund_hk_rank_em"),
-        "fund_individual_achievement_xq": db.get_collection("fund_individual_achievement_xq"),
-        "fund_value_estimation_em": db.get_collection("fund_value_estimation_em"),
-        "fund_individual_analysis_xq": db.get_collection("fund_individual_analysis_xq"),
-        "fund_individual_profit_probability_xq": db.get_collection("fund_individual_profit_probability_xq"),
-        "fund_individual_detail_hold_xq": db.get_collection("fund_individual_detail_hold_xq"),
-        "fund_overview_em": db.get_collection("fund_overview_em"),
-        "fund_fee_em": db.get_collection("fund_fee_em"),
-        "fund_individual_detail_info_xq": db.get_collection("fund_individual_detail_info_xq"),
-        "fund_portfolio_hold_em": db.get_collection("fund_portfolio_hold_em"),
-        "fund_portfolio_bond_hold_em": db.get_collection("fund_portfolio_bond_hold_em"),
-        "fund_portfolio_industry_allocation_em": db.get_collection("fund_portfolio_industry_allocation_em"),
-    }
-    
-    collection = collection_map.get(collection_name)
-    if collection is None:
-        return {"success": False, "error": f"集合 {collection_name} 不存在"}
-    
     try:
-        # 对于特定集合，使用 FundDataService 获取详细统计
-        if collection_name in [
-            "fund_name_em",
-            "fund_basic_info",
-            "fund_info_index_em",
-            "fund_purchase_status",
-            "fund_etf_spot_em",
-            "fund_etf_spot_ths",
-            "fund_lof_spot_em",
-            "fund_spot_sina",
-            "fund_etf_hist_min_em",
-            "fund_lof_hist_min_em",
-            "fund_etf_hist_em",
-            "fund_lof_hist_em",
-            "fund_hist_sina",
-            "fund_open_fund_daily_em",
-            "fund_open_fund_info_em",
-            "fund_money_fund_daily_em",
-            "fund_money_fund_info_em",
-            "fund_financial_fund_daily_em",
-            "fund_financial_fund_info_em",
-            "fund_graded_fund_daily_em",
-            "fund_graded_fund_info_em",
-            "fund_etf_fund_daily_em",
-            "fund_hk_hist_em",
-            "fund_etf_fund_info_em",
-            "fund_etf_dividend_sina",
-            "fund_fh_em",
-            "fund_cf_em",
-            "fund_fh_rank_em",
-            "fund_open_fund_rank_em",
-            "fund_exchange_rank_em",
-            "fund_money_rank_em",
-            "fund_lcx_rank_em",
-            "fund_hk_rank_em",
-            "fund_individual_achievement_xq",
-            "fund_value_estimation_em",
-            "fund_individual_analysis_xq",
-            "fund_individual_profit_probability_xq",
-            "fund_individual_detail_hold_xq",
-            "fund_overview_em",
-            "fund_fee_em",
-            "fund_individual_detail_info_xq",
-            "fund_portfolio_hold_em",
-            "fund_portfolio_bond_hold_em",
-            "fund_portfolio_industry_allocation_em",
-        ]:
-            from app.services.fund_data_service import FundDataService
-            data_service = FundDataService(db)
-            
-            if collection_name == "fund_name_em":
-                stats = await data_service.get_fund_name_em_stats()
-            elif collection_name == "fund_basic_info":
-                stats = await data_service.get_fund_basic_info_stats()
-            elif collection_name == "fund_info_index_em":
-                stats = await data_service.get_fund_info_index_stats()
-            elif collection_name == "fund_purchase_status":
-                stats = await data_service.get_fund_purchase_status_stats()
-            elif collection_name == "fund_etf_spot_em":
-                stats = await data_service.get_fund_etf_spot_stats()
-            elif collection_name == "fund_etf_spot_ths":
-                stats = await data_service.get_fund_etf_spot_ths_stats()
-            elif collection_name == "fund_lof_spot_em":
-                stats = await data_service.get_fund_lof_spot_stats()
-            elif collection_name == "fund_spot_sina":
-                stats = await data_service.get_fund_spot_sina_stats()
-            elif collection_name == "fund_etf_hist_min_em":
-                stats = await data_service.get_fund_etf_hist_min_stats()
-            elif collection_name == "fund_lof_hist_min_em":
-                stats = await data_service.get_fund_lof_hist_min_stats()
-            elif collection_name == "fund_etf_hist_em":
-                stats = await data_service.get_fund_etf_hist_stats()
-            elif collection_name == "fund_lof_hist_em":
-                stats = await data_service.get_fund_lof_hist_stats()
-            elif collection_name == "fund_hist_sina":
-                stats = await data_service.get_fund_hist_sina_stats()
-            elif collection_name == "fund_open_fund_daily_em":
-                stats = await data_service.get_fund_open_fund_daily_stats()
-            elif collection_name == "fund_open_fund_info_em":
-                stats = await data_service.get_fund_open_fund_info_stats()
-            elif collection_name == "fund_money_fund_daily_em":
-                stats = await data_service.get_fund_money_fund_daily_stats()
-            elif collection_name == "fund_money_fund_info_em":
-                stats = await data_service.get_fund_money_fund_info_stats()
-            elif collection_name == "fund_financial_fund_daily_em":
-                stats = await data_service.get_fund_financial_fund_daily_stats()
-            elif collection_name == "fund_financial_fund_info_em":
-                stats = await data_service.get_fund_financial_fund_info_stats()
-            elif collection_name == "fund_graded_fund_daily_em":
-                stats = await data_service.get_fund_graded_fund_daily_stats()
-            elif collection_name == "fund_graded_fund_info_em":
-                stats = await data_service.get_fund_graded_fund_info_stats()
-            elif collection_name == "fund_etf_fund_daily_em":
-                stats = await data_service.get_fund_etf_fund_daily_stats()
-            elif collection_name == "fund_hk_hist_em":
-                stats = await data_service.get_fund_hk_hist_em_stats()
-            elif collection_name == "fund_etf_fund_info_em":
-                stats = await data_service.get_fund_etf_fund_info_stats()
-            elif collection_name == "fund_etf_dividend_sina":
-                stats = await data_service.get_fund_etf_dividend_sina_stats()
-            elif collection_name == "fund_fh_em":
-                stats = await data_service.get_fund_fh_em_stats()
-            elif collection_name == "fund_cf_em":
-                stats = await data_service.get_fund_cf_em_stats()
-            elif collection_name == "fund_fh_rank_em":
-                stats = await data_service.get_fund_fh_rank_em_stats()
-            elif collection_name == "fund_open_fund_rank_em":
-                stats = await data_service.get_fund_open_fund_rank_em_stats()
-            elif collection_name == "fund_exchange_rank_em":
-                stats = await data_service.get_fund_exchange_rank_em_stats()
-            elif collection_name == "fund_money_rank_em":
-                stats = await data_service.get_fund_money_rank_em_stats()
-            elif collection_name == "fund_lcx_rank_em":
-                stats = await data_service.get_fund_lcx_rank_em_stats()
-            elif collection_name == "fund_hk_rank_em":
-                stats = await data_service.get_fund_hk_rank_em_stats()
-            elif collection_name == "fund_individual_achievement_xq":
-                stats = await data_service.get_fund_individual_achievement_xq_stats()
-            elif collection_name == "fund_value_estimation_em":
-                stats = await data_service.get_fund_value_estimation_em_stats()
-            elif collection_name == "fund_individual_analysis_xq":
-                stats = await data_service.get_fund_individual_analysis_xq_stats()
-            elif collection_name == "fund_individual_profit_probability_xq":
-                stats = await data_service.get_fund_individual_profit_probability_xq_stats()
-            elif collection_name == "fund_individual_detail_hold_xq":
-                stats = await data_service.get_fund_individual_detail_hold_xq_stats()
-            elif collection_name == "fund_overview_em":
-                stats = await data_service.get_fund_overview_em_stats()
-            elif collection_name == "fund_fee_em":
-                stats = await data_service.get_fund_fee_em_stats()
-            elif collection_name == "fund_individual_detail_info_xq":
-                stats = await data_service.get_fund_individual_detail_info_xq_stats()
-            elif collection_name == "fund_portfolio_hold_em":
-                stats = await data_service.get_fund_portfolio_hold_em_stats()
-            elif collection_name == "fund_portfolio_bond_hold_em":
-                stats = await data_service.get_fund_portfolio_bond_hold_em_stats()
-            elif collection_name == "fund_portfolio_industry_allocation_em":
-                stats = await data_service.get_fund_portfolio_industry_allocation_em_stats()
-            
-            stats["collection_name"] = collection_name
-            
-            return {
-                "success": True,
-                "data": stats
-            }
-        else:
-            # 其他集合只返回基本统计
-            total_count = await collection.count_documents({})
-            
-            stats = {
-                "total_count": total_count,
-                "collection_name": collection_name,
-            }
-            
-            return {
-                "success": True,
-                "data": stats
-            }
+        # 使用新的 FundRefreshService (V2) 统一获取集合概览
+        from app.services.fund_refresh_service import FundRefreshService
+        db = get_mongo_db()
+        refresh_service = FundRefreshService(db)
+        
+        # 检查集合是否支持
+        supported_collections = refresh_service.get_supported_collections()
+        if collection_name not in supported_collections:
+            return {"success": False, "error": f"集合 {collection_name} 不存在"}
+        
+        # 获取集合统计信息
+        stats = await refresh_service.get_collection_overview(collection_name)
+        stats["collection_name"] = collection_name
+        
+        return {
+            "success": True,
+            "data": stats
+        }
     except Exception as e:
         logger.error(f"获取基金集合统计失败: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
