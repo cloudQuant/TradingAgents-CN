@@ -30,6 +30,9 @@ export const currenciesApi = {
     if (collectionName === 'currency_currencies') {
       return this.getCurrencyCurrenciesList(params)
     }
+    if (collectionName === 'currency_convert') {
+      return this.getCollectionDataUnified(collectionName, params)
+    }
     return ApiClient.get(`/api/currencies/collections/${collectionName}`, params)
   },
   async searchCurrencies(keyword: string): Promise<ApiResponse<any>> {
@@ -138,6 +141,33 @@ export const currenciesApi = {
   // Currency Convert Tool
   async convertCurrencyTool(params: { base: string, to: string, amount: string, api_key: string }): Promise<ApiResponse<any>> {
     return ApiClient.get('/api/currencies/tool/convert', params)
+  },
+
+  // ============== 统一刷新 API ==============
+  
+  // 获取集合更新配置
+  async getCollectionUpdateConfig(collectionName: string): Promise<ApiResponse<any>> {
+    return ApiClient.get(`/api/currencies/collections/${collectionName}/update-config`)
+  },
+
+  // 刷新集合数据（统一接口）
+  async refreshCollectionData(collectionName: string, params?: any): Promise<ApiResponse<any>> {
+    return ApiClient.post(`/api/currencies/collections/${collectionName}/refresh`, params || {})
+  },
+
+  // 获取刷新任务状态
+  async getRefreshTaskStatus(collectionName: string, taskId: string): Promise<ApiResponse<any>> {
+    return ApiClient.get(`/api/currencies/collections/${collectionName}/refresh/status/${taskId}`)
+  },
+
+  // 获取集合数据（统一接口）
+  async getCollectionDataUnified(collectionName: string, params?: { page?: number, page_size?: number }): Promise<ApiResponse<any>> {
+    return ApiClient.get(`/api/currencies/collections/${collectionName}/data`, params)
+  },
+
+  // 获取集合概览（统一接口）
+  async getCollectionOverview(collectionName: string): Promise<ApiResponse<any>> {
+    return ApiClient.get(`/api/currencies/collections/${collectionName}/overview`)
   },
 
 }

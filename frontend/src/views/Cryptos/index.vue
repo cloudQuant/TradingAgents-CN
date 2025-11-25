@@ -50,10 +50,6 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.cryptos-overview { padding: 16px; }
-.page-header { margin-bottom: 24px; }
-.page-title { font-size: 28px; font-weight: 600; color: #303133; margin: 0; display: flex; align-items: center; gap: 12px; }
-.page-description { font-size: 14px; color: #909399; margin: 8px 0 0 0; }
-.content { max-width: 1400px; }
+<style lang="scss" scoped>
+@use '@/styles/overview.scss' as *;
 </style>

@@ -3308,6 +3308,22 @@ async def get_refresh_status(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+@router.get("/collections/{collection_name}/update-config")
+async def get_collection_update_config(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取集合的更新配置（支持前端动态渲染更新表单）"""
+    from app.config.stock_update_config import get_collection_update_config as get_config
+    
+    try:
+        config = get_config(collection_name)
+        return ok(config)
+    except Exception as e:
+        logger.error(f"获取更新配置失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get("/collections/{collection_name}/stats")
 async def get_collection_stats(
     collection_name: str,

@@ -312,16 +312,33 @@
         </el-row>
 
         <div style="margin-top: 16px;">
-          <el-button type="primary" @click="handleSync" :loading="refreshing">单个更新</el-button>
+          <el-button type="primary" @click="handleSync" :loading="refreshing" :disabled="batchUpdating">单个更新</el-button>
           <el-button 
             v-if="collectionName !== 'currency_currencies'"
             type="success" 
             @click="handleBatchSync" 
-            :loading="refreshing"
+            :loading="batchUpdating"
+            :disabled="refreshing"
             style="margin-left: 8px;"
           >
             批量更新
           </el-button>
+        </div>
+
+        <!-- 批量更新进度条 -->
+        <div v-if="batchUpdating" style="margin-top: 16px; padding: 16px; background-color: #f5f7fa; border-radius: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; color: #409eff;">批量更新进度</span>
+            <span style="font-size: 14px; color: #909399;">{{ progressPercentage }}%</span>
+          </div>
+          <el-progress 
+            :percentage="progressPercentage" 
+            :status="progressStatus"
+            :stroke-width="15"
+          />
+          <p style="margin-top: 10px; text-align: center; color: #606266; font-size: 13px;">
+            {{ progressMessage }}
+          </p>
         </div>
       </el-form>
 
@@ -422,6 +439,14 @@ const items = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
+
+// 批量更新进度相关
+const batchUpdating = ref(false)
+const progressPercentage = ref(0)
+const progressStatus = ref('')
+const progressMessage = ref('')
+const currentTaskId = ref('')
+let batchProgressTimer: ReturnType<typeof setInterval> | null = null
 
 // Chart related
 const chartRef = ref<HTMLElement | null>(null)
@@ -900,6 +925,14 @@ const handleSync = async () => {
                 c_type: 'fiat',
                 api_key: apiKey.value
             })
+        } else if (collectionName.value === 'currency_convert') {
+            // 单个转换使用统一刷新 API
+            res = await currenciesApi.refreshCollectionData(collectionName.value, {
+                base: syncBase.value,
+                to: syncTo.value,
+                amount: syncAmount.value,
+                api_key: apiKey.value
+            })
         }
 
         if (res && res.success) {
@@ -922,50 +955,103 @@ const handleBatchSync = async () => {
         return
     }
     
-    refreshing.value = true
+    // 验证必填参数
+    if (collectionName.value === 'currency_history' && !syncDate.value) {
+        ElMessage.warning('请输入日期')
+        return
+    }
+    if (collectionName.value === 'currency_time_series' && (!syncStartDate.value || !syncEndDate.value)) {
+        ElMessage.warning('请输入开始和结束日期')
+        return
+    }
+    
+    // 初始化进度状态
+    batchUpdating.value = true
+    progressPercentage.value = 0
+    progressStatus.value = ''
+    progressMessage.value = '正在创建批量更新任务...'
+    
     try {
-        let res
-        if (collectionName.value === 'currency_latest') {
-            res = await currenciesApi.batchSyncCurrencyLatest({
-                api_key: apiKey.value
-            })
-        } else if (collectionName.value === 'currency_history') {
-            if (!syncDate.value) {
-                 ElMessage.warning('请输入日期')
-                 refreshing.value = false
-                 return
-            }
-            res = await currenciesApi.batchSyncCurrencyHistory({
-                base: syncBase.value,
-                date: syncDate.value,
-                api_key: apiKey.value
-            })
-        } else if (collectionName.value === 'currency_time_series') {
-            if (!syncStartDate.value || !syncEndDate.value) {
-                 ElMessage.warning('请输入开始和结束日期')
-                 refreshing.value = false
-                 return
-            }
-            res = await currenciesApi.batchSyncCurrencyTimeSeries({
-                base: syncBase.value,
-                start_date: syncStartDate.value,
-                end_date: syncEndDate.value,
-                api_key: apiKey.value
-            })
+        // 构建参数
+        const params: any = {
+            update_type: 'batch',
+            api_key: apiKey.value,
+            base: syncBase.value
         }
-
-        if (res && res.success) {
-            ElMessage.success(res.message)
-            refreshDialogVisible.value = false
-            loadData()
+        
+        if (collectionName.value === 'currency_history') {
+            params.date = syncDate.value
+        } else if (collectionName.value === 'currency_time_series') {
+            params.start_date = syncStartDate.value
+            params.end_date = syncEndDate.value
+        } else if (collectionName.value === 'currency_convert') {
+            params.to = syncTo.value
+            params.amount = syncAmount.value
+        }
+        
+        // 调用统一刷新 API
+        const res = await currenciesApi.refreshCollectionData(collectionName.value, params)
+        
+        if (res.success && res.data?.task_id) {
+            currentTaskId.value = res.data.task_id
+            progressMessage.value = '任务已创建，正在执行...'
+            pollBatchTaskStatus()
         } else {
-            ElMessage.error(res?.message || '批量更新失败')
+            progressStatus.value = 'exception'
+            progressMessage.value = res.message || '创建任务失败'
+            batchUpdating.value = false
         }
     } catch (error) {
-        ElMessage.error('批量更新失败')
-    } finally {
-        refreshing.value = false
+        console.error('Batch sync error:', error)
+        progressStatus.value = 'exception'
+        progressMessage.value = '批量更新失败'
+        batchUpdating.value = false
     }
+}
+
+// 轮询任务状态
+const pollBatchTaskStatus = () => {
+    if (batchProgressTimer) {
+        clearInterval(batchProgressTimer)
+    }
+    
+    batchProgressTimer = setInterval(async () => {
+        try {
+            const res = await currenciesApi.getRefreshTaskStatus(collectionName.value, currentTaskId.value)
+            
+            if (res.success && res.data) {
+                const task = res.data
+                
+                // 更新进度
+                if (task.progress !== undefined && task.total !== undefined && task.total > 0) {
+                    progressPercentage.value = Math.round((task.progress / task.total) * 100)
+                }
+                progressMessage.value = task.message || '正在批量更新...'
+                
+                // 完成
+                if (task.status === 'success') {
+                    if (batchProgressTimer) clearInterval(batchProgressTimer)
+                    progressStatus.value = 'success'
+                    progressPercentage.value = 100
+                    progressMessage.value = task.message || '批量更新完成'
+                    ElMessage.success(task.message || '批量更新完成')
+                    await loadData()
+                    setTimeout(() => {
+                        batchUpdating.value = false
+                    }, 2000)
+                    
+                } else if (task.status === 'failed') {
+                    if (batchProgressTimer) clearInterval(batchProgressTimer)
+                    progressStatus.value = 'exception'
+                    progressMessage.value = task.message || '批量更新失败'
+                    ElMessage.error(task.message || '批量更新失败')
+                    batchUpdating.value = false
+                }
+            }
+        } catch (error) {
+            console.error('Poll task status error:', error)
+        }
+    }, 1000)
 }
 
 const handleImport = async () => {
@@ -1094,6 +1180,9 @@ const handleClearData = async () => {
             res = await currenciesApi.clearCurrencyTimeSeries()
         } else if (collectionName.value === 'currency_currencies') {
             res = await currenciesApi.clearCurrencyCurrencies()
+        } else if (collectionName.value === 'currency_convert') {
+            // 使用通用清空 API (如果后端支持)
+            res = { success: false, message: '暂不支持清空此集合' }
         }
         
         if (res && res.success) {
@@ -1120,6 +1209,9 @@ const currencyCollectionStaticInfo: Record<string, { dataSource: string }> = {
     dataSource: 'https://currencyscoop.com/'
   },
   currency_currencies: {
+    dataSource: 'https://currencyscoop.com/'
+  },
+  currency_convert: {
     dataSource: 'https://currencyscoop.com/'
   }
 }
@@ -1199,13 +1291,6 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.collection-view { padding: 16px; }
-.page-header { margin-bottom: 24px; }
-.header-content { display: flex; justify-content: space-between; align-items: flex-start; }
-.page-title { font-size: 24px; display: flex; align-items: center; gap: 10px; margin: 0; }
-.page-description { color: #909399; margin: 5px 0 0 0; }
-.content { max-width: 1400px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
 </style>

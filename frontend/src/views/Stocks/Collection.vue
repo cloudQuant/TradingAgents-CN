@@ -53,7 +53,7 @@
                   <template #reference>
                     <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
                   </template>
-                  <el-table :data="fieldRows" stripe border size="small" style="width: 100%">
+                  <el-table :data="fieldRows" stripe border size="small" :style="{ width: '100%' }">
                     <el-table-column prop="name" label="字段名" width="180" />
                     <el-table-column prop="description" label="说明" />
                     <el-table-column prop="example" label="示例值" width="200">
@@ -101,7 +101,7 @@
             size="small"
             stripe
             v-loading="loading"
-            style="width: 100%"
+            :style="{ width: '100%' }"
           >
             <el-table-column
               v-for="field in displayFields"
@@ -667,8 +667,8 @@ const remoteSyncAuthSource = ref('admin')
 const remoteSyncing = ref(false)
 const remoteSyncStats = ref<any>(null)
 
-// API更新参数相关
-const refreshConfig = computed<CollectionRefreshConfig | null>(() => {
+// API更新参数相关（现在 getRefreshConfig 不会返回 null，未配置的集合使用默认配置）
+const refreshConfig = computed<CollectionRefreshConfig>(() => {
   return getRefreshConfig(collectionName.value)
 })
 const singleParams = ref<Record<string, any>>({})
@@ -677,77 +677,14 @@ const batchSize = ref(50)
 const concurrency = ref(3)
 const delay = ref(0.5)
 
-// 集合固定信息映射
-const collectionStaticInfo: Record<string, any> = {
-  stock_individual_info_em: {
-    name: 'stock_individual_info_em',
-    displayName: '个股信息查询-东财',
-    fieldCount: 15,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_individual_basic_info_xq: {
-    name: 'stock_individual_basic_info_xq',
-    displayName: '个股信息查询-雪球',
-    fieldCount: 12,
-    dataSource: 'https://xueqiu.com/'
-  },
-  stock_zh_a_spot_em: {
-    name: 'stock_zh_a_spot_em',
-    displayName: '沪深京A股实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/center/gridlist.html#hs_a_board'
-  },
-  stock_zh_a_hist: {
-    name: 'stock_zh_a_hist',
-    displayName: 'A股历史行情-东财',
-    fieldCount: 13,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_zh_a_hist_min_em: {
-    name: 'stock_zh_a_hist_min_em',
-    displayName: 'A股分时数据-东财',
-    fieldCount: 5,
-    dataSource: 'http://push2.eastmoney.com/'
-  },
-  stock_sh_a_spot_em: {
-    name: 'stock_sh_a_spot_em',
-    displayName: '沪A股实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_sz_a_spot_em: {
-    name: 'stock_sz_a_spot_em',
-    displayName: '深A股实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_cyb_spot_em: {
-    name: 'stock_cyb_spot_em',
-    displayName: '创业板实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_kcb_spot_em: {
-    name: 'stock_kcb_spot_em',
-    displayName: '科创板实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/'
-  },
-  stock_bj_a_spot_em: {
-    name: 'stock_bj_a_spot_em',
-    displayName: '京A股实时行情-东财',
-    fieldCount: 35,
-    dataSource: 'http://quote.eastmoney.com/'
-  }
-}
-
-// 获取当前集合的固定信息
+// 获取当前集合的固定信息（从 refreshConfig 动态获取）
 const currentCollectionInfo = computed(() => {
-  return collectionStaticInfo[collectionName.value] || {
+  const config = refreshConfig.value
+  return {
     name: collectionName.value,
-    displayName: collectionDef.value?.display_name || collectionName.value,
+    displayName: config?.displayName || collectionDef.value?.display_name || collectionName.value,
     fieldCount: displayFields.value.length,
-    dataSource: '暂无'
+    dataSource: 'https://akshare.akfamily.xyz/'
   }
 })
 
@@ -1085,127 +1022,6 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped lang="scss">
-.collection-page {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.title-icon {
-  font-size: 28px;
-  color: #409eff;
-}
-
-.page-description {
-  margin: 8px 0 0 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.content {
-  margin-top: 8px;
-}
-
-.action-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.fields-card {
-  margin-bottom: 16px;
-}
-
-.data-card {
-  margin-bottom: 16px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-}
-
-.pagination-wrapper {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.example-placeholder {
-  color: #c0c4cc;
-}
-
-.stats-card {
-  margin-bottom: 16px;
-  
-  .card-actions {
-    display: flex;
-    gap: 8px;
-  }
-}
-
-.refresh-progress {
-  margin-top: 16px;
-  
-  .progress-text {
-    font-size: 13px;
-    color: #606266;
-  }
-}
-
-.text-muted {
-  color: #909399;
-  font-size: 14px;
-}
-
-.param-description {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-  line-height: 1.5;
-}
-
-@media (max-width: 768px) {
-  .page-header {
-    .header-content {
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .header-actions {
-      width: 100%;
-      justify-content: flex-end;
-    }
-  }
-}
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
 </style>

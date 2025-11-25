@@ -251,6 +251,15 @@ export const stocksApi = {
   },
 
   /**
+   * 获取集合的更新配置
+   */
+  async getUpdateConfig(collectionName: string) {
+    return ApiClient.get<any>(
+      `/api/stocks/collections/${collectionName}/update-config`
+    )
+  },
+
+  /**
    * 上传数据文件
    */
   async uploadData(collectionName: string, file: File, onProgress?: (progress: number) => void) {

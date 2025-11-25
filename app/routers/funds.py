@@ -13,6 +13,7 @@ from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
 from app.services.fund_refresh_service import FundRefreshService
 from app.services.fund_data_service import FundDataService
+from app.config.fund_update_config import get_collection_update_config
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 logger = logging.getLogger("webapi")
@@ -20,6 +21,32 @@ logger = logging.getLogger("webapi")
 # 简单的内存缓存
 _fund_list_cache = {}
 _cache_ttl_seconds = 300  # 5分钟缓存
+
+# 集合字段顺序缓存
+_collection_fields_cache = {}
+
+
+def _get_collection_fields_order(collection_name: str) -> list:
+    """获取集合的预定义字段顺序"""
+    # 定义各集合的字段顺序（与 list_fund_collections 中定义一致）
+    COLLECTION_FIELDS = {
+        "fund_name_em": ["基金代码", "拼音缩写", "基金简称", "基金类型", "拼音全称"],
+        "fund_basic_info": ["基金代码", "基金名称", "基金全称", "成立时间", "最新规模", "基金公司", "基金经理", "基金类型", "基金评级", "业绩比较基准"],
+        "fund_info_index_em": ["基金代码", "基金名称", "单位净值", "日期", "日增长率", "近1周", "近1月", "近3月", "近6月", "近1年", "近2年", "近3年", "今年来", "成立来", "手续费", "起购金额", "跟踪标的", "跟踪方式"],
+        "fund_purchase_status": ["序号", "基金代码", "基金简称", "基金类型", "最新净值/万份收益", "最新净值/万份收益-报告时间", "申购状态", "赎回状态", "下一开放日", "购买起点", "日累计限定金额", "手续费"],
+        "fund_etf_spot_em": ["代码", "名称", "最新价", "IOPV实时估值", "基金折价率", "涨跌额", "涨跌幅", "成交量", "成交额", "开盘价", "最高价", "最低价", "昨收", "换手率", "量比", "委比", "外盘", "内盘", "主力净流入-净额", "主力净流入-净占比", "超大单净流入-净额", "超大单净流入-净占比", "大单净流入-净额", "大单净流入-净占比", "中单净流入-净额", "中单净流入-净占比", "小单净流入-净额", "小单净流入-净占比", "现手", "买一", "卖一", "最新份额", "流通市值", "总市值", "数据日期", "更新时间"],
+        "fund_etf_spot_ths": ["序号", "基金代码", "基金名称", "当前-单位净值", "当前-累计净值", "前一日-单位净值", "前一日-累计净值", "增长值", "增长率", "赎回状态", "申购状态", "最新-交易日", "最新-单位净值", "最新-累计净值", "基金类型", "查询日期"],
+        "fund_lof_spot_em": ["代码", "名称", "最新价", "涨跌额", "涨跌幅", "成交量", "成交额", "开盘价", "最高价", "最低价", "昨收", "换手率", "流通市值", "总市值", "数据日期"],
+        "fund_portfolio_hold_em": ["基金代码", "股票代码", "股票名称", "季度", "持仓占比", "持仓数量", "持仓市值", "数据源", "接口名称", "更新时间"],
+        "fund_portfolio_bond_hold_em": ["基金代码", "债券代码", "债券名称", "季度", "持仓占比", "持仓数量", "持仓市值", "code", "bond_code", "quarter", "source", "endpoint", "updated_at"],
+        "fund_portfolio_industry_allocation_em": ["基金代码", "行业类别", "截止时间", "占净值比例", "code", "industry", "end_date", "source", "endpoint", "updated_at"],
+        "fund_portfolio_change_em": ["序号", "股票代码", "股票名称", "本期累计买入金额", "占期初基金资产净值比例", "季度", "基金代码", "code", "stock_code", "quarter", "indicator_type", "source", "endpoint", "updated_at"],
+        "fund_open_fund_rank_em": ["序号", "基金代码", "基金简称", "日期", "单位净值", "累计净值", "日增长率", "近1周", "近1月", "近3月", "近6月", "近1年", "近2年", "近3年", "今年来", "成立来", "自定义", "手续费", "code", "date", "source", "endpoint", "updated_at"],
+        "fund_money_fund_daily_em": ["基金代码", "基金简称", "日期", "每万份收益", "7日年化收益率", "单位净值", "前一日万份收益", "前一日7日年化", "前一日净值", "日增长", "成立日期", "基金经理", "手续费", "申购状态"],
+        "fund_etf_fund_daily_em": ["基金代码", "基金简称", "类型", "日期", "单位净值", "累计净值", "增长值", "增长率", "市价", "折价率"],
+        "fund_value_estimation_em": ["序号", "基金代码", "基金名称", "估算数据-估算值", "估算数据-估算增长率", "公布数据-单位净值", "公布数据-日增长率", "估算偏差", "单位净值", "日期", "code", "date", "source", "endpoint", "updated_at"],
+    }
+    return COLLECTION_FIELDS.get(collection_name, [])
 
 
 @router.get("/overview")
@@ -1424,6 +1451,23 @@ async def list_fund_collections(current_user: dict = Depends(get_current_user)):
         return {"success": False, "error": str(e)}
 
 
+@router.get("/collections/{collection_name}/update-config")
+async def get_fund_collection_update_config(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取指定基金集合的更新配置"""
+    try:
+        config = get_collection_update_config(collection_name)
+        return {
+            "success": True,
+            "data": config
+        }
+    except Exception as e:
+        logger.error(f"获取基金集合更新配置失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
 @router.get("/collections/{collection_name}")
 async def get_fund_collection_data(
     collection_name: str,
@@ -1589,6 +1633,12 @@ async def get_fund_collection_data(
         fields_info = []
         if items:
             sample = items[0]
+            
+            # 获取预定义的字段顺序
+            defined_fields_order = _get_collection_fields_order(collection_name)
+            
+            # 构建字段信息字典
+            fields_dict = {}
             for key, value in sample.items():
                 if key != "_id":
                     field_type = type(value).__name__
@@ -1604,11 +1654,25 @@ async def get_fund_collection_data(
                         field_type = "对象"
                     else:
                         field_type = "字符串"
-                    fields_info.append({
+                    fields_dict[key] = {
                         "name": key,
                         "type": field_type,
                         "example": str(value)[:50] if value is not None else None,
-                    })
+                    }
+            
+            # 按预定义顺序排列字段
+            if defined_fields_order:
+                # 先添加预定义顺序的字段
+                for field_name in defined_fields_order:
+                    if field_name in fields_dict:
+                        fields_info.append(fields_dict[field_name])
+                        del fields_dict[field_name]
+                # 再添加未在预定义列表中的字段（按原顺序）
+                for field_info in fields_dict.values():
+                    fields_info.append(field_info)
+            else:
+                # 如果没有预定义顺序，按原始顺序
+                fields_info = list(fields_dict.values())
         
         return {
             "success": True,
@@ -1757,6 +1821,7 @@ async def refresh_fund_collection(
 ):
     """刷新基金数据集合"""
     try:
+        logger.info(f"[API refresh] 接收到刷新请求: collection={collection_name}, params={params}")
         db = get_mongo_db()
         task_manager = get_task_manager()
         
@@ -1872,410 +1937,21 @@ async def clear_fund_collection(
     collection_name: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """清空基金数据集合"""
+    """清空基金数据集合（统一使用通用清空方法）"""
     try:
         db = get_mongo_db()
         data_service = FundDataService(db)
         
-        # 支持fund_name_em / fund_basic_info / fund_info_index_em 集合
-        if collection_name == "fund_name_em":
-            deleted_count = await data_service.clear_fund_name_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
+        # 统一调用通用清空方法
+        deleted_count = await data_service.clear_fund_data(collection_name)
+        
+        return {
+            "success": True,
+            "data": {
+                "deleted_count": deleted_count,
+                "message": f"成功清空 {deleted_count} 条数据"
             }
-        elif collection_name == "fund_basic_info":
-            deleted_count = await data_service.clear_fund_basic_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_info_index_em":
-            deleted_count = await data_service.clear_fund_info_index_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_purchase_status":
-            deleted_count = await data_service.clear_fund_purchase_status_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_spot_em":
-            deleted_count = await data_service.clear_fund_etf_spot_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_spot_ths":
-            deleted_count = await data_service.clear_fund_etf_spot_ths_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_lof_spot_em":
-            deleted_count = await data_service.clear_fund_lof_spot_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_spot_sina":
-            deleted_count = await data_service.clear_fund_spot_sina_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_hist_min_em":
-            deleted_count = await data_service.clear_fund_etf_hist_min_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_lof_hist_min_em":
-            deleted_count = await data_service.clear_fund_lof_hist_min_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_hist_em":
-            deleted_count = await data_service.clear_fund_etf_hist_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_lof_hist_em":
-            deleted_count = await data_service.clear_fund_lof_hist_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_hist_sina":
-            deleted_count = await data_service.clear_fund_hist_sina_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_open_fund_daily_em":
-            deleted_count = await data_service.clear_fund_open_fund_daily_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_open_fund_info_em":
-            deleted_count = await data_service.clear_fund_open_fund_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_money_fund_daily_em":
-            deleted_count = await data_service.clear_fund_money_fund_daily_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_money_fund_info_em":
-            deleted_count = await data_service.clear_fund_money_fund_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_financial_fund_daily_em":
-            deleted_count = await data_service.clear_fund_financial_fund_daily_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_financial_fund_info_em":
-            deleted_count = await data_service.clear_fund_financial_fund_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_graded_fund_daily_em":
-            deleted_count = await data_service.clear_fund_graded_fund_daily_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_graded_fund_info_em":
-            deleted_count = await data_service.clear_fund_graded_fund_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_fund_daily_em":
-            deleted_count = await data_service.clear_fund_etf_fund_daily_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_hk_hist_em":
-            deleted_count = await data_service.clear_fund_hk_hist_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_fund_info_em":
-            deleted_count = await data_service.clear_fund_etf_fund_info_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_etf_dividend_sina":
-            deleted_count = await data_service.clear_fund_etf_dividend_sina_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_fh_em":
-            deleted_count = await data_service.clear_fund_fh_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_cf_em":
-            deleted_count = await data_service.clear_fund_cf_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_fh_rank_em":
-            deleted_count = await data_service.clear_fund_fh_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_open_fund_rank_em":
-            deleted_count = await data_service.clear_fund_open_fund_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_exchange_rank_em":
-            deleted_count = await data_service.clear_fund_exchange_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_money_rank_em":
-            deleted_count = await data_service.clear_fund_money_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_lcx_rank_em":
-            deleted_count = await data_service.clear_fund_lcx_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_hk_rank_em":
-            deleted_count = await data_service.clear_fund_hk_rank_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_individual_achievement_xq":
-            deleted_count = await data_service.clear_fund_individual_achievement_xq_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_value_estimation_em":
-            deleted_count = await data_service.clear_fund_value_estimation_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_individual_analysis_xq":
-            deleted_count = await data_service.clear_fund_individual_analysis_xq_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_individual_profit_probability_xq":
-            deleted_count = await data_service.clear_fund_individual_profit_probability_xq_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_individual_detail_hold_xq":
-            deleted_count = await data_service.clear_fund_individual_detail_hold_xq_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_overview_em":
-            deleted_count = await data_service.clear_fund_overview_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_fee_em":
-            deleted_count = await data_service.clear_fund_fee_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_individual_detail_info_xq":
-            deleted_count = await data_service.clear_fund_individual_detail_info_xq_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_portfolio_hold_em":
-            deleted_count = await data_service.clear_fund_portfolio_hold_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_portfolio_bond_hold_em":
-            deleted_count = await data_service.clear_fund_portfolio_bond_hold_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        elif collection_name == "fund_portfolio_industry_allocation_em":
-            deleted_count = await data_service.clear_fund_portfolio_industry_allocation_em_data()
-            return {
-                "success": True,
-                "data": {
-                    "deleted_count": deleted_count,
-                    "message": f"成功清空 {deleted_count} 条数据"
-                }
-            }
-        else:
-            return {"success": False, "error": f"不支持清空集合: {collection_name}"}
+        }
             
     except Exception as e:
         logger.error(f"清空基金集合失败: {e}", exc_info=True)

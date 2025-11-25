@@ -1,0 +1,265 @@
+/**
+ * 数据集合列表页面共享样式
+ * 用于 Bonds/Collections, Currencies/Collections, Funds/Collections,
+ * Futures/Collections, Options/Collections, Cryptos/Collections, Stocks/Collections 等页面
+ */
+
+/* ========== 页面容器 ========== */
+.collections-view,
+.collections-page {
+  padding: 16px;
+}
+
+.collections-page {
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
+}
+
+/* ========== 页面头部 ========== */
+.page-header {
+  margin-bottom: 24px;
+  
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  .title-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+    color: #303133;
+    
+    .title-icon {
+      font-size: 32px;
+      color: #409eff;
+    }
+  }
+  
+  .page-description {
+    font-size: 14px;
+    color: #909399;
+    margin: 0;
+  }
+  
+  .header-stats {
+    :deep(.el-statistic__head) {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+    }
+    
+    :deep(.el-statistic__content) {
+      color: white;
+      font-size: 32px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* 渐变头部时标题白色 */
+.collections-page .page-header {
+  .page-title {
+    color: white;
+    
+    .title-icon {
+      color: white;
+    }
+  }
+  
+  .page-description {
+    color: white;
+    opacity: 0.9;
+  }
+}
+
+/* ========== 内容区域 ========== */
+.content {
+  max-width: 1400px;
+}
+
+/* ========== 搜索卡片 ========== */
+.search-card {
+  margin-bottom: 16px;
+  
+  .filter-info {
+    text-align: right;
+    
+    .collections-count {
+      font-size: 14px;
+      color: #909399;
+      font-weight: 500;
+    }
+  }
+}
+
+/* ========== 集合网格布局（简单风格） ========== */
+.collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* ========== 集合卡片（简单风格） ========== */
+.collection-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+  
+  &:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.collection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collection-icon {
+  font-size: 20px;
+  color: #409eff;
+}
+
+.collection-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collection-description {
+  font-size: 14px;
+  color: #606266;
+  margin: 0;
+  min-height: 40px;
+}
+
+.collection-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  
+  .el-tag {
+    margin: 0;
+  }
+  
+  .more-fields {
+    font-size: 12px;
+    color: #909399;
+    margin-left: 4px;
+  }
+}
+
+/* ========== 集合卡片容器（复杂风格） ========== */
+.collections-card {
+  .collections-list {
+    min-height: 400px;
+  }
+  
+  .el-row {
+    margin-left: -8px !important;
+    margin-right: -8px !important;
+  }
+  
+  .el-col {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-bottom: 16px;
+  }
+}
+
+/* ========== 集合项（复杂风格） ========== */
+.collection-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 100%;
+  background: #fff;
+  
+  &:hover {
+    border-color: #409eff;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+/* 复杂风格的图标 */
+.collection-item .collection-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+  font-size: inherit;
+  
+  .el-icon {
+    font-size: 20px;
+  }
+}
+
+.collection-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.collection-desc {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========== 响应式布局 ========== */
+@media (max-width: 768px) {
+  .collections-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-header {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .header-stats {
+      width: 100%;
+    }
+  }
+}

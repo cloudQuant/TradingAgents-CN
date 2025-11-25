@@ -116,63 +116,6 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.funds-overview {
-  padding: 16px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title-icon {
-  font-size: 32px;
-  color: #409eff;
-}
-
-.page-description {
-  font-size: 14px;
-  color: #909399;
-  margin: 0;
-}
-
-.stats-row {
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.card-header {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.content {
-  max-width: 1400px;
-}
-
-@media (max-width: 768px) {
-  .page-title {
-    font-size: 24px;
-  }
-}
+<style lang="scss" scoped>
+@use '@/styles/overview.scss' as *;
 </style>

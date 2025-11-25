@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.stock_zh_a_minute_provider import StockZhAMinuteProvider
+from ..providers.stock_zh_a_minute_provider import StockZhAMinuteProvider
 
 logger = logging.getLogger(__name__)
 

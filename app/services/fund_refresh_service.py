@@ -169,7 +169,7 @@ class FundRefreshService:
     # 前端特有的参数，不应传递给 akshare 函数
     FRONTEND_ONLY_PARAMS = {
         # 批量更新控制参数
-        'batch', 'batch_update', 'batch_size', 'concurrency', 'delay',
+        'batch', 'batch_update', 'batch_size', 'concurrency', 'delay', 'update_type',
         # 分页和过滤参数
         'page', 'limit', 'skip', 'filters', 'sort', 'order',
         # 任务和回调参数
@@ -208,6 +208,13 @@ class FundRefreshService:
             # 更新进度
             self.task_manager.update_progress(task_id, 10, 100, f"正在获取 {collection_name} 数据...")
             
+            # 判断是批量更新还是单条更新
+            is_batch = (
+                params.get("batch") or 
+                params.get("batch_update") or 
+                params.get("update_type") == "batch"
+            ) if params else False
+            
             # 过滤掉前端特有的参数，只保留 akshare 需要的参数
             api_params = {}
             if params:
@@ -215,19 +222,30 @@ class FundRefreshService:
                     k: v for k, v in params.items() 
                     if k not in self.FRONTEND_ONLY_PARAMS
                 }
-                logger.info(f"[参数过滤] 原始参数: {params}, 过滤后: {api_params}")
+                # 对于批量更新，保留 concurrency 参数
+                if is_batch and "concurrency" in params:
+                    api_params["concurrency"] = params["concurrency"]
+                logger.info(f"[参数过滤] 原始参数: {params}, 过滤后: {api_params}, 批量更新: {is_batch}")
             
             # 调用服务刷新数据
-            result = await service.refresh_data(**api_params)
-            
-            if result.get("success"):
-                self.task_manager.update_progress(
-                    task_id, 100, 100, 
-                    f"成功刷新 {collection_name}，插入 {result.get('inserted', 0)} 条数据"
-                )
-                self.task_manager.complete_task(task_id)
+            if is_batch and hasattr(service, "update_batch_data"):
+                logger.info(f"[{collection_name}] 调用批量更新方法 update_batch_data")
+                # 批量更新方法自己管理任务状态和进度
+                result = await service.update_batch_data(task_id=task_id, **api_params)
+                # 批量更新方法已经处理了任务完成状态，不需要再次调用
             else:
-                self.task_manager.fail_task(task_id, result.get("message", "刷新失败"))
+                logger.info(f"[{collection_name}] 调用单条更新方法 update_single_data")
+                result = await service.update_single_data(**api_params)
+                
+                # 单条更新需要在这里处理任务状态
+                if result.get("success"):
+                    self.task_manager.update_progress(
+                        task_id, 100, 100, 
+                        f"成功刷新 {collection_name}，插入 {result.get('inserted', 0)} 条数据"
+                    )
+                    self.task_manager.complete_task(task_id)
+                else:
+                    self.task_manager.fail_task(task_id, result.get("message", "刷新失败"))
             
             return result
             

@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, UploadFile, File, Body
 from pydantic import BaseModel
 import hashlib
 import logging
@@ -969,6 +969,20 @@ async def list_bond_collections(
     return {"success": True, "data": collections}
 
 
+@router.get("/collections/{collection_name}/update-config")
+async def get_collection_update_config(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取指定集合的更新配置信息
+    
+    返回该集合支持的单条更新和批量更新参数配置
+    """
+    from app.config.bond_update_config import get_collection_update_config as get_config
+    config = get_config(collection_name)
+    return {"success": True, "data": config}
+
+
 @router.get("/collections/{collection_name}")
 async def get_collection_data(
     collection_name: str,
@@ -1596,49 +1610,34 @@ async def get_bond_analysis_result(
 async def refresh_collection_data(
     collection_name: str,
     background_tasks: BackgroundTasks,
-    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD（可选，仅适用于某些集合）"),
-    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD（可选，仅适用于某些集合）"),
-    date: Optional[str] = Query(None, description="指定日期 YYYY-MM-DD（可选，用于单日期集合）"),
-    # bond_info_cm 特定参数
-    bond_name: Optional[str] = Query(None, description="债券名称（bond_info_cm专用）"),
-    bond_code: Optional[str] = Query(None, description="债券代码（bond_info_cm专用）"),
-    bond_issue: Optional[str] = Query(None, description="发行人（bond_info_cm专用）"),
-    bond_type: Optional[str] = Query(None, description="债券类型（bond_info_cm专用）"),
-    coupon_type: Optional[str] = Query(None, description="付息方式（bond_info_cm专用）"),
-    issue_year: Optional[str] = Query(None, description="发行年份（bond_info_cm专用）"),
-    underwriter: Optional[str] = Query(None, description="承销商（bond_info_cm专用）"),
-    grade: Optional[str] = Query(None, description="评级（bond_info_cm专用）"),
+    params: Dict[str, Any] = Body(default={}),
     current_user: dict = Depends(get_current_user),
 ):
     """从AKShare更新指定集合的数据（异步执行，支持进度查询）
     
-    支持的参数因集合而异：
-    - bond_info_cm: 支持 bond_name, bond_code, bond_issue, bond_type, coupon_type, issue_year, underwriter, grade
-    - yield_curve_daily, bond_daily: 支持 start_date, end_date
-    - bond_cash_summary, bond_deal_summary: 支持 date
+    请求体参数（JSON）：
+    - update_type: 'batch' 或 'single'，默认 'single'
+    - concurrency: 并发数（批量更新时）
+    - 其他参数根据集合不同而不同，参考 /collections/{collection_name}/update-config
+    
+    示例请求体：
+    ```json
+    {
+        "update_type": "batch",
+        "concurrency": 3,
+        "year": "2024"
+    }
+    ```
     """
     try:
-        logger.info(f"🔄 创建集合更新任务: {collection_name}")
+        logger.info(f"🔄 创建集合更新任务: {collection_name}, params={params}")
         
         db = get_mongo_db()
-        svc = BondDataService(db)
-        refresh_service = CollectionRefreshService(svc)
         task_manager = get_task_manager()
         
-        # 准备参数字典
-        params = {
-            "start_date": start_date,
-            "end_date": end_date,
-            "date": date,
-            "bond_name": bond_name,
-            "bond_code": bond_code,
-            "bond_issue": bond_issue,
-            "bond_type": bond_type,
-            "coupon_type": coupon_type,
-            "issue_year": issue_year,
-            "underwriter": underwriter,
-            "grade": grade,
-        }
+        # 使用新的 BondRefreshService
+        from app.services.bond_refresh_service import BondRefreshService
+        refresh_service = BondRefreshService(db)
         
         # 创建任务
         task_id = task_manager.create_task(

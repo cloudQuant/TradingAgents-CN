@@ -15,6 +15,39 @@ export const futuresApi = {
     return response.data
   },
 
+  // 获取集合更新配置（新）
+  async getCollectionUpdateConfig(collectionName: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}/update-config`
+    )
+    return response.data
+  },
+
+  // 刷新集合数据（新版V2，使用FuturesRefreshService）
+  async refreshCollectionV2(collectionName: string, params?: Record<string, any>) {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}/refresh`,
+      { params: params || {} }
+    )
+    return response.data
+  },
+
+  // 获取刷新任务状态
+  async getRefreshTaskStatus(taskId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/futures/refresh/task/${taskId}`
+    )
+    return response.data
+  },
+
+  // 获取支持刷新的集合列表
+  async getSupportedRefreshCollections() {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/futures/refresh/supported-collections`
+    )
+    return response.data
+  },
+
   // 获取指定集合的数据
   async getCollectionData(
     collectionName: string,

@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.news_trade_notify_suspend_baidu_provider import NewsTradeNotifySuspendBaiduProvider
+from ..providers.news_trade_notify_suspend_baidu_provider import NewsTradeNotifySuspendBaiduProvider
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.news_report_time_baidu_provider import NewsReportTimeBaiduProvider
+from ..providers.news_report_time_baidu_provider import NewsReportTimeBaiduProvider
 
 logger = logging.getLogger(__name__)
 

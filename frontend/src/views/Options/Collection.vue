@@ -624,52 +624,6 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.collection-page {
-  padding: 20px;
-}
-.page-header {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 10px 0;
-}
-.title-icon {
-  color: #409eff;
-}
-.collection-name-en {
-  font-size: 0.8em;
-  color: #909399;
-  font-weight: normal;
-}
-.page-description {
-  color: #606266;
-  margin: 0;
-}
-.header-actions {
-    display: flex;
-    gap: 10px;
-}
-.fields-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.pagination-wrapper {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-}
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
 </style>

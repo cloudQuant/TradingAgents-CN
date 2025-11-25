@@ -14,6 +14,7 @@ from pymongo import MongoClient
 from app.routers.auth_db import get_current_user, get_current_user_optional
 from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
+from app.config.futures_update_config import get_futures_collection_update_config, FUTURES_UPDATE_CONFIGS
 
 # 导入update任务函数
 try:
@@ -1769,3 +1770,156 @@ async def clear_futures_collection(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+
+# ==================== 新重构的刷新服务接口 ====================
+
+@router.get("/collections/{collection_name}/update-config")
+async def get_collection_update_config(
+    collection_name: str,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """获取集合的更新参数配置"""
+    try:
+        config = get_futures_collection_update_config(collection_name)
+        return {"success": True, "data": config}
+    except Exception as e:
+        logger.error(f"获取更新配置失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+class RefreshCollectionRequest(BaseModel):
+    """刷新集合请求体"""
+    params: Dict[str, Any] = {}
+
+
+@router.post("/collections/{collection_name}/refresh")
+async def refresh_futures_collection_v2(
+    collection_name: str,
+    background_tasks: BackgroundTasks,
+    request: RefreshCollectionRequest = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    刷新期货数据集合（新版本，使用FuturesRefreshService）
+    
+    使用新的服务层架构，支持单条更新和批量更新
+    """
+    try:
+        # 导入刷新服务（延迟导入避免循环依赖）
+        from app.services.futures_refresh_service import FuturesRefreshService
+        
+        db = get_mongo_db()
+        refresh_service = FuturesRefreshService(db)
+        
+        # 检查集合是否支持
+        supported = refresh_service.get_supported_collections()
+        if collection_name not in supported:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"集合 {collection_name} 不支持刷新操作"
+            )
+        
+        # 创建任务
+        task_manager = get_task_manager()
+        task_id = str(uuid.uuid4())
+        task_manager.create_task(
+            task_id,
+            name=f"刷新{collection_name}",
+            task_type="refresh",
+            collection_name=collection_name
+        )
+        
+        # 获取请求参数
+        params = request.params if request else {}
+        
+        # 在后台执行刷新
+        async def run_refresh():
+            try:
+                await refresh_service.refresh_collection(
+                    collection_name=collection_name,
+                    task_id=task_id,
+                    params=params
+                )
+            except Exception as e:
+                logger.error(f"刷新任务失败: {e}", exc_info=True)
+                task_manager.fail_task(task_id, str(e))
+        
+        background_tasks.add_task(lambda: asyncio.create_task(run_refresh()))
+        
+        return {
+            "success": True,
+            "data": {
+                "task_id": task_id,
+                "message": f"已启动 {collection_name} 刷新任务"
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"启动刷新任务失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/refresh/task/{task_id}")
+async def get_refresh_task_status(
+    task_id: str,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """获取刷新任务状态"""
+    try:
+        task_manager = get_task_manager()
+        task_status = task_manager.get_task_status(task_id)
+        
+        if task_status is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"任务 {task_id} 不存在"
+            )
+        
+        return {"success": True, "data": task_status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取任务状态失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/refresh/supported-collections")
+async def get_supported_refresh_collections(
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """获取支持刷新的集合列表"""
+    try:
+        from app.services.futures_refresh_service import FuturesRefreshService
+        
+        db = get_mongo_db()
+        refresh_service = FuturesRefreshService(db)
+        
+        supported = refresh_service.get_supported_collections()
+        
+        # 返回集合信息和配置
+        result = []
+        for name in supported:
+            config = get_futures_collection_update_config(name)
+            result.append({
+                "name": name,
+                "display_name": config.get("display_name", name),
+                "update_description": config.get("update_description", ""),
+                "single_update_enabled": config.get("single_update", {}).get("enabled", False),
+                "batch_update_enabled": config.get("batch_update", {}).get("enabled", False),
+            })
+        
+        return {
+            "success": True,
+            "data": {
+                "count": len(result),
+                "collections": result
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取支持的集合列表失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}

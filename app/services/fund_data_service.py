@@ -16,6 +16,8 @@ class FundDataService:
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
+        # 兼容旧版 FundDataService 中使用的集合别名
+        self.col_fund_portfolio_hold_em = self.db.funds.fund_portfolio_hold_em
     
     async def import_data_from_file(
         self, 
@@ -240,4 +242,24 @@ class FundDataService:
             
         except Exception as e:
             logger.error(f"获取集合信息失败: {e}", exc_info=True)
+            raise
+
+    async def clear_fund_data(self, collection_name: str) -> int:
+        """
+        清空指定基金数据集合
+        
+        Args:
+            collection_name: 集合名称（如 fund_name_em）
+            
+        Returns:
+            删除的记录数
+        """
+        try:
+            # 使用 get_collection 访问集合，与 get_fund_collection_data API 保持一致
+            collection = self.db.get_collection(collection_name)
+            result = await collection.delete_many({})
+            logger.info(f"成功清空集合 {collection_name}: {result.deleted_count} 条记录")
+            return result.deleted_count
+        except Exception as e:
+            logger.error(f"清空集合 {collection_name} 失败: {e}", exc_info=True)
             raise

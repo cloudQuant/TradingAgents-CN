@@ -133,7 +133,7 @@
                 <template #reference>
                   <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
                 </template>
-                <el-table :data="fields" stripe border size="small" style="width: 100%">
+                <el-table :data="fields" stripe border size="small" :style="{ width: '100%' }">
                   <el-table-column prop="name" label="字段名" width="200" />
                   <el-table-column prop="type" label="类型" width="120" />
                   <el-table-column prop="example" label="示例" show-overflow-tooltip>
@@ -181,7 +181,7 @@
           v-loading="loading"
           stripe
           border
-          style="width: 100%"
+          :style="{ width: '100%' }"
           max-height="600"
           @sort-change="handleSortChange"
         >
@@ -803,8 +803,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Box, Refresh, Search, Document, Calendar, Download, Delete, QuestionFilled, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
+import { Box, Refresh, Search, Download, Delete, QuestionFilled, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -816,7 +816,6 @@ import { bondsApi } from '@/api/bonds'
 use([CanvasRenderer, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
 const route = useRoute()
-const router = useRouter()
 
 const collectionName = computed(() => route.params.collectionName as string)
 
@@ -980,11 +979,6 @@ const needsSingleDate = computed(() => {
   return ['bond_cash_summary', 'bond_deal_summary'].includes(collectionName.value)
 })
 
-// 判断是否不需要日期
-const needsNoDate = computed(() => {
-  return ['bond_basic_info', 'bond_cb_list_jsl', 'bond_cov_list', 'bond_nafmii_debts', 'bond_spot_quotes', 'bond_cb_profiles'].includes(collectionName.value)
-})
-
 // 判断是否是bond_info_cm（需要查询参数）
 const needsBondParams = computed(() => {
   return collectionName.value === 'bond_info_cm'
@@ -1004,13 +998,13 @@ const importFiles = ref<File[]>([])
 const importing = ref(false)
 const uploadRef = ref()
 
-const handleImportFileChange = (file: any, fileList: any[]) => {
+const handleImportFileChange = (_file: any, fileList: any[]) => {
   importFiles.value = (fileList || [])
     .map((f: any) => f?.raw)
     .filter((f: any) => !!f)
 }
 
-const handleImportFileRemove = (file: any, fileList: any[]) => {
+const handleImportFileRemove = (_file: any, fileList: any[]) => {
   importFiles.value = (fileList || [])
     .map((f: any) => f?.raw)
     .filter((f: any) => !!f)
@@ -1297,7 +1291,7 @@ const handleFilter = () => {
 }
 
 // 排序处理
-const handleSortChange = ({ column, prop, order }: { column: any; prop: string; order: string | null }) => {
+const handleSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
   if (order === null) {
     // 取消排序
     sortBy.value = ''
@@ -1523,22 +1517,6 @@ const pollTaskStatus = async () => {
   }, 1000) // 每秒轮询一次
 }
 
-// 取消刷新
-const cancelRefresh = () => {
-  if (progressTimer) {
-    clearInterval(progressTimer)
-    progressTimer = null
-  }
-  apiUpdateDialogVisible.value = false
-  refreshing.value = false
-  progressPercentage.value = 0
-  progressStatus.value = ''
-  progressMessage.value = ''
-  batchRefreshing.value = false
-  batchProgress.value = { completed: 0, total: 0, failed: 0 }
-  batchTasks.value = []
-}
-
 // 批量更新所有年份（从1993到当前年份）
 const refreshAllYears = async () => {
   try {
@@ -1740,7 +1718,7 @@ const getBondBasicUpdateStatistics = async () => {
       bondBasicStats.value = response.data
       ElMessage.success('获取统计信息成功')
     } else {
-      throw new Error(response.data?.message || '获取统计信息失败')
+      throw new Error('获取统计信息失败')
     }
   } catch (error: any) {
     console.error('获取统计信息失败:', error)
@@ -1908,294 +1886,8 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.collection-view {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.title-icon {
-  font-size: 28px;
-  color: #409eff;
-}
-
-.page-description {
-  margin: 8px 0 0 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-}
-
-.stats-card,
-.fields-card,
-.data-card {
-  margin-bottom: 16px;
-}
-
-.issuance-card {
-  margin-bottom: 16px;
-}
-
-.analysis-tabs {
-  margin-bottom: 16px;
-}
-
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #606266;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.chart-wrapper-medium {
-  width: 100%;
-  height: 320px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stats-label {
-  font-size: 14px;
-  color: #606266;
-  margin-right: 8px;
-}
-
-.category-stats,
-.exchange-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.example-text {
-  font-family: monospace;
-  font-size: 12px;
-  color: #606266;
-}
-
-.text-muted {
-  color: #c0c4cc;
-}
-
-.pagination-wrapper {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.batch-config-section {
-  padding: 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  margin-bottom: 20px;
-}
-
-.batch-config-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.batch-config-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.batch-config-subtitle {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: #909399;
-}
-
-.batch-config-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.batch-config-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.batch-field-label {
-  font-size: 13px;
-  color: #606266;
-  font-weight: 500;
-}
-
-.batch-config-action {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.batch-update-btn {
-  width: fit-content;
-  padding: 4px 18px;
-  font-weight: 500;
-}
-
-.batch-config-note {
-  margin: 0;
-  font-size: 12px;
-  color: #a0a4ab;
-  line-height: 1.4;
-}
-
-.stat-metric-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  height: 100%;
-}
-
-.stat-metric-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.metric-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.metric-value-large {
-  font-size: 32px;
-  font-weight: 700;
-  color: #303133;
-  line-height: 1.2;
-}
-
-.metric-value-medium {
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
-  line-height: 1.2;
-  margin-bottom: 4px;
-}
-
-.metric-sub {
-  font-size: 12px;
-  color: #909399;
-}
-
-.stat-distribution-group {
-  padding-left: 24px;
-  border-left: 1px solid #ebeef5;
-}
-
-@media screen and (max-width: 768px) {
-  .stat-distribution-group {
-    padding-left: 0;
-    border-left: none;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid #ebeef5;
-  }
-}
-
-.group-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #606266;
-  margin-bottom: 16px;
-}
-
-.distribution-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.distribution-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dist-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-}
-
-.dist-name {
-  color: #606266;
-}
-
-.dist-count {
-  color: #909399;
-}
-
-.batch-config-divider {
-  margin: 20px 0 0 0;
-}
-
-@media (max-width: 768px) {
-  .batch-config-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-}
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
 </style>
 
 

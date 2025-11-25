@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.news_trade_notify_dividend_baidu_provider import NewsTradeNotifyDividendBaiduProvider
+from ..providers.news_trade_notify_dividend_baidu_provider import NewsTradeNotifyDividendBaiduProvider
 
 logger = logging.getLogger(__name__)
 

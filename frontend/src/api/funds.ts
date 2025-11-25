@@ -39,6 +39,11 @@ export const fundsApi = {
     return await ApiClient.get(`/api/funds/collections/${collectionName}/stats`)
   },
 
+  // 获取集合更新配置
+  async getCollectionUpdateConfig(collectionName: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/funds/collections/${collectionName}/update-config`)
+  },
+
   // 搜索基金
   async searchFunds(keyword: string): Promise<ApiResponse<any>> {
     return await ApiClient.get('/api/funds/search', { keyword })

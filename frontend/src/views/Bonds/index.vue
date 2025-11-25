@@ -119,7 +119,7 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item v-if="activeCategory === 'interest' || activeCategory === ''">
+          <el-form-item v-if="activeCategory === 'interest' || activeCategory === 'all'">
             <el-checkbox v-model="onlyNotMatured" @change="loadBonds">仅未到期</el-checkbox>
           </el-form-item>
 
@@ -136,7 +136,7 @@
           <el-tag
             v-for="cat in categoryOptions"
             :key="cat.value"
-            :type="cat.value === activeCategory ? 'primary' : ''"
+            :type="cat.value === activeCategory ? 'primary' : undefined"
             :effect="cat.value === activeCategory ? 'dark' : 'plain'"
             class="category-tag"
             @click="quickSelectCategory(cat.value)"
@@ -165,7 +165,7 @@
           :data="items"
           v-loading="loading"
           stripe
-          style="width: 100%"
+          :style="{ width: '100%' }"
           :default-sort="{ prop: sortBy, order: sortDir === 'asc' ? 'ascending' : 'descending' }"
           @sort-change="onSortChange"
           @row-click="handleRowClick"
@@ -331,7 +331,7 @@ const router = useRouter()
 const keyword = ref('')
 const loading = ref(false)
 const items = ref<BondItem[]>([])
-const activeCategory = ref<'interest' | 'credit' | 'convertible' | 'exchangeable' | 'other' | ''>('convertible')
+const activeCategory = ref<'interest' | 'credit' | 'convertible' | 'exchangeable' | 'other' | 'all'>('convertible')
 const filterExchange = ref('')
 const onlyNotMatured = ref(false)
 const page = ref(1)
@@ -358,7 +358,7 @@ const bondDetailLoading = ref(false)
 
 // 分类选项
 const categoryOptions = computed(() => [
-  { label: '全部', value: '', count: stats.value.total },
+  { label: '全部', value: 'all', count: stats.value.total },
   { label: '可转债', value: 'convertible', count: stats.value.convertible },
   { label: '利率债', value: 'interest', count: stats.value.interest },
   { label: '信用债', value: 'credit', count: stats.value.credit },
@@ -372,7 +372,7 @@ const loadBonds = async () => {
     loading.value = true
     // 处理category参数：空字符串表示全部，需要特殊处理
     let categoryParam: string | undefined = undefined
-    if (activeCategory.value && activeCategory.value !== '') {
+    if (activeCategory.value && activeCategory.value !== 'all') {
       categoryParam = activeCategory.value
     }
     
@@ -481,7 +481,7 @@ const loadStats = async () => {
 // 快速选择分类
 const quickSelectCategory = (category: string) => {
   activeCategory.value = category as any
-  if (category === '') {
+  if (category === 'all') {
     onlyNotMatured.value = false
   } else if (category === 'interest') {
     onlyNotMatured.value = true
@@ -534,13 +534,13 @@ const categoryLabel = (cat?: string) => {
   }
 }
 
-const categoryTagType = (cat?: string): any => {
+const categoryTagType = (cat?: string) => {
   switch ((cat || '').toLowerCase()) {
     case 'interest': return 'primary'
     case 'credit': return 'warning'
     case 'convertible': return 'success'
     case 'exchangeable': return 'info'
-    default: return ''
+    default: return 'info'
   }
 }
 
@@ -639,7 +639,7 @@ const formatDaysToMaturity = (d: any) => {
   }
 }
 
-const getDaysToMaturityTagType = (d: any): string => {
+const getDaysToMaturityTagType = (d: any) => {
   if (!d) return 'info'
   try {
     const endDate = new Date(d + 'T00:00:00')
@@ -651,7 +651,7 @@ const getDaysToMaturityTagType = (d: any): string => {
     if (isNaN(diff)) return 'info'
     if (diff < 0) return 'danger'
     if (diff <= 30) return 'warning'
-    if (diff <= 365) return ''
+    if (diff <= 365) return 'info'
     return 'success'
   } catch {
     return 'info'
@@ -729,110 +729,6 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.bonds-overview {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.title-icon {
-  font-size: 28px;
-  color: #409eff;
-}
-
-.page-description {
-  margin: 8px 0 0 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.stats-row {
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  text-align: center;
-}
-
-.stat-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.search-card :deep(.el-card__header) {
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-}
-
-.category-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.category-tag {
-  transition: all 0.3s;
-}
-
-.tag-count {
-  margin-left: 4px;
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.table-card :deep(.el-card__header) {
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.bond-name {
-  font-weight: 500;
-}
-
-.coupon-rate {
-  font-weight: 600;
-  color: #409eff;
-}
-
-.maturity-expired {
-  color: #f56c6c;
-  font-weight: 500;
-}
-
-.maturity-soon {
-  color: #e6a23c;
-  font-weight: 500;
-}
-
-.table-pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.el-table__row) {
-  cursor: pointer;
-}
-
-:deep(.el-table__row:hover) {
-  background-color: #f5f7fa;
-}
+<style lang="scss" scoped>
+@use '@/styles/overview.scss' as *;
 </style>

@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.stock_balance_sheet_by_yearly_em_provider import StockBalanceSheetByYearlyEmProvider
+from ..providers.stock_balance_sheet_by_yearly_em_provider import StockBalanceSheetByYearlyEmProvider
 
 logger = logging.getLogger(__name__)
 

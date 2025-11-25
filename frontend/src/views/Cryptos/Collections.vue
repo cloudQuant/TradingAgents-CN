@@ -50,18 +50,6 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.collections-view { padding: 16px; }
-.page-header { margin-bottom: 24px; }
-.page-title { font-size: 28px; font-weight: 600; color: #303133; margin: 0; display: flex; align-items: center; gap: 12px; }
-.page-description { font-size: 14px; color: #909399; margin: 8px 0 0 0; }
-.content { max-width: 1400px; }
-.search-card { margin-bottom: 16px; }
-.collections-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.collection-card { cursor: pointer; transition: transform 0.2s; }
-.collection-card:hover { transform: translateY(-4px); }
-.collection-header { display: flex; align-items: center; gap: 8px; }
-.collection-icon { font-size: 20px; color: #409eff; }
-.collection-name { font-size: 16px; font-weight: 600; }
-.collection-description { font-size: 14px; color: #606266; margin: 0; min-height: 40px; }
+<style lang="scss" scoped>
+@use '@/styles/collections.scss' as *;
 </style>

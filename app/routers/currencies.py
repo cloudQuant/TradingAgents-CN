@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 import logging
 import pandas as pd
@@ -9,6 +9,9 @@ import akshare as ak
 from app.routers.auth_db import get_current_user
 from app.core.database import get_mongo_db
 from app.services.currency_data_service import CurrencyDataService
+from app.services.currency_refresh_service import CurrencyRefreshService
+from app.config.currency_update_config import get_collection_update_config, get_all_collection_update_configs
+from app.utils.task_manager import get_task_manager
 
 router = APIRouter(prefix="/api/currencies", tags=["currencies"])
 logger = logging.getLogger("webapi")
@@ -55,6 +58,13 @@ async def list_currencies_collections(current_user: dict = Depends(get_current_u
             "description": "所有货币的基础信息",
             "route": "/currencies/collections/currency_currencies",
             "fields": ["id", "name", "short_code", "code", "precision", "subunit", "symbol", "symbol_first", "decimal_mark", "thousands_separator"],
+        },
+        {
+            "name": "currency_convert",
+            "display_name": "货币转换",
+            "description": "实时货币转换数据",
+            "route": "/currencies/collections/currency_convert",
+            "fields": ["date", "base", "to", "amount", "value"],
         },
     ]
     return {"success": True, "data": collections}
@@ -783,4 +793,122 @@ async def tool_currency_convert(
         
     except Exception as e:
         logger.error(f"❌ [Currency Tool] Conversion failed: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+
+# ============== 统一刷新 API ==============
+
+@router.get("/collections/{collection_name}/update-config")
+async def get_currency_collection_update_config(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取集合的更新配置"""
+    config = get_collection_update_config(collection_name)
+    return {"success": True, "data": config}
+
+
+@router.post("/collections/{collection_name}/refresh")
+async def refresh_currency_collection(
+    collection_name: str,
+    background_tasks: BackgroundTasks,
+    params: Dict[str, Any] = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    刷新指定的外汇数据集合
+    
+    Args:
+        collection_name: 集合名称
+        params: 更新参数，包含 update_type ('single' 或 'batch') 和其他参数
+    """
+    try:
+        task_manager = get_task_manager()
+        task_id = task_manager.create_task(
+            task_type=f"refresh_{collection_name}",
+            description=f"更新外汇集合: {collection_name}"
+        )
+        
+        async def do_refresh():
+            db = get_mongo_db()
+            refresh_service = CurrencyRefreshService(db)
+            await refresh_service.refresh_collection(collection_name, task_id, params)
+        
+        background_tasks.add_task(do_refresh)
+        
+        return {"success": True, "data": {"task_id": task_id}}
+        
+    except Exception as e:
+        logger.error(f"❌ [Currency Refresh] Failed to start refresh: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/collections/{collection_name}/refresh/status/{task_id}")
+async def get_currency_refresh_task_status(
+    collection_name: str,
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取刷新任务状态"""
+    try:
+        task_manager = get_task_manager()
+        task = task_manager.get_task(task_id)
+        
+        if task is None:
+            return {"success": False, "message": f"Task {task_id} not found"}
+        
+        return {"success": True, "data": task}
+        
+    except Exception as e:
+        logger.error(f"❌ [Currency Refresh] Failed to get task status: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/collections/{collection_name}/data")
+async def get_currency_collection_data(
+    collection_name: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user),
+):
+    """获取集合数据"""
+    try:
+        db = get_mongo_db()
+        refresh_service = CurrencyRefreshService(db)
+        
+        skip = (page - 1) * page_size
+        result = await refresh_service.get_collection_data(
+            collection_name, skip=skip, limit=page_size
+        )
+        
+        return {
+            "success": True,
+            "data": {
+                "items": result.get("data", []),
+                "total": result.get("total", 0),
+                "page": page,
+                "page_size": page_size
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ [Currency Collection] Failed to get data: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/collections/{collection_name}/overview")
+async def get_currency_collection_overview(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取集合数据概览"""
+    try:
+        db = get_mongo_db()
+        refresh_service = CurrencyRefreshService(db)
+        
+        result = await refresh_service.get_collection_overview(collection_name)
+        return {"success": True, "data": result}
+        
+    except Exception as e:
+        logger.error(f"❌ [Currency Collection] Failed to get overview: {e}", exc_info=True)
         return {"success": False, "message": str(e)}

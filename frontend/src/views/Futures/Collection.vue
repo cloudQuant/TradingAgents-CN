@@ -129,64 +129,113 @@
     <el-dialog
       v-model="refreshDialogVisible"
       title="更新数据"
-      width="500px"
+      width="600px"
       :close-on-click-modal="false"
     >
-      <el-form label-width="100px">
+      <el-form label-width="120px">
         <el-form-item label="集合名称">
           <el-input :value="collectionInfo?.display_name || collectionName" disabled />
         </el-form-item>
 
-        <!-- futures_zh_spot 特定参数 -->
-        <template v-if="collectionName === 'futures_zh_spot'">
-          <el-form-item label="市场类型">
-            <el-select v-model="market" style="width: 100%">
-              <el-option label="商品期货 (CF)" value="CF" />
-              <el-option label="金融期货 (FF)" value="FF" />
-            </el-select>
-          </el-form-item>
-          
-          <el-form-item label="数据详细度">
-            <el-select v-model="adjust" style="width: 100%">
-              <el-option label="基本数据" value="0" />
-              <el-option label="包含交易所信息" value="1" />
-            </el-select>
-          </el-form-item>
+        <el-form-item label="更新说明" v-if="updateConfig?.update_description">
+          <el-text type="info">{{ updateConfig.update_description }}</el-text>
+        </el-form-item>
 
-          <el-form-item label="合约代码">
+        <!-- 更新类型选择 -->
+        <el-form-item label="更新类型" v-if="updateConfig?.batch_update?.enabled">
+          <el-radio-group v-model="updateType">
+            <el-radio value="single" v-if="updateConfig?.single_update?.enabled">单条更新</el-radio>
+            <el-radio value="batch">批量更新</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- 动态参数表单 -->
+        <template v-if="updateType === 'single' && updateConfig?.single_update?.params">
+          <el-form-item
+            v-for="param in updateConfig.single_update.params"
+            :key="param.name"
+            :label="param.label || param.name"
+          >
+            <el-select
+              v-if="param.options"
+              v-model="updateParams[param.name]"
+              style="width: 100%"
+              :placeholder="param.placeholder || `请选择${param.label}`"
+            >
+              <el-option
+                v-for="opt in param.options"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
             <el-input
-              v-model="symbol"
-              placeholder="可选，留空获取所有合约"
+              v-else
+              v-model="updateParams[param.name]"
+              :placeholder="param.placeholder || `请输入${param.label}`"
             />
+            <div class="param-hint" v-if="param.description">
+              <el-text size="small" type="info">{{ param.description }}</el-text>
+            </div>
           </el-form-item>
         </template>
 
-        <!-- 通用symbol参数 -->
-        <el-form-item v-else label="参数">
-          <el-input
-            v-model="symbol"
-            placeholder="请输入参数（如合约代码、日期等）"
-          />
-        </el-form-item>
+        <template v-if="updateType === 'batch' && updateConfig?.batch_update?.params">
+          <el-form-item
+            v-for="param in updateConfig.batch_update.params"
+            :key="param.name"
+            :label="param.label || param.name"
+          >
+            <el-select
+              v-if="param.options"
+              v-model="updateParams[param.name]"
+              style="width: 100%"
+              :placeholder="param.placeholder || `请选择${param.label}`"
+            >
+              <el-option
+                v-for="opt in param.options"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+            <el-input-number
+              v-else-if="param.type === 'number'"
+              v-model="updateParams[param.name]"
+              :min="param.min || 1"
+              :max="param.max || 100"
+              style="width: 100%"
+            />
+            <el-input
+              v-else
+              v-model="updateParams[param.name]"
+              :placeholder="param.placeholder || `请输入${param.label}`"
+            />
+            <div class="param-hint" v-if="param.description">
+              <el-text size="small" type="info">{{ param.description }}</el-text>
+            </div>
+          </el-form-item>
+        </template>
 
         <!-- 进度显示 -->
         <div v-if="refreshing" style="margin-top: 20px;">
           <el-progress
-            :percentage="100"
-            status="success"
-            :indeterminate="true"
-            :stroke-width="15"
+            :percentage="taskProgress"
+            :status="taskStatus === 'completed' ? 'success' : (taskStatus === 'failed' ? 'exception' : '')"
+            :stroke-width="18"
           />
           <p style="margin-top: 10px; font-size: 14px; color: #606266; text-align: center;">
-            数据更新中，请稍候...
+            {{ taskMessage || '数据更新中，请稍候...' }}
           </p>
         </div>
       </el-form>
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="refreshDialogVisible = false" :disabled="refreshing">取消</el-button>
-          <el-button type="primary" @click="handleRefresh" :loading="refreshing">
+          <el-button @click="handleCancelRefresh" :disabled="refreshing && taskStatus === 'running'">
+            {{ refreshing ? '后台运行' : '取消' }}
+          </el-button>
+          <el-button type="primary" @click="handleRefresh" :loading="refreshing" :disabled="refreshing">
             开始更新
           </el-button>
         </span>
@@ -391,6 +440,16 @@ const syncDialogVisible = ref(false)
 const symbol = ref('')
 const market = ref('CF')
 const adjust = ref('0')
+
+// 新增：更新配置和任务状态
+const updateConfig = ref<any>(null)
+const updateType = ref('single')
+const updateParams = ref<Record<string, any>>({})
+const currentTaskId = ref('')
+const taskProgress = ref(0)
+const taskStatus = ref('')
+const taskMessage = ref('')
+let taskPollTimer: any = null
 
 // 文件导入相关
 const uploadRef = ref()
@@ -622,36 +681,131 @@ const handleRemoteSync = async () => {
   }
 }
 
-// 更新数据
+// 加载更新配置
+const loadUpdateConfig = async () => {
+  try {
+    const res = await futuresApi.getCollectionUpdateConfig(collectionName.value)
+    if (res.success) {
+      updateConfig.value = res.data
+      // 根据配置设置默认更新类型
+      if (updateConfig.value?.single_update?.enabled) {
+        updateType.value = 'single'
+      } else if (updateConfig.value?.batch_update?.enabled) {
+        updateType.value = 'batch'
+      }
+      // 初始化默认参数值
+      initDefaultParams()
+    }
+  } catch (error) {
+    console.error('加载更新配置失败:', error)
+  }
+}
+
+// 初始化默认参数值
+const initDefaultParams = () => {
+  updateParams.value = {}
+  const config = updateType.value === 'batch' 
+    ? updateConfig.value?.batch_update 
+    : updateConfig.value?.single_update
+  
+  if (config?.params) {
+    for (const param of config.params) {
+      if (param.default !== undefined) {
+        updateParams.value[param.name] = param.default
+      }
+    }
+  }
+}
+
+// 轮询任务状态
+const pollTaskStatus = async () => {
+  if (!currentTaskId.value) return
+  
+  try {
+    const res = await futuresApi.getRefreshTaskStatus(currentTaskId.value)
+    if (res.success && res.data) {
+      const task = res.data
+      taskProgress.value = task.progress || 0
+      taskStatus.value = task.status || ''
+      taskMessage.value = task.message || ''
+      
+      if (task.status === 'completed') {
+        ElMessage.success('更新完成')
+        stopTaskPoll()
+        refreshing.value = false
+        loadData()
+        loadStats()
+      } else if (task.status === 'failed') {
+        ElMessage.error(task.error || '更新失败')
+        stopTaskPoll()
+        refreshing.value = false
+      }
+    }
+  } catch (error) {
+    console.error('获取任务状态失败:', error)
+  }
+}
+
+// 开始轮询
+const startTaskPoll = () => {
+  stopTaskPoll()
+  taskPollTimer = setInterval(pollTaskStatus, 2000)
+}
+
+// 停止轮询
+const stopTaskPoll = () => {
+  if (taskPollTimer) {
+    clearInterval(taskPollTimer)
+    taskPollTimer = null
+  }
+}
+
+// 取消/后台运行
+const handleCancelRefresh = () => {
+  if (refreshing.value) {
+    // 后台运行，关闭对话框但继续轮询
+    refreshDialogVisible.value = false
+    ElMessage.info('任务将在后台继续运行')
+  } else {
+    refreshDialogVisible.value = false
+  }
+}
+
+// 更新数据（使用新API）
 const handleRefresh = async () => {
   refreshing.value = true
+  taskProgress.value = 0
+  taskStatus.value = 'pending'
+  taskMessage.value = '准备更新...'
+  
   try {
-    const params: any = {}
-    if (symbol.value) params.symbol = symbol.value
+    // 构建参数
+    const params: any = { ...updateParams.value }
+    if (updateType.value === 'batch') {
+      params.batch = true
+    }
     
+    // 兼容旧逻辑
     if (collectionName.value === 'futures_zh_spot') {
+      if (symbol.value) params.symbol = symbol.value
       params.market = market.value
       params.adjust = adjust.value
     }
     
-    const res = await futuresApi.updateCollection(collectionName.value, params)
+    // 调用新的刷新API
+    const res = await futuresApi.refreshCollectionV2(collectionName.value, params)
     
-    if (res.success) {
-      ElMessage.success('更新任务已提交，请稍后刷新查看数据')
-      refreshDialogVisible.value = false
-      
-      // 5秒后自动刷新数据
-      setTimeout(() => {
-        loadData()
-        loadStats()
-      }, 5000)
+    if (res.success && res.data?.task_id) {
+      currentTaskId.value = res.data.task_id
+      ElMessage.success('更新任务已提交')
+      startTaskPoll()
     } else {
       ElMessage.error(res.error || '更新失败')
+      refreshing.value = false
     }
   } catch (error: any) {
     console.error('更新失败:', error)
-    ElMessage.error(error.message || '更新失败')
-  } finally {
+    ElMessage.error(error.response?.data?.detail || error.message || '更新失败')
     refreshing.value = false
   }
 }
@@ -712,125 +866,28 @@ watch(() => route.params.collectionName, (newVal) => {
   if (newVal) {
     collectionName.value = newVal as string
     currentPage.value = 1
+    stopTaskPoll()
     loadCollectionInfo()
+    loadUpdateConfig()
     loadStats()
     loadData()
   }
 })
 
+// 监听更新类型变化，重新初始化参数
+watch(updateType, () => {
+  initDefaultParams()
+})
+
 // 初始化
 onMounted(() => {
   loadCollectionInfo()
+  loadUpdateConfig()
   loadStats()
   loadData()
 })
 </script>
 
-<style scoped>
-.collection-view {
-  padding: 20px;
-  background-color: #f5f7fa;
-  min-height: 100vh;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.title-section {
-  flex: 1;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  color: #303133;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.title-icon {
-  font-size: 28px;
-  color: #409EFF;
-}
-
-.page-description {
-  margin: 8px 0 0 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.stats-card, .chart-card, .data-card {
-  background: white;
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.stat-metric-group {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 20px;
-}
-
-.stat-metric-item {
-  text-align: center;
-}
-
-.metric-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.metric-value-large {
-  font-size: 32px;
-  font-weight: 600;
-  color: #409EFF;
-  margin-bottom: 4px;
-}
-
-.metric-sub {
-  font-size: 12px;
-  color: #C0C4CC;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.text-muted {
-  color: #C0C4CC;
-}
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
 </style>

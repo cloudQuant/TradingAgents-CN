@@ -17,7 +17,7 @@ class FundRatingShEmService:
     
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
-        self.collection = db.funds.fund_rating_sh_em
+        self.collection = db["fund_rating_sh_em"]
         self.provider = FundRatingShEmProvider()
         
     async def get_overview(self) -> Dict[str, Any]:
@@ -60,8 +60,9 @@ class FundRatingShEmService:
             "limit": limit,
         }
     
-    async def refresh_data(self, **kwargs) -> Dict[str, Any]:
-        """刷新数据"""
+
+    async def update_single_data(self, **kwargs) -> Dict[str, Any]:
+        """更新单条数据"""
         try:
             df = self.provider.fetch_data(**kwargs)
             
@@ -79,7 +80,7 @@ class FundRatingShEmService:
                 result = await self.collection.insert_many(records)
                 return {
                     "success": True,
-                    "message": "Data refreshed successfully",
+                    "message": "Data updated successfully",
                     "inserted": len(result.inserted_ids),
                 }
             
@@ -90,18 +91,18 @@ class FundRatingShEmService:
             }
             
         except Exception as e:
-            logger.error(f"Error refreshing data: {e}")
+            logger.error(f"Error updating single data: {e}")
             return {
                 "success": False,
                 "message": str(e),
                 "inserted": 0,
             }
-    
-    async def clear_data(self) -> Dict[str, Any]:
-        """清空数据"""
-        result = await self.collection.delete_many({})
+
+    async def update_batch_data(self, **kwargs) -> Dict[str, Any]:
+        """批量更新数据（暂未实现）"""
+        logger.warning(f"{self.__class__.__name__}.update_batch_data: 批量更新功能暂未实现")
         return {
-            "success": True,
-            "message": f"Deleted {result.deleted_count} records",
-            "deleted": result.deleted_count,
+            "success": False,
+            "message": "批量更新功能暂未实现",
+            "warning": True,
         }

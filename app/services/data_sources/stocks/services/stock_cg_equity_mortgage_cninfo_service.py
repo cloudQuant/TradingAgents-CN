@@ -7,7 +7,7 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
 
-from .providers.stock_cg_equity_mortgage_cninfo_provider import StockCgEquityMortgageCninfoProvider
+from ..providers.stock_cg_equity_mortgage_cninfo_provider import StockCgEquityMortgageCninfoProvider
 
 logger = logging.getLogger(__name__)
 
