@@ -168,9 +168,14 @@ class FundRefreshService:
     
     # 前端特有的参数，不应传递给 akshare 函数
     FRONTEND_ONLY_PARAMS = {
-        'batch', 'page', 'limit', 'skip', 'filters', 'sort', 'order',
+        # 批量更新控制参数
+        'batch', 'batch_update', 'batch_size', 'concurrency', 'delay',
+        # 分页和过滤参数
+        'page', 'limit', 'skip', 'filters', 'sort', 'order',
+        # 任务和回调参数
         'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
-        'force', 'clear_first', 'overwrite'
+        # 更新控制参数
+        'force', 'clear_first', 'overwrite', 'mode'
     }
     
     async def refresh_collection(
@@ -210,6 +215,7 @@ class FundRefreshService:
                     k: v for k, v in params.items() 
                     if k not in self.FRONTEND_ONLY_PARAMS
                 }
+                logger.info(f"[参数过滤] 原始参数: {params}, 过滤后: {api_params}")
             
             # 调用服务刷新数据
             result = await service.refresh_data(**api_params)
