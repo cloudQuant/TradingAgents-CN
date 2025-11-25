@@ -166,6 +166,13 @@ class FundRefreshService:
             "fund_announcement_personnel_em": FundAnnouncementPersonnelEmService(self.db),
         }
     
+    # 前端特有的参数，不应传递给 akshare 函数
+    FRONTEND_ONLY_PARAMS = {
+        'batch', 'page', 'limit', 'skip', 'filters', 'sort', 'order',
+        'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
+        'force', 'clear_first', 'overwrite'
+    }
+    
     async def refresh_collection(
         self,
         collection_name: str,
@@ -196,8 +203,16 @@ class FundRefreshService:
             # 更新进度
             self.task_manager.update_progress(task_id, 10, 100, f"正在获取 {collection_name} 数据...")
             
+            # 过滤掉前端特有的参数，只保留 akshare 需要的参数
+            api_params = {}
+            if params:
+                api_params = {
+                    k: v for k, v in params.items() 
+                    if k not in self.FRONTEND_ONLY_PARAMS
+                }
+            
             # 调用服务刷新数据
-            result = await service.refresh_data(**(params or {}))
+            result = await service.refresh_data(**api_params)
             
             if result.get("success"):
                 self.task_manager.update_progress(
