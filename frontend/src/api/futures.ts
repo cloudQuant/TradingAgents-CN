@@ -80,5 +80,31 @@ export const futuresApi = {
       `${API_BASE_URL}/api/futures/collections/${collectionName}`
     )
     return response.data
+  },
+
+  // 上传数据文件
+  async uploadData(collectionName: string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const response = await axios.post(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    return response.data
+  },
+
+  // 远程同步数据
+  async syncData(collectionName: string, config: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/futures/collections/${collectionName}/sync`,
+      config
+    )
+    return response.data
   }
 }

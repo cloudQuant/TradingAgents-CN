@@ -12,7 +12,18 @@
         <div class="header-actions">
           <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
           <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
-          <el-button :icon="Download" type="primary" @click="handleRefreshData" :loading="refreshing">更新数据</el-button>
+          <el-dropdown @command="handleUpdateCommand" trigger="click">
+            <el-button type="primary" :loading="refreshing || importing || remoteSyncing">
+              更新数据 <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="api" :icon="Download">API更新</el-dropdown-item>
+                <el-dropdown-item command="file" :icon="Upload">文件导入</el-dropdown-item>
+                <el-dropdown-item command="remote" :icon="Connection">远程同步</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
         </div>
       </div>
@@ -337,7 +348,7 @@
                 <template #reference>
                   <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
                 </template>
-                <el-table :data="fields" stripe border size="small" style="width: 100%">
+                <el-table :data="fields" stripe border size="small">
                   <el-table-column prop="name" label="字段名" width="200" />
                   <el-table-column prop="type" label="类型" width="120" />
                   <el-table-column prop="example" label="示例" show-overflow-tooltip>
@@ -430,8 +441,7 @@
           v-loading="loading"
           stripe
           border
-          style="width: 100%"
-          max-height="600"
+          :max-height="600"
           @sort-change="handleSortChange"
         >
           <el-table-column
@@ -467,10 +477,10 @@
       </el-card>
     </div>
 
-    <!-- 更新数据对话框 -->
+    <!-- API更新对话框 -->
     <el-dialog
-      v-model="refreshDialogVisible"
-      title="更新数据"
+      v-model="apiRefreshDialogVisible"
+      title="API更新"
       width="600px"
       :close-on-click-modal="false"
     >
@@ -479,117 +489,8 @@
           <el-input :value="collectionInfo?.display_name || collectionName" disabled />
         </el-form-item>
 
-        <!-- 批量更新等配置 (针对特定集合) -->
+        <!-- API配置 (针对特定集合) -->
         <template v-if="collectionName === 'fund_basic_info'">
-          
-          <!-- 文件导入 -->
-          <el-divider content-position="left">文件导入</el-divider>
-          <div style="width: 100%">
-            <el-upload
-              ref="uploadRef"
-              :auto-upload="false"
-              multiple
-              :on-change="handleImportFileChange"
-              :on-remove="handleImportFileRemove"
-              accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              drag
-            >
-              <div class="el-upload__text">
-                拖拽文件到此处或<em>点击选择文件</em>
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">
-                  支持 CSV 或 Excel 文件，列结构需包含基金代码、基金名称等字段
-                </div>
-              </template>
-            </el-upload>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleImportFile"
-              :loading="importing"
-              :disabled="!importFiles.length || importing"
-            >
-              导入文件
-            </el-button>
-          </div>
-          
-          <!-- 远程同步 -->
-          <el-divider content-position="left">远程同步</el-divider>
-          <div style="width: 100%">
-            <el-row :gutter="8">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncHost"
-                  placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
-                />
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-                  <el-option label="MongoDB" value="mongodb" />
-                </el-select>
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-                  <el-option label="1000" :value="1000" />
-                  <el-option label="2000" :value="2000" />
-                  <el-option label="5000" :value="5000" />
-                  <el-option label="10000" :value="10000" />
-                </el-select>
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncCollection"
-                  :placeholder="collectionName === 'fund_name_em' ? '远程集合名称，默认 fund_name_em' : '远程集合名称，默认 fund_basic_info'"
-                />
-              </el-col>
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncUsername"
-                  placeholder="远程用户名（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncAuthSource"
-                  placeholder="认证库（authSource），通常为创建该用户时所在的数据库，例如 admin"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncPassword"
-                  type="password"
-                  show-password
-                  placeholder="远程密码（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleRemoteSync"
-              :loading="remoteSyncing"
-              :disabled="!remoteSyncHost || remoteSyncing"
-            >
-              远程同步
-            </el-button>
-            <div
-              v-if="remoteSyncStats"
-              style="margin-top: 4px; font-size: 12px; color: #606266;"
-            >
-              最近一次同步：远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新
-              {{ remoteSyncStats.synced_count }} 条
-            </div>
-          </div>
-
           <!-- 单个更新 -->
           <el-divider content-position="left">单个更新</el-divider>
           <div style="width: 100%">
@@ -640,128 +541,8 @@
           </el-row>
         </template>
 
-        <!-- fund_name_em、fund_purchase_status、fund_etf_spot_em、fund_etf_spot_ths、fund_lof_spot_em、fund_spot_sina、fund_etf_hist_min_em、fund_etf_hist_em、fund_lof_hist_em、fund_hist_sina、fund_open_fund_daily_em、fund_open_fund_info_em 和 fund_money_fund_daily_em 的文件导入和远程同步 -->
-        <template v-else-if="collectionName === 'fund_name_em' || collectionName === 'fund_purchase_status' || collectionName === 'fund_etf_spot_em' || collectionName === 'fund_etf_spot_ths' || collectionName === 'fund_lof_spot_em' || collectionName === 'fund_spot_sina' || collectionName === 'fund_etf_hist_min_em' || collectionName === 'fund_etf_hist_em' || collectionName === 'fund_lof_hist_em' || collectionName === 'fund_hist_sina' || collectionName === 'fund_open_fund_daily_em' || collectionName === 'fund_open_fund_info_em' || collectionName === 'fund_money_fund_daily_em'">
-          <!-- 文件导入 -->
-          <el-divider content-position="left">文件导入</el-divider>
-          <div style="width: 100%">
-            <el-upload
-              ref="uploadRef"
-              :auto-upload="false"
-              multiple
-              :on-change="handleImportFileChange"
-              :on-remove="handleImportFileRemove"
-              accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              drag
-            >
-              <div class="el-upload__text">
-                拖拽文件到此处或<em>点击选择文件</em>
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">
-                  <span v-if="collectionName === 'fund_name_em'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金简称等字段</span>
-                  <span v-else-if="collectionName === 'fund_purchase_status'">支持 CSV 或 Excel 文件，列结构需包含基金代码、申购状态、赎回状态等字段</span>
-                  <span v-else-if="collectionName === 'fund_etf_spot_em'">支持 CSV 或 Excel 文件，列结构需包含代码、名称、最新价、涨跌幅等字段</span>
-                  <span v-else-if="collectionName === 'fund_etf_spot_ths'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金名称、当前单位净值、增长率等字段</span>
-                  <span v-else-if="collectionName === 'fund_lof_spot_em'">支持 CSV 或 Excel 文件，列结构需包含代码、名称、最新价、涨跌幅、市值等字段</span>
-                  <span v-else-if="collectionName === 'fund_spot_sina'">支持 CSV 或 Excel 文件，列结构需包含代码、名称、最新价、涨跌幅、成交量、基金类型等字段</span>
-                  <span v-else-if="collectionName === 'fund_etf_hist_min_em'">支持 CSV 或 Excel 文件，列结构需包含代码、时间、开盘、收盘、最高、最低、成交量、成交额等字段</span>
-                  <span v-else-if="collectionName === 'fund_etf_hist_em'">支持 CSV 或 Excel 文件，列结构需包含代码、日期、开盘、收盘、最高、最低、成交量、成交额、振幅、涨跌幅、涨跌额、换手率等字段</span>
-                  <span v-else-if="collectionName === 'fund_lof_hist_em'">支持 CSV 或 Excel 文件，列结构需包含代码、日期、开盘、收盘、最高、最低、成交量、成交额、振幅、涨跌幅、涨跌额、换手率等字段</span>
-                  <span v-else-if="collectionName === 'fund_hist_sina'">支持 CSV 或 Excel 文件，列结构需包含 code、date、open、high、low、close、volume 等字段</span>
-                  <span v-else-if="collectionName === 'fund_open_fund_daily_em'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金简称、单位净值、累计净值等字段（列名格式如 "2024-01-01-单位净值"）</span>
-                  <span v-else-if="collectionName === 'fund_open_fund_info_em'">支持 CSV 或 Excel 文件，列结构需包含日期、基金代码、单位净值、日增长率、累计净值等字段</span>
-                  <span v-else-if="collectionName === 'fund_money_fund_daily_em'">支持 CSV 或 Excel 文件，列结构需包含基金代码、基金简称、每万份收益、7日年化收益率等字段</span>
-                </div>
-              </template>
-            </el-upload>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleImportFile"
-              :loading="importing"
-              :disabled="!importFiles.length || importing"
-            >
-              导入文件
-            </el-button>
-          </div>
-
-          <!-- 远程同步 -->
-          <el-divider content-position="left">远程同步</el-divider>
-          <div style="width: 100%">
-            <el-row :gutter="8">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncHost"
-                  placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
-                />
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-                  <el-option label="MongoDB" value="mongodb" />
-                </el-select>
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-                  <el-option label="1000" :value="1000" />
-                  <el-option label="2000" :value="2000" />
-                  <el-option label="5000" :value="5000" />
-                  <el-option label="10000" :value="10000" />
-                </el-select>
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncCollection"
-                  :placeholder="`远程集合名称，默认 ${collectionName}`"
-                />
-              </el-col>
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncUsername"
-                  placeholder="远程用户名（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncAuthSource"
-                  placeholder="认证库（authSource），通常为创建该用户时所在的数据库，例如 admin"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncPassword"
-                  type="password"
-                  show-password
-                  placeholder="远程密码（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleRemoteSync"
-              :loading="remoteSyncing"
-              :disabled="!remoteSyncHost || remoteSyncing"
-            >
-              远程同步
-            </el-button>
-            <div
-              v-if="remoteSyncStats"
-              style="margin-top: 4px; font-size: 12px; color: #606266;"
-            >
-              最近一次同步：远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新
-              {{ remoteSyncStats.synced_count }} 条
-            </div>
-          </div>
-
+        <!-- API配置：各基金集合的单个更新和批量更新 -->
+        <template v-else-if="collectionName === 'fund_name_em' || collectionName === 'fund_purchase_status' || collectionName === 'fund_etf_spot_em' || collectionName === 'fund_etf_spot_ths' || collectionName === 'fund_lof_spot_em' || collectionName === 'fund_spot_sina' || collectionName === 'fund_etf_hist_min_em' || collectionName === 'fund_etf_hist_em' || collectionName === 'fund_lof_hist_em' || collectionName === 'fund_hist_sina' || collectionName === 'fund_open_fund_daily_em' || collectionName === 'fund_open_fund_info_em' || collectionName === 'fund_money_fund_daily_em' || collectionName === 'fund_money_fund_info_em' || collectionName === 'fund_financial_fund_daily_em' || collectionName === 'fund_financial_fund_info_em' || collectionName === 'fund_etf_fund_daily_em' || collectionName === 'fund_etf_fund_info_em' || collectionName === 'fund_etf_dividend_sina' || collectionName === 'fund_fh_em' || collectionName === 'fund_cf_em' || collectionName === 'fund_fh_rank_em' || collectionName === 'fund_open_fund_rank_em' || collectionName === 'fund_exchange_rank_em' || collectionName === 'fund_money_rank_em' || collectionName === 'fund_hk_rank_em' || collectionName === 'fund_individual_achievement_xq' || collectionName === 'fund_individual_analysis_xq' || collectionName === 'fund_individual_profit_probability_xq' || collectionName === 'fund_individual_detail_hold_xq' || collectionName === 'fund_overview_em' || collectionName === 'fund_portfolio_hold_em' || collectionName === 'fund_portfolio_bond_hold_em' || collectionName === 'fund_portfolio_change_em'">
           <!-- fund_open_fund_info_em 特殊配置：添加单个更新和批量更新 -->
           <template v-if="collectionName === 'fund_open_fund_info_em'">
             <!-- 单个更新 -->
@@ -802,6 +583,753 @@
               </el-col>
             </el-row>
           </template>
+
+          <!-- fund_money_fund_info_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_money_fund_info_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从货币型基金实时行情集合（fund_money_fund_daily_em）获取基金代码列表，并发更新历史行情数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_financial_fund_info_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_financial_fund_info_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从理财型基金实时行情集合（fund_financial_fund_daily_em）获取基金代码列表，并发更新历史行情数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_etf_fund_info_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_etf_fund_info_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 511280）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从场内交易基金实时行情集合（fund_etf_fund_daily_em）获取基金代码列表，并发更新历史行情数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_etf_dividend_sina 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_etf_dividend_sina'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入 symbol（如 sh510050）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从基金名称集合（fund_name_em）获取基金代码列表（自动加前缀 sh），并发更新基金累计分红数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="每批数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="200" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_individual_achievement_xq 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_individual_achievement_xq'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从雪球基金基本信息集合（fund_basic_info）获取基金代码列表，并发更新基金业绩数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="更新数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="500" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_value_estimation_em 特殊配置：基金类型选择 -->
+          <template v-if="collectionName === 'fund_value_estimation_em'">
+            <el-divider content-position="left">基金类型选择</el-divider>
+            <el-alert
+              title="净值估算说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>获取东方财富网的基金净值估算数据，支持按基金类型筛选</div>
+              <div style="margin-top: 4px;">数据将按【日期+基金代码】作为唯一标识保存</div>
+            </el-alert>
+            <el-form-item label="基金类型">
+              <el-select v-model="fundValueSymbol" placeholder="请选择基金类型" style="width: 100%">
+                <el-option label="全部" value="全部" />
+                <el-option label="股票型" value="股票型" />
+                <el-option label="混合型" value="混合型" />
+                <el-option label="债券型" value="债券型" />
+                <el-option label="指数型" value="指数型" />
+                <el-option label="QDII" value="QDII" />
+                <el-option label="ETF联接" value="ETF联接" />
+                <el-option label="LOF" value="LOF" />
+                <el-option label="场内交易基金" value="场内交易基金" />
+              </el-select>
+            </el-form-item>
+          </template>
+
+          <!-- fund_individual_analysis_xq 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_individual_analysis_xq'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从基金代码集合（fund_name_em）获取基金代码列表，并发更新基金数据分析</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="更新数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="500" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_individual_profit_probability_xq 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_individual_profit_probability_xq'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从基金代码集合（fund_name_em）获取基金代码列表，并发更新基金盈利概率数据</div>
+              <div style="margin-top: 8px; color: #67C23A;">数据将自动添加基金代码和当日日期，并以日期+基金代码+持有时长作为唯一标识</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="更新数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="500" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_individual_detail_hold_xq 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_individual_detail_hold_xq'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="基金代码">
+                  <el-input 
+                    v-model="singleFundCode" 
+                    placeholder="请输入基金代码（如 000001）"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="季度末日期">
+                  <el-input 
+                    v-model="singleDate" 
+                    placeholder="如 2024-09-30"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-button 
+                  type="primary"
+                  @click="refreshData('single')" 
+                  :loading="refreshing"
+                  :disabled="!singleFundCode || !singleDate || refreshing"
+                  style="width: 100%"
+                >
+                  更新单个
+                </el-button>
+              </el-col>
+            </el-row>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从基金代码集合（fund_name_em）获取基金代码列表</div>
+              <div style="margin-top: 4px;">自动遍历2000年以来所有季度末日期（3月30日、6月30日、9月30日、12月31日）</div>
+              <div style="margin-top: 8px; color: #E6A23C;">⚠️ 批量更新将进行大量API请求，耗时较长，请耐心等待</div>
+              <div style="margin-top: 4px; color: #67C23A;">数据将以 {资产类型: 仓位占比} 字典格式存储在"持仓信息"字段中</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="更新数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="500" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_overview_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_overview_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <div style="width: 100%">
+              <el-input 
+                v-model="singleFundCode" 
+                placeholder="请输入基金代码（如 000001）"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="refreshData('single')" 
+                    :loading="refreshing"
+                    :disabled="!singleFundCode || refreshing"
+                  >
+                    更新单个
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>从基金代码集合（fund_name_em）获取基金代码列表，并发更新基金基本概况数据</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="更新数量">
+                  <el-input-number v-model="batchSize" :min="10" :max="500" :step="10" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_portfolio_hold_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_portfolio_hold_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="基金代码">
+                  <el-input 
+                    v-model="singleFundCode" 
+                    placeholder="请输入基金代码（如 000001）"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="查询年份">
+                  <el-input 
+                    v-model="singleYear" 
+                    placeholder="如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-button 
+                  type="primary"
+                  @click="refreshData('single')" 
+                  :loading="refreshing"
+                  :disabled="!singleFundCode || !singleYear || refreshing"
+                  style="width: 100%"
+                >
+                  更新单个
+                </el-button>
+              </el-col>
+            </el-row>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>📊 从基金代码集合（fund_name_em）获取所有基金代码</div>
+              <div style="margin-top: 4px;">📅 自动遍历指定年份获取持仓数据</div>
+              <div style="margin-top: 4px;">💡 年份为空时：更新2010年至今所有年份</div>
+              <div style="margin-top: 4px;">💡 指定年份时：只更新该年份的持仓数据</div>
+              <div style="margin-top: 4px; color: #67C23A;">数据包含基金代码、股票代码、季度等信息，以基金代码+股票代码+季度作为唯一标识</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="批量更新年份（可选）">
+                  <el-input 
+                    v-model="batchYear" 
+                    placeholder="留空更新所有年份，如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_portfolio_bond_hold_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_portfolio_bond_hold_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="基金代码">
+                  <el-input 
+                    v-model="singleFundCode" 
+                    placeholder="请输入基金代码（如 000001）"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="查询年份">
+                  <el-input 
+                    v-model="singleYear" 
+                    placeholder="如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-button 
+                  type="primary"
+                  @click="refreshData('single')" 
+                  :loading="refreshing"
+                  :disabled="!singleFundCode || !singleYear || refreshing"
+                  style="width: 100%"
+                >
+                  更新单个
+                </el-button>
+              </el-col>
+            </el-row>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>📊 从基金代码集合（fund_name_em）获取所有基金代码</div>
+              <div style="margin-top: 4px;">📅 自动遍历指定年份获取债券持仓数据</div>
+              <div style="margin-top: 4px;">💡 年份为空时：更新2010年至今所有年份</div>
+              <div style="margin-top: 4px;">💡 指定年份时：只更新该年份的债券持仓数据</div>
+              <div style="margin-top: 4px; color: #67C23A;">数据包含基金代码、债券代码、季度等信息</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="批量更新年份（可选）">
+                  <el-input 
+                    v-model="batchYear" 
+                    placeholder="留空更新所有年份，如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+ 
+          <!-- fund_portfolio_change_em 特殊配置：添加单个更新和批量更新 -->
+          <template v-if="collectionName === 'fund_portfolio_change_em'">
+            <!-- 单个更新 -->
+            <el-divider content-position="left">单个更新</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="基金代码">
+                  <el-input 
+                    v-model="singleFundCode" 
+                    placeholder="请输入基金代码（如 000001）"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="查询年份">
+                  <el-input 
+                    v-model="singleYear" 
+                    placeholder="如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="24">
+                <el-button 
+                  type="primary"
+                  @click="refreshData('single')" 
+                  :loading="refreshing"
+                  :disabled="!singleFundCode || !singleYear || refreshing"
+                  style="width: 100%"
+                >
+                  更新单个
+                </el-button>
+              </el-col>
+            </el-row>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>📊 从基金代码集合（fund_name_em）获取所有基金代码</div>
+              <div style="margin-top: 4px;">📅 按指定年份（如 2024）获取基金重大变动数据</div>
+              <div style="margin-top: 4px; color: #67C23A;">数据以基金代码+股票代码+指标类型+季度作为唯一标识，仅对缺失年份进行增量更新</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="批量年份">
+                  <el-input 
+                    v-model="batchYear" 
+                    placeholder="必填，如 2024"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <!-- fund_fh_em 特殊配置：添加单年更新和批量更新 -->
+          <template v-if="collectionName === 'fund_fh_em'">
+            <!-- 单年更新 -->
+            <el-divider content-position="left">单年更新</el-divider>
+            <div style="width: 100%; margin-bottom: 16px;">
+              <el-input
+                v-model="singleYear"
+                placeholder="请输入年份（如 2024）"
+                clearable
+              >
+                <template #append>
+                  <el-button
+                    type="primary"
+                    @click="refreshData('single')"
+                    :loading="refreshing"
+                    :disabled="!singleYear || refreshing"
+                  >
+                    更新单年
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+
+            <!-- 批量更新配置 -->
+            <el-divider content-position="left">批量更新配置</el-divider>
+            <el-alert
+              title="批量更新说明"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 12px;"
+            >
+              <div>批量更新 1999 年至 2025 年所有基金的分红数据，支持多线程并发（默认 3）。</div>
+            </el-alert>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="并发数">
+                  <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+        </template>
+
+        <!-- fund_cf_em 特殊配置：添加单年更新和批量更新 -->
+        <template v-if="collectionName === 'fund_cf_em'">
+          <!-- 单年更新 -->
+          <el-divider content-position="left">单年更新</el-divider>
+          <div style="width: 100%; margin-bottom: 16px;">
+            <el-input
+              v-model="singleYear"
+              placeholder="请输入年份（如 2020）"
+              clearable
+            >
+              <template #append>
+                <el-button
+                  type="primary"
+                  @click="refreshData('single')"
+                  :loading="refreshing"
+                  :disabled="!singleYear || refreshing"
+                >
+                  更新单年
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+
+          <!-- 批量更新配置 -->
+          <el-divider content-position="left">批量更新配置</el-divider>
+          <el-alert
+            title="批量更新说明"
+            type="info"
+            :closable="false"
+            style="margin-bottom: 12px;"
+          >
+            <div>批量更新 2005 年至当前年份所有基金的拆分数据，支持多线程并发（默认 3）。</div>
+          </el-alert>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="并发数">
+                <el-input-number v-model="concurrency" :min="1" :max="10" :step="1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-button
+            style="margin-top: 8px;"
+            type="primary"
+            @click="refreshData('batch')"
+            :loading="refreshing"
+            :disabled="refreshing"
+          >
+            批量更新
+          </el-button>
         </template>
 
         <!-- 指数型基金基本信息更新配置 -->
@@ -1065,6 +1593,11 @@
               <p v-else-if="collectionName === 'fund_open_fund_daily_em'">将从东方财富网一次性获取所有开放式基金的实时净值数据（fund_open_fund_daily_em接口），每个交易日16:00-23:00更新当日最新数据</p>
               <p v-else-if="collectionName === 'fund_open_fund_info_em'">支持单个更新和批量更新开放式基金历史行情数据。单个更新：获取指定基金的单位净值走势和累计净值走势。批量更新：从fund_open_fund_daily_em集合获取基金代码列表后批量更新（fund_open_fund_info_em接口）</p>
               <p v-else-if="collectionName === 'fund_money_fund_daily_em'">将从东方财富网一次性获取所有货币型基金的实时行情数据（fund_money_fund_daily_em接口），包括每万份收益、7日年化收益率等指标</p>
+              <p v-else-if="collectionName === 'fund_money_fund_info_em'">支持单个更新和批量更新货币型基金历史行情数据。单个更新：获取指定基金的历史每万份收益和7日年化收益率数据。批量更新：从fund_money_fund_daily_em集合获取基金代码列表后批量更新（fund_money_fund_info_em接口）</p>
+              <p v-else-if="collectionName === 'fund_financial_fund_daily_em'">将从东方财富网一次性获取所有理财型基金的实时行情数据（fund_financial_fund_daily_em接口），包括上期年化收益率、每万份收益、7日年化收益率、封闭期等指标</p>
+              <p v-else-if="collectionName === 'fund_financial_fund_info_em'">支持单个更新和批量更新理财型基金历史行情数据。单个更新：获取指定基金的历史单位净值、累计净值、日增长率数据。批量更新：从fund_financial_fund_daily_em集合获取基金代码列表后批量更新（fund_financial_fund_info_em接口）</p>
+              <p v-else-if="collectionName === 'fund_etf_fund_daily_em'">将从东方财富网一次性获取所有场内交易基金的实时行情数据（fund_etf_fund_daily_em接口），包括基金代码、类型、单位净值、累计净值、增长值、增长率、市价、折价率等指标，动态日期字段会自动去掉日期部分以保持一致性</p>
+              <p v-else-if="collectionName === 'fund_etf_fund_info_em'">支持单个更新和批量更新场内交易基金历史行情数据。单个更新：获取指定基金的历史单位净值、累计净值、日增长率数据。批量更新：从fund_etf_fund_daily_em集合获取基金代码列表后批量更新（fund_etf_fund_info_em接口）</p>
               <p v-else-if="collectionName === 'fund_spot_sina'">将从新浪财经获取{{ selectedFundType === '全部' ? '三种类型' : selectedFundType }}的实时行情数据（fund_etf_category_sina接口）</p>
               <p v-else-if="collectionName === 'fund_etf_hist_min_em'">支持单个更新和批量更新ETF基金分时行情数据（fund_etf_hist_min_em接口）</p>
               <p v-else-if="collectionName === 'fund_lof_hist_min_em'">支持单个更新和批量更新LOF基金分时行情数据（fund_lof_hist_min_em接口）</p>
@@ -1079,12 +1612,158 @@
           {{ refreshing ? '取消' : '关闭' }}
         </el-button>
         <el-button 
+          v-if="collectionName !== 'fund_cf_em'"
           type="primary" 
-          @click="refreshData" 
+          @click="refreshData('batch')" 
           :loading="refreshing"
           :disabled="refreshing"
         >
           {{ refreshing ? '更新中...' : '开始更新' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 文件导入对话框 -->
+    <el-dialog
+      v-model="fileImportDialogVisible"
+      title="文件导入"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="集合名称">
+          <el-input :value="collectionInfo?.display_name || collectionName" disabled />
+        </el-form-item>
+        
+        <el-divider content-position="left">选择文件</el-divider>
+        <div style="width: 100%">
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            multiple
+            :on-change="handleImportFileChange"
+            :on-remove="handleImportFileRemove"
+            accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            drag
+          >
+            <div class="el-upload__text">
+              拖拽文件到此处或<em>点击选择文件</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持 CSV 或 Excel 文件
+              </div>
+            </template>
+          </el-upload>
+        </div>
+      </el-form>
+      
+      <template #footer>
+        <el-button @click="fileImportDialogVisible = false">关闭</el-button>
+        <el-button 
+          type="primary" 
+          @click="handleImportFile"
+          :loading="importing"
+          :disabled="!importFiles.length || importing"
+        >
+          {{ importing ? '导入中...' : '开始导入' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 远程同步对话框 -->
+    <el-dialog
+      v-model="remoteSyncDialogVisible"
+      title="远程同步"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="120px">
+        <el-form-item label="集合名称">
+          <el-input :value="collectionInfo?.display_name || collectionName" disabled />
+        </el-form-item>
+        
+        <el-divider content-position="left">远程MongoDB配置</el-divider>
+        <el-form-item label="远程地址">
+          <el-input
+            v-model="remoteSyncHost"
+            placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10"
+          />
+        </el-form-item>
+        
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="数据库类型">
+              <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
+                <el-option label="MongoDB" value="mongodb" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="批次大小">
+              <el-select v-model="remoteSyncBatchSize" style="width: 100%">
+                <el-option label="1000" :value="1000" />
+                <el-option label="2000" :value="2000" />
+                <el-option label="5000" :value="5000" />
+                <el-option label="10000" :value="10000" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="集合名称">
+              <el-input
+                v-model="remoteSyncCollection"
+                :placeholder="`默认 ${collectionName}`"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="用户名">
+              <el-input
+                v-model="remoteSyncUsername"
+                placeholder="可选"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-form-item label="认证库">
+          <el-input
+            v-model="remoteSyncAuthSource"
+            placeholder="authSource，通常为 admin"
+          />
+        </el-form-item>
+        
+        <el-form-item label="密码">
+          <el-input
+            v-model="remoteSyncPassword"
+            type="password"
+            show-password
+            placeholder="可选"
+          />
+        </el-form-item>
+        
+        <div
+          v-if="remoteSyncStats"
+          style="margin-top: 12px; padding: 12px; background: #f5f7fa; border-radius: 4px; font-size: 13px; color: #606266;"
+        >
+          <div>最近一次同步：</div>
+          <div style="margin-top: 4px;">远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新 {{ remoteSyncStats.synced_count }} 条</div>
+        </div>
+      </el-form>
+      
+      <template #footer>
+        <el-button @click="remoteSyncDialogVisible = false">关闭</el-button>
+        <el-button 
+          type="primary" 
+          @click="handleRemoteSync"
+          :loading="remoteSyncing"
+          :disabled="!remoteSyncHost || remoteSyncing"
+        >
+          {{ remoteSyncing ? '同步中...' : '开始同步' }}
         </el-button>
       </template>
     </el-dialog>
@@ -1134,7 +1813,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Box, Refresh, Search, Download, Delete, QuestionFilled } from '@element-plus/icons-vue'
+import { Box, Refresh, Search, Download, Delete, QuestionFilled, ArrowDown, Upload, Connection } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fundsApi } from '@/api/funds'
 import { use } from 'echarts/core'
@@ -1974,8 +2653,10 @@ const lofMarketCapPieOption = computed(() => {
   }
 })
 
-// 更新数据相关
-const refreshDialogVisible = ref(false)
+// 更新数据相关 - 三个独立对话框
+const apiRefreshDialogVisible = ref(false)  // API更新对话框
+const fileImportDialogVisible = ref(false)  // 文件导入对话框
+const remoteSyncDialogVisible = ref(false)  // 远程同步对话框
 const refreshing = ref(false)
 const currentTaskId = ref('')
 const progressPercentage = ref(0)
@@ -1985,9 +2666,13 @@ let progressTimer: NodeJS.Timeout | null = null
 
 // 批量更新配置
 const batchSize = ref(50)
-const concurrency = ref(5)
+const concurrency = ref(3)
 const delay = ref(0.1)
 const singleFundCode = ref('')
+const singleYear = ref('')
+const batchYear = ref('')  // fund_portfolio_hold_em 的批量更新年份参数
+const singleDate = ref('')  // fund_individual_detail_hold_xq 的日期参数
+const fundValueSymbol = ref('全部')  // fund_value_estimation_em 的基金类型参数
 
 // 指数型基金更新参数
 const indexSymbol = ref('全部')
@@ -2561,9 +3246,28 @@ const getColumnWidth = (fieldName: string): number => {
   return 150
 }
 
-// 处理更新数据
+// 处理下拉菜单命令
+const handleUpdateCommand = (command: string) => {
+  progressPercentage.value = 0
+  progressStatus.value = ''
+  progressMessage.value = ''
+  
+  switch(command) {
+    case 'api':
+      apiRefreshDialogVisible.value = true
+      break
+    case 'file':
+      fileImportDialogVisible.value = true
+      break
+    case 'remote':
+      remoteSyncDialogVisible.value = true
+      break
+  }
+}
+
+// 处理更新数据（保留兼容性）
 const handleRefreshData = () => {
-  refreshDialogVisible.value = true
+  apiRefreshDialogVisible.value = true
   progressPercentage.value = 0
   progressStatus.value = ''
   progressMessage.value = ''
@@ -2571,11 +3275,51 @@ const handleRefreshData = () => {
 
 // 更新数据
 const refreshData = async (mode: string = 'batch') => {
-  // 支持 fund_name_em / fund_basic_info / fund_info_index_em / fund_purchase_status / fund_etf_spot_em / fund_etf_spot_ths / fund_lof_spot_em / fund_spot_sina / fund_etf_hist_min_em / fund_etf_hist_em / fund_lof_hist_em / fund_hist_sina / fund_open_fund_daily_em / fund_open_fund_info_em / fund_money_fund_daily_em / fund_money_fund_info_em / fund_financial_fund_daily_em / fund_financial_fund_info_em / fund_graded_fund_daily_em / fund_etf_fund_daily_em 集合的更新
-  const supportedCollections = ['fund_name_em', 'fund_basic_info', 'fund_info_index_em', 'fund_purchase_status', 'fund_etf_spot_em', 'fund_etf_spot_ths', 'fund_lof_spot_em', 'fund_spot_sina', 'fund_etf_hist_min_em', 'fund_etf_hist_em', 'fund_lof_hist_em', 'fund_hist_sina', 'fund_open_fund_daily_em', 'fund_open_fund_info_em', 'fund_money_fund_daily_em', 'fund_money_fund_info_em', 'fund_financial_fund_daily_em', 'fund_financial_fund_info_em', 'fund_graded_fund_daily_em', 'fund_etf_fund_daily_em']
+  // 支持的自动更新集合列表
+  const supportedCollections = [
+    'fund_name_em', 'fund_basic_info', 'fund_info_index_em', 'fund_purchase_status',
+    'fund_etf_spot_em', 'fund_etf_spot_ths', 'fund_lof_spot_em', 'fund_spot_sina',
+    'fund_etf_hist_min_em', 'fund_etf_hist_em', 'fund_lof_hist_em', 'fund_hist_sina',
+    'fund_open_fund_daily_em', 'fund_open_fund_info_em', 'fund_money_fund_daily_em',
+    'fund_money_fund_info_em', 'fund_financial_fund_daily_em', 'fund_financial_fund_info_em',
+    'fund_graded_fund_daily_em', 'fund_etf_fund_daily_em', 'fund_etf_fund_info_em',
+    'fund_etf_dividend_sina', 'fund_fh_em', 'fund_cf_em', 'fund_fh_rank_em',
+    'fund_open_fund_rank_em', 'fund_exchange_rank_em', 'fund_money_rank_em', 'fund_hk_rank_em',
+    'fund_individual_achievement_xq', 'fund_value_estimation_em', 'fund_individual_analysis_xq',
+    'fund_individual_profit_probability_xq', 'fund_individual_detail_hold_xq', 'fund_overview_em',
+    'fund_portfolio_hold_em', 'fund_portfolio_bond_hold_em', 'fund_portfolio_change_em'
+  ]
   if (!supportedCollections.includes(collectionName.value)) {
     ElMessage.warning('该集合暂不支持自动更新')
     return
+  }
+
+  // 智能判断模式：如果输入了单个代码，自动使用single模式（仅针对按基金代码的集合）
+  let actualMode = mode
+  if (mode === 'batch') {
+    // 对于支持单个更新的集合，如果输入了单个代码，自动切换为single模式
+    const singleUpdateCollections = [
+      'fund_open_fund_info_em', 'fund_money_fund_info_em', 'fund_financial_fund_info_em',
+      'fund_etf_fund_info_em', 'fund_etf_dividend_sina', 'fund_individual_achievement_xq',
+      'fund_individual_analysis_xq', 'fund_individual_profit_probability_xq',
+      'fund_individual_detail_hold_xq', 'fund_overview_em',
+      'fund_portfolio_hold_em', 'fund_portfolio_bond_hold_em', 'fund_portfolio_change_em'
+    ]
+    
+    // fund_individual_detail_hold_xq 需要同时检查基金代码和日期
+    if (collectionName.value === 'fund_individual_detail_hold_xq') {
+      if (singleFundCode.value && singleDate.value) {
+        actualMode = 'single'
+      }
+    } else if (collectionName.value === 'fund_portfolio_bond_hold_em' || collectionName.value === 'fund_portfolio_change_em') {
+      // 持仓 / 债券持仓 / 重大变动 需要同时检查基金代码和年份才是单个更新
+      if (singleFundCode.value && singleYear.value) {
+        actualMode = 'single'
+      }
+      // 如果只有年份，保持批量更新模式
+    } else if (singleUpdateCollections.includes(collectionName.value) && singleFundCode.value) {
+      actualMode = 'single'
+    }
   }
 
   refreshing.value = true
@@ -2588,17 +3332,16 @@ const refreshData = async (mode: string = 'batch') => {
     
     // ETF/LOF分时行情的参数处理
     if (collectionName.value === 'fund_etf_hist_min_em' || collectionName.value === 'fund_lof_hist_min_em') {
-      if (mode === 'single') {
+      if (actualMode === 'single') {
         // 单个更新模式
         if (!singleSymbol.value) {
           ElMessage.warning('请输入基金代码')
+          refreshing.value = false
           return
         }
         params.symbol = singleSymbol.value
         params.period = singlePeriod.value
         params.adjust = singleAdjust.value
-        if (singleStartDate.value) params.start_date = singleStartDate.value
-        if (singleEndDate.value) params.end_date = singleEndDate.value
       } else {
         // 批量更新模式
         params.period = batchPeriod.value
@@ -2607,7 +3350,7 @@ const refreshData = async (mode: string = 'batch') => {
       }
     }
     if (collectionName.value === 'fund_basic_info') {
-      if (mode === 'single' && singleFundCode.value) {
+      if (actualMode === 'single' && singleFundCode.value) {
         params.fund_code = singleFundCode.value
       } else {
         params.batch_size = batchSize.value
@@ -2620,10 +3363,230 @@ const refreshData = async (mode: string = 'batch') => {
     } else if (collectionName.value === 'fund_spot_sina') {
       params.symbol = selectedFundType.value || '全部'
     } else if (collectionName.value === 'fund_open_fund_info_em') {
-      if (mode === 'single' && singleFundCode.value) {
+      if (actualMode === 'single' && singleFundCode.value) {
         params.fund_code = singleFundCode.value
       } else {
         // 批量更新模式
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_money_fund_info_em') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        params.symbol = singleFundCode.value
+      } else {
+        // 批量更新模式
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_financial_fund_info_em') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        params.symbol = singleFundCode.value
+      } else {
+        // 批量更新模式
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_etf_fund_info_em') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        params.symbol = singleFundCode.value
+      } else {
+        // 批量更新模式
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_etf_dividend_sina') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        // 单个更新：传入 symbol（如 sh510050）到后端的 fund_code 参数
+        params.fund_code = singleFundCode.value
+        params.batch_update = false
+      } else {
+        // 批量更新模式：从 fund_name_em 获取代码列表
+        params.batch_update = true
+        params.batch_size = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_individual_achievement_xq') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        // 单个更新：传入基金代码到后端的 fund_code 参数
+        params.fund_code = singleFundCode.value
+      } else {
+        // 批量更新模式：从 fund_basic_info 获取代码列表，并发更新
+        params.batch = true
+        params.limit = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (String(collectionName.value) === 'fund_value_estimation_em') {
+      // 净值估算：传入基金类型参数
+      params.symbol = fundValueSymbol.value
+    } else if (String(collectionName.value) === 'fund_individual_analysis_xq') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        // 单个更新：传入基金代码到后端的 fund_code 参数
+        params.fund_code = singleFundCode.value
+      } else {
+        // 批量更新模式：从 fund_name_em 获取代码列表，并发更新
+        params.batch = true
+        params.limit = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (String(collectionName.value) === 'fund_individual_profit_probability_xq') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        // 单个更新：传入基金代码到后端的 fund_code 参数
+        params.fund_code = singleFundCode.value
+      } else {
+        // 批量更新模式：从 fund_name_em 获取代码列表，并发更新
+        params.batch = true
+        params.limit = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (String(collectionName.value) === 'fund_individual_detail_hold_xq') {
+      if (actualMode === 'single') {
+        // 单个更新：传入基金代码(symbol)和日期(date)参数
+        if (!singleFundCode.value) {
+          ElMessage.warning('请输入基金代码')
+          refreshing.value = false
+          return
+        }
+        if (!singleDate.value) {
+          ElMessage.warning('请输入季度末日期（如 2024-09-30）')
+          refreshing.value = false
+          return
+        }
+        params.symbol = singleFundCode.value
+        params.date = singleDate.value
+      } else {
+        // 批量更新模式：从 fund_name_em 获取代码列表，自动遍历所有季度末日期
+        params.batch = true
+        params.limit = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (String(collectionName.value) === 'fund_overview_em') {
+      if (actualMode === 'single' && singleFundCode.value) {
+        // 单个更新：传入基金代码到后端的 fund_code 参数
+        params.fund_code = singleFundCode.value
+      } else {
+        // 批量更新模式：从 fund_name_em 获取代码列表，并发更新
+        params.batch = true
+        params.limit = batchSize.value
+        params.concurrency = concurrency.value
+      }
+    } else if (String(collectionName.value) === 'fund_portfolio_hold_em') {
+      console.log('fund_portfolio_hold_em - actualMode:', actualMode, 'mode:', mode)
+      console.log('singleFundCode:', singleFundCode.value, 'singleYear:', singleYear.value, 'batchYear:', batchYear.value)
+      
+      if (actualMode === 'single') {
+        // 单个更新：必须提供基金代码和年份
+        if (!singleFundCode.value) {
+          ElMessage.warning('请输入基金代码')
+          refreshing.value = false
+          return
+        }
+        if (!singleYear.value) {
+          ElMessage.warning('请输入查询年份（如 2024）')
+          refreshing.value = false
+          return
+        }
+        params.fund_code = singleFundCode.value
+        params.year = singleYear.value
+        console.log('设置单个更新参数:', params)
+      } else {
+        // 批量更新模式：从 fund_name_em 获取所有代码，遍历年份
+        params.batch = true
+        params.concurrency = concurrency.value
+        // year 参数可选，为空时更新2010-今年所有年份
+        if (batchYear.value) {
+          params.year = batchYear.value
+        }
+        console.log('设置批量更新参数:', params)
+      }
+    } else if (String(collectionName.value) === 'fund_portfolio_bond_hold_em') {
+      console.log('fund_portfolio_bond_hold_em - actualMode:', actualMode, 'mode:', mode)
+      console.log('singleFundCode:', singleFundCode.value, 'singleYear:', singleYear.value, 'batchYear:', batchYear.value)
+      
+      if (actualMode === 'single') {
+        // 单个更新：必须提供基金代码和年份
+        if (!singleFundCode.value) {
+          ElMessage.warning('请输入基金代码')
+          refreshing.value = false
+          return
+        }
+        if (!singleYear.value) {
+          ElMessage.warning('请输入查询年份（如 2024）')
+          refreshing.value = false
+          return
+        }
+        params.fund_code = singleFundCode.value
+        params.year = singleYear.value
+        console.log('设置单个更新参数:', params)
+      } else {
+        // 批量更新模式：从 fund_name_em 获取所有代码，遍历年份
+        params.batch = true
+        params.concurrency = concurrency.value
+        // year 参数可选，为空时更新2010-今年所有年份
+        if (batchYear.value) {
+          params.year = batchYear.value
+        }
+        console.log('设置批量更新参数:', params)
+      }
+    } else if (collectionName.value === 'fund_portfolio_change_em') {
+      console.log('fund_portfolio_change_em - actualMode:', actualMode, 'mode:', mode)
+      console.log('singleFundCode:', singleFundCode.value, 'singleYear:', singleYear.value, 'batchYear:', batchYear.value)
+      
+      if (actualMode === 'single') {
+        // 单个更新：必须提供基金代码和年份
+        if (!singleFundCode.value) {
+          ElMessage.warning('请输入基金代码')
+          refreshing.value = false
+          return
+        }
+        if (!singleYear.value) {
+          ElMessage.warning('请输入查询年份（如 2024）')
+          refreshing.value = false
+          return
+        }
+        params.fund_code = singleFundCode.value
+        params.date = singleYear.value
+        console.log('设置单个更新参数:', params)
+      } else {
+        // 批量更新模式：从 fund_name_em 获取所有代码，按年份增量更新
+        if (!batchYear.value) {
+          ElMessage.warning('请输入批量更新年份（如 2024）')
+          refreshing.value = false
+          return
+        }
+        params.batch = true
+        params.concurrency = concurrency.value
+        params.date = batchYear.value
+        console.log('设置批量更新参数:', params)
+      }
+    } else if (collectionName.value === 'fund_fh_em') {
+      if (mode === 'single') {
+        // 单年更新：传入 year 参数
+        if (!singleYear.value) {
+          ElMessage.warning('请输入年份')
+          refreshing.value = false
+          return
+        }
+        params.year = singleYear.value
+        params.batch_update = false
+      } else {
+        // 批量更新：1999-2025 年，前端允许配置并发数
+        params.batch_update = true
+        params.start_year = 1999
+        params.end_year = 2025
+        params.concurrency = concurrency.value
+      }
+    } else if (collectionName.value === 'fund_cf_em') {
+      if (mode === 'single') {
+        // 单年更新：传入 year 参数
+        if (!singleYear.value) {
+          ElMessage.warning('请输入年份')
+          refreshing.value = false
+          return
+        }
+        params.year = singleYear.value
+        params.batch_update = false
+      } else {
+        // 批量更新：2005-当前年份，前端固定起始年份，结束年份取当前年，允许配置并发数
+        const currentYear = new Date().getFullYear()
+        params.batch_update = true
+        params.start_year = 2005
+        params.end_year = currentYear
         params.concurrency = concurrency.value
       }
     }
@@ -2735,7 +3698,7 @@ const cancelRefresh = () => {
     clearInterval(progressTimer)
     progressTimer = null
   }
-  refreshDialogVisible.value = false
+  apiRefreshDialogVisible.value = false
   refreshing.value = false
   progressPercentage.value = 0
   progressStatus.value = ''
@@ -2744,6 +3707,7 @@ const cancelRefresh = () => {
 
 // 文件处理
 const handleImportFileChange = (file: any, fileList: any[]) => {
+  if (!file) return
   importFiles.value = fileList.slice(-1) // 仅允许单文件
 }
 
@@ -2766,7 +3730,7 @@ const handleImportFile = async () => {
       importFiles.value = []
       loadData()
     } else {
-      ElMessage.error(res.error || '导入失败')
+      ElMessage.error(res.message || '导入失败')
     }
   } catch (error: any) {
     ElMessage.error(error.message || '导入失败')
@@ -2781,10 +3745,10 @@ const handleRemoteSync = async () => {
     ElMessage.warning('请输入远程主机地址')
     return
   }
-  
+
   remoteSyncing.value = true
   remoteSyncStats.value = null
-  
+
   try {
     const config = {
       host: remoteSyncHost.value,
@@ -2794,15 +3758,15 @@ const handleRemoteSync = async () => {
       collection: remoteSyncCollection.value || collectionName.value,
       batch_size: remoteSyncBatchSize.value
     }
-    
+
     const res = await fundsApi.syncData(collectionName.value, config)
-    
+
     if (res.success) {
       remoteSyncStats.value = res.data
-      ElMessage.success(res.data.message || '同步成功')
+      ElMessage.success(res.data?.message || '同步成功')
       loadData()
     } else {
-      ElMessage.error(res.error || '同步失败')
+      ElMessage.error(res.message || '同步失败')
     }
   } catch (error: any) {
     ElMessage.error(error.message || '同步失败')

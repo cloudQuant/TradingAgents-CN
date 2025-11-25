@@ -13,7 +13,18 @@
         <div class="header-actions">
           <el-button :icon="Box" @click="showOverview">数据概览</el-button>
           <el-button :icon="Refresh" @click="refreshData" :loading="loading">刷新</el-button>
-          <el-button :icon="Download" type="primary" @click="handleRefreshData" :loading="refreshing">更新数据</el-button>
+          <el-dropdown @command="handleUpdateCommand" :loading="refreshing">
+            <el-button :icon="Download" type="primary" :loading="refreshing">
+              更新数据<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="api">API更新</el-dropdown-item>
+                <el-dropdown-item command="file">文件导入</el-dropdown-item>
+                <el-dropdown-item command="sync">远程同步</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button :icon="Delete" type="danger" @click="handleClearData">清空数据</el-button>
         </div>
       </div>
@@ -154,15 +165,324 @@
         <el-button @click="overviewDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- API更新对话框（定制化） -->
+    <el-dialog
+      v-model="apiParamsDialogVisible"
+      title="API更新"
+      width="650px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="集合名称">
+          <el-input :value="refreshConfig?.displayName || collectionName" disabled />
+        </el-form-item>
+
+        <!-- 描述信息 -->
+        <el-alert 
+          v-if="refreshConfig?.description"
+          :title="refreshConfig.description"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 16px;"
+        />
+
+        <!-- 不需要参数的集合（uiType=none） -->
+        <template v-if="refreshConfig?.uiType === 'none'">
+          <el-alert
+            :title="refreshConfig?.allUpdate?.tips || '将更新所有数据，可能需要较长时间'"
+            type="warning"
+            :closable="false"
+            show-icon
+          />
+        </template>
+
+        <!-- 单个更新（uiType=single或single-batch） -->
+        <template v-if="refreshConfig?.singleUpdate?.enabled">
+          <el-divider content-position="left">单个更新</el-divider>
+          
+          <!-- 单个更新参数 -->
+          <div v-for="param in refreshConfig.singleUpdate.params" :key="param.key">
+            <!-- 文本输入 -->
+            <el-form-item v-if="param.type === 'string'" :label="param.name">
+              <el-input
+                v-model="singleParams[param.key]"
+                :placeholder="param.placeholder"
+                clearable
+              >
+                <template #append>
+                  <el-button 
+                    @click="handleSingleRefresh"
+                    :loading="refreshing"
+                    :disabled="!singleParams[param.key] || refreshing"
+                  >
+                    {{ refreshConfig.singleUpdate.buttonText || '更新' }}
+                  </el-button>
+                </template>
+              </el-input>
+              <div v-if="param.description" class="param-description">
+                {{ param.description }}
+              </div>
+            </el-form-item>
+            
+            <!-- 选择框 -->
+            <el-form-item v-else-if="param.type === 'select'" :label="param.name">
+              <el-select v-model="singleParams[param.key]" style="width: 100%">
+                <el-option
+                  v-for="opt in param.options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+            </el-form-item>
+
+            <!-- 数字输入 -->
+            <el-form-item v-else-if="param.type === 'number'" :label="param.name">
+              <el-input-number
+                v-model="singleParams[param.key]"
+                :min="param.min"
+                :max="param.max"
+                :step="param.step"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </div>
+
+          <el-alert 
+            v-if="refreshConfig.singleUpdate.tips"
+            :title="refreshConfig.singleUpdate.tips"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-top: 12px;"
+          />
+        </template>
+
+        <!-- 批量更新（uiType=batch或single-batch） -->
+        <template v-if="refreshConfig?.batchUpdate?.enabled">
+          <el-divider content-position="left">批量更新配置</el-divider>
+          
+          <el-alert 
+            v-if="refreshConfig.batchUpdate.tips"
+            :title="refreshConfig.batchUpdate.tips"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
+
+          <!-- 批量更新参数（如果有） -->
+          <div v-if="refreshConfig.batchUpdate.params">
+            <div v-for="param in refreshConfig.batchUpdate.params" :key="param.key">
+              <el-form-item v-if="param.type === 'select'" :label="param.name">
+                <el-select v-model="batchParams[param.key]" style="width: 100%">
+                  <el-option
+                    v-for="opt in param.options"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </div>
+          </div>
+
+          <el-row :gutter="20">
+            <!-- 批次大小配置 -->
+            <el-col :span="12" v-if="refreshConfig.batchUpdate.batchSizeConfig">
+              <el-form-item label="批次大小">
+                <el-input-number 
+                  v-model="batchSize"
+                  :min="refreshConfig.batchUpdate.batchSizeConfig.min"
+                  :max="refreshConfig.batchUpdate.batchSizeConfig.max"
+                  :step="10"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+
+            <!-- 并发数配置 -->
+            <el-col :span="12" v-if="refreshConfig.batchUpdate.concurrencyConfig">
+              <el-form-item label="并发数">
+                <el-input-number 
+                  v-model="concurrency"
+                  :min="refreshConfig.batchUpdate.concurrencyConfig.min"
+                  :max="refreshConfig.batchUpdate.concurrencyConfig.max"
+                  :step="1"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+
+            <!-- 延迟配置 -->
+            <el-col :span="12" v-if="refreshConfig.batchUpdate.delayConfig">
+              <el-form-item label="请求延迟(秒)">
+                <el-input-number 
+                  v-model="delay"
+                  :min="refreshConfig.batchUpdate.delayConfig.min"
+                  :max="refreshConfig.batchUpdate.delayConfig.max"
+                  :step="refreshConfig.batchUpdate.delayConfig.step"
+                  :precision="1"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-button 
+            type="primary" 
+            @click="handleBatchRefresh"
+            :loading="refreshing"
+            :disabled="refreshing"
+            style="width: 100%;"
+          >
+            {{ refreshConfig.batchUpdate.buttonText || '开始批量更新' }}
+          </el-button>
+        </template>
+
+        <!-- 全部更新按钮（针对不需要参数的集合） -->
+        <template v-if="refreshConfig?.uiType === 'none'">
+          <el-button 
+            type="primary" 
+            @click="handleAllRefresh"
+            :loading="refreshing"
+            :disabled="refreshing"
+            style="width: 100%; margin-top: 16px;"
+          >
+            {{ refreshConfig?.allUpdate?.buttonText || '更新全部数据' }}
+          </el-button>
+        </template>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="apiParamsDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 文件导入对话框 -->
+    <el-dialog
+      v-model="uploadDialogVisible"
+      title="文件导入"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-upload
+        ref="uploadRef"
+        :auto-upload="false"
+        multiple
+        :on-change="handleImportFileChange"
+        :on-remove="handleImportFileRemove"
+        accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        drag
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">
+          拖拽文件到此处或<em>点击选择文件</em>
+        </div>
+        <template #tip>
+          <div class="el-upload__tip">
+            支持 CSV 或 Excel 文件，文件结构需与集合字段一致
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleImportFile"
+          :loading="importing"
+          :disabled="!importFiles.length || importing"
+        >
+          导入
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 远程同步对话框 -->
+    <el-dialog
+      v-model="syncDialogVisible"
+      title="远程同步"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="120px">
+        <el-form-item label="远程主机">
+          <el-input
+            v-model="remoteSyncHost"
+            placeholder="IP地址或URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
+          />
+        </el-form-item>
+        <el-form-item label="数据库类型">
+          <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
+            <el-option label="MongoDB" value="mongodb" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="批次大小">
+          <el-select v-model="remoteSyncBatchSize" style="width: 100%">
+            <el-option label="1000" :value="1000" />
+            <el-option label="2000" :value="2000" />
+            <el-option label="5000" :value="5000" />
+            <el-option label="10000" :value="10000" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="远程集合名">
+          <el-input
+            v-model="remoteSyncCollection"
+            :placeholder="`默认使用当前集合名: ${collectionName}`"
+          />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input
+            v-model="remoteSyncUsername"
+            placeholder="可选"
+          />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="remoteSyncPassword"
+            type="password"
+            placeholder="可选"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="认证数据库">
+          <el-input
+            v-model="remoteSyncAuthSource"
+            placeholder="通常为 admin"
+          />
+        </el-form-item>
+      </el-form>
+
+      <el-alert
+        v-if="remoteSyncStats"
+        :title="`同步完成: ${remoteSyncStats.synced_count}/${remoteSyncStats.total_count} 条`"
+        type="success"
+        style="margin-top: 16px"
+        show-icon
+      />
+
+      <template #footer>
+        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleRemoteSync"
+          :loading="remoteSyncing"
+        >
+          开始同步
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Box, Refresh, Delete, Download, Search, QuestionFilled } from '@element-plus/icons-vue'
+import { Box, Refresh, Delete, Download, Search, QuestionFilled, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { stocksApi, type CollectionStatsResponse, type RefreshStatusResponse } from '@/api/stocks'
+import { getRefreshConfig, type CollectionRefreshConfig } from './collectionRefreshConfig'
 
 const route = useRoute()
 
@@ -327,6 +647,35 @@ let statusCheckInterval: number | null = null
 
 // 对话框相关
 const overviewDialogVisible = ref(false)
+const uploadDialogVisible = ref(false)
+const syncDialogVisible = ref(false)
+const apiParamsDialogVisible = ref(false)
+
+// 文件导入相关
+const uploadRef = ref()
+const importFiles = ref<any[]>([])
+const importing = ref(false)
+
+// 远程同步相关
+const remoteSyncHost = ref('')
+const remoteSyncDbType = ref('mongodb')
+const remoteSyncBatchSize = ref(1000)
+const remoteSyncCollection = ref('')
+const remoteSyncUsername = ref('')
+const remoteSyncPassword = ref('')
+const remoteSyncAuthSource = ref('admin')
+const remoteSyncing = ref(false)
+const remoteSyncStats = ref<any>(null)
+
+// API更新参数相关
+const refreshConfig = computed<CollectionRefreshConfig | null>(() => {
+  return getRefreshConfig(collectionName.value)
+})
+const singleParams = ref<Record<string, any>>({})
+const batchParams = ref<Record<string, any>>({})
+const batchSize = ref(50)
+const concurrency = ref(3)
+const delay = ref(0.5)
 
 // 集合固定信息映射
 const collectionStaticInfo: Record<string, any> = {
@@ -459,26 +808,6 @@ const loadStats = async () => {
   }
 }
 
-// 刷新数据
-const handleRefreshData = async () => {
-  const name = collectionName.value
-  if (!name) return
-  
-  try {
-    refreshing.value = true
-    const res = await stocksApi.refreshCollection(name, {})
-    currentTaskId.value = res.data.task_id
-    ElMessage.success('刷新任务已启动')
-    
-    // 开始轮询任务状态
-    startStatusPolling()
-  } catch (error: any) {
-    console.error('启动刷新任务失败', error)
-    ElMessage.error(error.response?.data?.detail || '启动刷新任务失败')
-    refreshing.value = false
-  }
-}
-
 // 清空数据
 const handleClearData = async () => {
   try {
@@ -571,6 +900,173 @@ const formatTime = (timeStr: string) => {
 // 显示数据概览
 const showOverview = () => {
   overviewDialogVisible.value = true
+}
+
+// 处理更新数据菜单命令
+const handleUpdateCommand = (command: string) => {
+  if (command === 'api') {
+    // 打开API更新对话框前，初始化参数
+    const config = refreshConfig.value
+    apiParamsDialogVisible.value = true
+    
+    // 初始化单个更新参数
+    singleParams.value = {}
+    if (config?.singleUpdate?.params) {
+      config.singleUpdate.params.forEach(param => {
+        singleParams.value[param.key] = param.defaultValue || ''
+      })
+    }
+    
+    // 初始化批量更新参数
+    batchParams.value = {}
+    if (config?.batchUpdate?.params) {
+      config.batchUpdate.params.forEach(param => {
+        batchParams.value[param.key] = param.defaultValue || ''
+      })
+    }
+    
+    // 初始化批量配置
+    if (config?.batchUpdate?.batchSizeConfig) {
+      batchSize.value = config.batchUpdate.batchSizeConfig.default
+    }
+    if (config?.batchUpdate?.concurrencyConfig) {
+      concurrency.value = config.batchUpdate.concurrencyConfig.default
+    }
+    if (config?.batchUpdate?.delayConfig) {
+      delay.value = config.batchUpdate.delayConfig.default
+    }
+  } else if (command === 'file') {
+    uploadDialogVisible.value = true
+  } else if (command === 'sync') {
+    syncDialogVisible.value = true
+  }
+}
+
+// 单个更新
+const handleSingleRefresh = async () => {
+  const config = refreshConfig.value
+  if (!config?.singleUpdate) return
+  
+  // 验证必填参数
+  for (const param of config.singleUpdate.params) {
+    if (param.required && !singleParams.value[param.key]) {
+      ElMessage.warning(`请输入${param.name}`)
+      return
+    }
+  }
+  
+  // 调用刷新
+  await handleRefreshDataWithParams({ ...singleParams.value, mode: 'single' })
+}
+
+// 批量更新
+const handleBatchRefresh = async () => {
+  const params: any = {
+    mode: 'batch',
+    ...batchParams.value
+  }
+  
+  // 添加批量配置
+  if (batchSize.value) params.batch_size = batchSize.value
+  if (concurrency.value) params.concurrency = concurrency.value
+  if (delay.value) params.delay = delay.value
+  
+  await handleRefreshDataWithParams(params)
+}
+
+// 全部更新（不需要参数）
+const handleAllRefresh = async () => {
+  await handleRefreshDataWithParams({})
+}
+
+// 带参数的刷新数据
+const handleRefreshDataWithParams = async (params: any = {}) => {
+  const name = collectionName.value
+  if (!name) return
+  
+  try {
+    refreshing.value = true
+    const res = await stocksApi.refreshCollection(name, params)
+    currentTaskId.value = res.data.task_id
+    ElMessage.success('刷新任务已启动')
+    
+    // 开始轮询任务状态
+    startStatusPolling()
+  } catch (error: any) {
+    console.error('启动刷新任务失败', error)
+    ElMessage.error(error.response?.data?.detail || '启动刷新任务失败')
+    refreshing.value = false
+  }
+}
+
+// 文件导入相关
+const handleImportFileChange = (file: any) => {
+  importFiles.value = [file]
+}
+
+const handleImportFileRemove = () => {
+  importFiles.value = []
+}
+
+const handleImportFile = async () => {
+  if (!importFiles.value.length) return
+  
+  importing.value = true
+  const file = importFiles.value[0].raw
+  
+  try {
+    const res = await stocksApi.uploadData(collectionName.value, file)
+    
+    if (res.success) {
+      ElMessage.success(res.data.message || '导入成功')
+      if (uploadRef.value) uploadRef.value.clearFiles()
+      importFiles.value = []
+      uploadDialogVisible.value = false
+      await Promise.all([loadStats(), refreshData()])
+    } else {
+      ElMessage.error(res.message || '导入失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '导入失败')
+  } finally {
+    importing.value = false
+  }
+}
+
+// 远程同步处理
+const handleRemoteSync = async () => {
+  if (!remoteSyncHost.value) {
+    ElMessage.warning('请输入远程主机地址')
+    return
+  }
+
+  remoteSyncing.value = true
+  remoteSyncStats.value = null
+
+  try {
+    const config = {
+      host: remoteSyncHost.value,
+      username: remoteSyncUsername.value,
+      password: remoteSyncPassword.value,
+      authSource: remoteSyncAuthSource.value,
+      collection: remoteSyncCollection.value || collectionName.value,
+      batch_size: remoteSyncBatchSize.value
+    }
+
+    const res = await stocksApi.syncData(collectionName.value, config)
+
+    if (res.success) {
+      remoteSyncStats.value = res.data
+      ElMessage.success(res.data?.message || '同步成功')
+      await Promise.all([loadStats(), refreshData()])
+    } else {
+      ElMessage.error(res.message || '同步失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '同步失败')
+  } finally {
+    remoteSyncing.value = false
+  }
 }
 
 onMounted(() => {
@@ -690,6 +1186,13 @@ onUnmounted(() => {
 .text-muted {
   color: #909399;
   font-size: 14px;
+}
+
+.param-description {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.5;
 }
 
 @media (max-width: 768px) {

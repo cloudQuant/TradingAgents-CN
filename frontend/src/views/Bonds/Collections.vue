@@ -140,7 +140,12 @@ const loadCollections = async () => {
   try {
     const res = await bondsApi.getCollections()
     if (res.success && res.data) {
-      collections.value = res.data
+      const raw = res.data as any[]
+      // 确保每个集合都有 fields 字段，避免模板访问 collection.fields.slice 报错
+      collections.value = raw.map((item) => ({
+        ...item,
+        fields: Array.isArray((item as any).fields) ? (item as any).fields : []
+      }))
     } else {
       ElMessage.error('加载数据集合失败')
     }

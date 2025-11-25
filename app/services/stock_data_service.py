@@ -3,6 +3,7 @@
 基于现有MongoDB集合，提供标准化的数据访问服务
 """
 import logging
+import uuid
 from datetime import datetime, date
 from typing import Optional, Dict, Any, List
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -4904,6 +4905,180 @@ class StockDataService:
             return 0
         except Exception as e:
             logger.error(f"❌ 保存{collection_name}数据失败: {e}")
+            raise
+
+    async def import_data_from_file(self, collection_name: str, content: bytes, filename: str) -> Dict[str, Any]:
+        """从文件导入数据到股票集合"""
+        import io
+        try:
+            # 读取文件内容
+            if filename.endswith('.csv'):
+                df = pd.read_csv(io.BytesIO(content))
+            else:
+                df = pd.read_excel(io.BytesIO(content))
+            
+            if df.empty:
+                return {"imported_count": 0, "message": "文件为空"}
+            
+            # 直接批量插入数据到指定集合
+            db = get_mongo_db()
+            collection = db[collection_name]
+            records = df.to_dict('records')
+            
+            # 尝试批量插入（使用 upsert 避免重复）
+            operations = []
+            for record in records:
+                # 尝试使用常见的唯一键字段
+                filter_dict = {}
+                if 'code' in record:
+                    filter_dict['code'] = record['code']
+                elif 'symbol' in record:
+                    filter_dict['symbol'] = record['symbol']
+                elif '代码' in record:
+                    filter_dict['代码'] = record['代码']
+                elif '序号' in record:
+                    filter_dict['序号'] = record['序号']
+                
+                # 如果有日期字段，也加入过滤条件
+                date_fields = ['trade_date', 'date', 'datetime', '日期', '交易日期']
+                for date_field in date_fields:
+                    if date_field in record:
+                        filter_dict[date_field] = record[date_field]
+                        break
+                
+                if filter_dict:
+                    operations.append(UpdateOne(filter_dict, {"$set": record}, upsert=True))
+                else:
+                    # 如果没有唯一键，直接插入
+                    operations.append(UpdateOne({"_temp_id": str(uuid.uuid4())}, {"$set": record}, upsert=True))
+            
+            if operations:
+                result = await collection.bulk_write(operations)
+                count = result.upserted_count + result.modified_count
+                logger.info(f"✅ 导入{collection_name}数据: 共 {count} 条")
+                return {"imported_count": count, "message": f"成功导入 {count} 条数据"}
+            
+            return {"imported_count": 0, "message": "无数据导入"}
+            
+        except Exception as e:
+            logger.error(f"导入文件失败: {e}", exc_info=True)
+            raise
+
+    async def sync_data_from_remote(self, collection_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        """从远程数据库同步数据到股票集合"""
+        from motor.motor_asyncio import AsyncIOMotorClient
+        try:
+            host = config.get('host')
+            port = int(config.get('port', 27017))
+            username = config.get('username')
+            password = config.get('password')
+            auth_source = config.get('authSource', 'admin')
+            remote_db_name = config.get('database', 'tradingagents') 
+            remote_col_name = config.get('collection', collection_name)
+            batch_size = int(config.get('batch_size', 1000))
+            
+            if username and password:
+                uri = f"mongodb://{username}:{password}@{host}:{port}/{auth_source}"
+            else:
+                uri = f"mongodb://{host}:{port}"
+            
+            # 连接远程数据库
+            remote_client = AsyncIOMotorClient(uri)
+            remote_db = remote_client[remote_db_name]
+            remote_collection = remote_db[remote_col_name]
+            
+            # 获取本地数据库
+            local_db = get_mongo_db()
+            local_collection = local_db[collection_name]
+            
+            # 统计信息
+            total_synced = 0
+            total_count = await remote_collection.count_documents({})
+            
+            logger.info(f"开始同步 {collection_name}，远程数据总数: {total_count}")
+            
+            # 分批同步
+            cursor = remote_collection.find({})
+            batch = []
+            
+            async for doc in cursor:
+                # 移除 _id 字段，让本地数据库自动生成
+                if '_id' in doc:
+                    del doc['_id']
+                batch.append(doc)
+                
+                if len(batch) >= batch_size:
+                    # 批量插入
+                    if batch:
+                        operations = []
+                        for record in batch:
+                            # 尝试使用常见的唯一键字段
+                            filter_dict = {}
+                            if 'code' in record:
+                                filter_dict['code'] = record['code']
+                            elif 'symbol' in record:
+                                filter_dict['symbol'] = record['symbol']
+                            elif '代码' in record:
+                                filter_dict['代码'] = record['代码']
+                            elif '序号' in record:
+                                filter_dict['序号'] = record['序号']
+                            
+                            # 如果有日期字段，也加入过滤条件
+                            date_fields = ['trade_date', 'date', 'datetime', '日期', '交易日期']
+                            for date_field in date_fields:
+                                if date_field in record:
+                                    filter_dict[date_field] = record[date_field]
+                                    break
+                            
+                            if filter_dict:
+                                operations.append(UpdateOne(filter_dict, {"$set": record}, upsert=True))
+                        
+                        if operations:
+                            result = await local_collection.bulk_write(operations)
+                            total_synced += result.upserted_count + result.modified_count
+                        
+                        logger.info(f"同步进度: {total_synced}/{total_count}")
+                    batch = []
+            
+            # 处理最后一批
+            if batch:
+                operations = []
+                for record in batch:
+                    filter_dict = {}
+                    if 'code' in record:
+                        filter_dict['code'] = record['code']
+                    elif 'symbol' in record:
+                        filter_dict['symbol'] = record['symbol']
+                    elif '代码' in record:
+                        filter_dict['代码'] = record['代码']
+                    elif '序号' in record:
+                        filter_dict['序号'] = record['序号']
+                    
+                    date_fields = ['trade_date', 'date', 'datetime', '日期', '交易日期']
+                    for date_field in date_fields:
+                        if date_field in record:
+                            filter_dict[date_field] = record[date_field]
+                            break
+                    
+                    if filter_dict:
+                        operations.append(UpdateOne(filter_dict, {"$set": record}, upsert=True))
+                
+                if operations:
+                    result = await local_collection.bulk_write(operations)
+                    total_synced += result.upserted_count + result.modified_count
+            
+            # 关闭远程连接
+            remote_client.close()
+            
+            logger.info(f"✅ 同步完成: {collection_name}，共 {total_synced} 条")
+            return {
+                "synced_count": total_synced,
+                "total_count": total_count,
+                "message": f"成功同步 {total_synced} 条数据"
+            }
+            
+        except Exception as e:
+            logger.error(f"远程同步失败: {e}", exc_info=True)
             raise
 
 

@@ -84,24 +84,24 @@ class TestFundPortfolioBondHoldEmAPI:
         # 测试单个基金刷新
         response = await test_client.post(
             "/api/funds/collections/fund_portfolio_bond_hold_em/refresh",
-            json={"fund_code": "000001", "date": "2024-09-30"}
+            json={"fund_code": "000001", "year": "2024"}
         )
         assert response.status_code == 200
     
     @pytest.mark.asyncio
     async def test_refresh_single_and_batch(self, test_client):
         """测试单个更新和批量更新"""
-        # 单个更新（需要日期参数）
+        # 单个更新（需要年份参数）
         response = await test_client.post(
             "/api/funds/collections/fund_portfolio_bond_hold_em/refresh",
-            json={"fund_code": "000001", "date": "2024-09-30"}
+            json={"fund_code": "000001", "year": "2024"}
         )
         assert response.status_code == 200
         
-        # 批量更新（需要日期参数）
+        # 批量更新（可选年份参数）
         response = await test_client.post(
             "/api/funds/collections/fund_portfolio_bond_hold_em/refresh",
-            json={"batch": True, "limit": 10, "date": "2024-09-30"}
+            json={"batch": True, "year": "2024"}
         )
         assert response.status_code == 200
 

@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, UploadFile, File, Body
 from pydantic import BaseModel
 import hashlib
 import logging
@@ -707,6 +707,57 @@ async def refresh_options_collection(
         return {"success": False, "error": f"不支持刷新集合 {collection_name}"}
     except Exception as e:
         logger.error(f"刷新期权集合 {collection_name} 失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/{collection_name}/upload")
+async def upload_option_data(
+    collection_name: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """上传期权数据文件"""
+    try:
+        if not file.filename.endswith((".csv", ".xls", ".xlsx")):
+            return {"success": False, "error": "只支持CSV或Excel文件"}
+
+        db = get_mongo_db()
+        service = OptionDataService(db)
+
+        # 读取文件内容
+        content = await file.read()
+        filename = file.filename
+
+        result = await service.import_data_from_file(collection_name, content, filename)
+
+        return {
+            "success": True,
+            "data": result,
+        }
+    except Exception as e:
+        logger.error(f"上传期权文件失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/{collection_name}/sync")
+async def sync_option_data(
+    collection_name: str,
+    sync_config: Dict[str, Any] = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """远程同步期权数据"""
+    try:
+        db = get_mongo_db()
+        service = OptionDataService(db)
+
+        result = await service.sync_data_from_remote(collection_name, sync_config)
+
+        return {
+            "success": True,
+            "data": result,
+        }
+    except Exception as e:
+        logger.error(f"远程同步期权数据失败: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
 
 

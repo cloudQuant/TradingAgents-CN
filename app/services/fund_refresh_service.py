@@ -8,6 +8,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import time
+from tqdm import tqdm
+from tqdm.asyncio import tqdm as atqdm
 
 from app.core.database import get_mongo_db
 from app.services.fund_data_service import FundDataService
@@ -2546,58 +2548,64 @@ class FundRefreshService:
         """刷新货币型基金历史行情数据
 
         支持两种模式：
-        1. 单个更新：params 含 fund_code 时，仅拉取单只基金
-        2. 批量更新：不传 fund_code，从 fund_money_fund_daily_em 集合获取所有基金代码
+        1. 单个更新：params 含 symbol 时，仅拉取单只基金
+        2. 批量更新：不传 symbol，从 fund_money_fund_daily_em 集合获取所有基金代码
 
         Args:
             task_id: 任务 ID
-            params: 刷新参数
+            params: 刷新参数（symbol: 基金代码, concurrency: 并发数）
 
         Returns:
             刷新结果字典
         """
         try:
-            fund_code = params.get("fund_code")
+            symbol = params.get("symbol")  # 使用symbol参数
             concurrency = int(params.get("concurrency", 3))
 
             # 单个更新
-            if fund_code:
+            if symbol:
                 await self._update_task_progress(
-                    task_id, 10, f"正在获取基金 {fund_code} 的历史行情数据..."
+                    task_id, 10, f"正在获取基金 {symbol} 的历史行情数据..."
                 )
 
                 loop = asyncio.get_event_loop()
                 df = await loop.run_in_executor(
-                    _executor, self._fetch_fund_money_fund_info, fund_code
+                    _executor, self._fetch_fund_money_fund_info, symbol
                 )
 
                 if df is None or df.empty:
                     return {
                         "success": False,
-                        "message": f"未获取到基金 {fund_code} 的数据",
+                        "message": f"未获取到基金 {symbol} 的数据",
                     }
 
-                saved = await self.data_service.save_fund_money_fund_info_data(df, fund_code)
+                saved = await self.data_service.save_fund_money_fund_info_data(df, symbol)
                 await self._update_task_progress(
-                    task_id, 100, f"基金 {fund_code} 历史行情更新完成，保存 {saved} 条记录"
+                    task_id, 100, f"基金 {symbol} 历史行情更新完成，保存 {saved} 条记录"
                 )
 
                 return {
                     "success": True,
                     "mode": "single",
-                    "fund_code": fund_code,
+                    "fund_code": symbol,
                     "total_saved": saved,
-                    "message": f"基金 {fund_code} 更新完成，保存 {saved} 条记录",
+                    "message": f"基金 {symbol} 更新完成，保存 {saved} 条记录",
                 }
 
             # 批量更新
             await self._update_task_progress(task_id, 5, "正在获取基金代码列表...")
 
+            # 从货币型基金实时行情集合获取所有基金代码
             fund_codes = (
-                await self.data_service.col_fund_money_fund_daily_em.distinct("fund_code") or []
+                await self.data_service.col_fund_money_fund_daily_em.distinct("基金代码") or []
             )
             if not fund_codes:
-                return {"success": False, "message": "未找到基金代码列表"}
+                logger.warning("未找到任何基金代码，请先刷新 fund_money_fund_daily_em 集合")
+                return {
+                    "success": False,
+                    "mode": "batch",
+                    "message": "未找到基金代码列表，请先刷新 fund_money_fund_daily_em 集合",
+                }
 
             total_codes = len(fund_codes)
             await self._update_task_progress(
@@ -2756,51 +2764,64 @@ class FundRefreshService:
         """刷新理财型基金历史行情数据
 
         支持两种模式：
-        1. 单个更新：params 含 fund_code 时，仅拉取单只基金
-        2. 批量更新：不传 fund_code，从 fund_financial_fund_daily_em 集合获取所有基金代码
+        1. 单个更新：params 含 symbol 时，仅拉取单只基金
+        2. 批量更新：不传 symbol，从 fund_financial_fund_daily_em 集合获取所有基金代码
+        
+        Args:
+            task_id: 任务 ID
+            params: 刷新参数（symbol: 基金代码, concurrency: 并发数）
+
+        Returns:
+            刷新结果字典
         """
         try:
-            fund_code = params.get("fund_code")
+            symbol = params.get("symbol")  # 使用symbol参数
             concurrency = int(params.get("concurrency", 3))
 
             # 单个更新
-            if fund_code:
+            if symbol:
                 await self._update_task_progress(
-                    task_id, 10, f"正在获取基金 {fund_code} 的历史行情数据..."
+                    task_id, 10, f"正在获取基金 {symbol} 的历史行情数据..."
                 )
 
                 loop = asyncio.get_event_loop()
                 df = await loop.run_in_executor(
-                    _executor, self._fetch_fund_financial_fund_info, fund_code
+                    _executor, self._fetch_fund_financial_fund_info, symbol
                 )
 
                 if df is None or df.empty:
                     return {
                         "success": False,
-                        "message": f"未获取到基金 {fund_code} 的数据",
+                        "message": f"未获取到基金 {symbol} 的数据",
                     }
 
-                saved = await self.data_service.save_fund_financial_fund_info_data(df, fund_code)
+                saved = await self.data_service.save_fund_financial_fund_info_data(df, symbol)
                 await self._update_task_progress(
-                    task_id, 100, f"基金 {fund_code} 历史行情更新完成，保存 {saved} 条记录"
+                    task_id, 100, f"基金 {symbol} 历史行情更新完成，保存 {saved} 条记录"
                 )
 
                 return {
                     "success": True,
                     "mode": "single",
-                    "fund_code": fund_code,
+                    "fund_code": symbol,
                     "total_saved": saved,
-                    "message": f"基金 {fund_code} 更新完成，保存 {saved} 条记录",
+                    "message": f"基金 {symbol} 更新完成，保存 {saved} 条记录",
                 }
 
             # 批量更新
             await self._update_task_progress(task_id, 5, "正在获取基金代码列表...")
 
+            # 从理财型基金实时行情集合获取所有基金代码
             fund_codes = (
-                await self.data_service.col_fund_financial_fund_daily_em.distinct("fund_code") or []
+                await self.data_service.col_fund_financial_fund_daily_em.distinct("基金代码") or []
             )
             if not fund_codes:
-                return {"success": False, "message": "未找到基金代码列表"}
+                logger.warning("未找到任何基金代码，请先刷新 fund_financial_fund_daily_em 集合")
+                return {
+                    "success": False,
+                    "mode": "batch",
+                    "message": "未找到基金代码列表，请先刷新 fund_financial_fund_daily_em 集合",
+                }
 
             total_codes = len(fund_codes)
             await self._update_task_progress(
@@ -3317,33 +3338,71 @@ class FundRefreshService:
     ) -> Dict[str, Any]:
         """刷新场内交易基金历史行情数据
         
+        支持两种模式：
+        1. 单个更新：params 含 symbol 时，仅拉取单只基金
+        2. 批量更新：不传 symbol，从 fund_etf_fund_daily_em 集合获取所有基金代码
+        
         Args:
             task_id: 任务ID
             params: 参数字典，可包含:
+                - symbol: 单个基金代码（用于单个更新）
                 - fund_codes: 基金代码列表（可选，默认从fund_etf_fund_daily_em获取）
                 - start_date: 开始日期，格式 "YYYYMMDD"（默认 "20000101"）
                 - end_date: 结束日期，格式 "YYYYMMDD"（默认 "20500101"）
-                - concurrency: 并发数（默认5）
+                - concurrency: 并发数（默认3）
                 
         Returns:
             刷新结果
         """
         try:
+            symbol = params.get("symbol")  # 单个更新模式
+            start_date = params.get('start_date', '20000101')
+            end_date = params.get('end_date', '20500101')
+            concurrency = int(params.get('concurrency', 3))
+            
+            # 单个更新
+            if symbol:
+                await self._update_task_progress(
+                    task_id, 10, f"正在获取基金 {symbol} 的历史行情数据..."
+                )
+                
+                loop = asyncio.get_event_loop()
+                df = await loop.run_in_executor(
+                    _executor, self._fetch_fund_etf_fund_info_em, symbol, start_date, end_date
+                )
+                
+                if df is None or df.empty:
+                    return {
+                        "success": False,
+                        "message": f"未获取到基金 {symbol} 的数据",
+                    }
+                
+                saved = await self.data_service.save_fund_etf_fund_info_data(df, fund_code=symbol)
+                await self._update_task_progress(
+                    task_id, 100, f"基金 {symbol} 历史行情更新完成，保存 {saved} 条记录"
+                )
+                
+                return {
+                    "success": True,
+                    "mode": "single",
+                    "fund_code": symbol,
+                    "total_saved": saved,
+                    "message": f"基金 {symbol} 更新完成，保存 {saved} 条记录",
+                }
+            
+            # 批量更新
             await self._update_task_progress(
                 task_id, 5, "正在准备基金代码列表..."
             )
             
             # 获取参数
             fund_codes = params.get('fund_codes')
-            start_date = params.get('start_date', '20000101')
-            end_date = params.get('end_date', '20500101')
-            concurrency = params.get('concurrency', 5)
             
             # 如果未提供fund_codes，从fund_etf_fund_daily_em获取
             if not fund_codes:
                 logger.info("未提供fund_codes，从fund_etf_fund_daily_em获取场内交易基金代码...")
                 collection = self.db.get_collection("fund_etf_fund_daily_em")
-                fund_codes = await collection.distinct("fund_code")
+                fund_codes = await collection.distinct("基金代码")  # 使用中文字段名
                 logger.info(f"从fund_etf_fund_daily_em获取到 {len(fund_codes)} 个基金代码")
             
             total_codes = len(fund_codes)
@@ -3585,15 +3644,21 @@ class FundRefreshService:
             刷新结果
         """
         try:
+            # 解析参数：支持单年更新和多年度批量更新
+            year = params.get("year")
+            batch_update = bool(params.get("batch_update", False))
+            start_year = int(params.get("start_year", 1999))
+            end_year = int(params.get("end_year", 2025))
+            concurrency = int(params.get("concurrency", 3))
+            if concurrency <= 0:
+                concurrency = 3
+
             await self._update_task_progress(task_id, 5, "开始刷新基金分红数据...")
-            
             await self._update_task_progress(task_id, 10, "正在从东方财富网获取基金分红数据...")
-            
+
             loop = asyncio.get_event_loop()
-            df = await loop.run_in_executor(
-                _executor, self._fetch_fund_fh_em
-            )
-            
+            df = await loop.run_in_executor(_executor, self._fetch_fund_fh_em)
+
             if df is None or df.empty:
                 await self._update_task_progress(task_id, 100, "未获取到基金分红数据")
                 return {
@@ -3601,22 +3666,120 @@ class FundRefreshService:
                     "saved": 0,
                     "message": "未获取到基金分红数据"
                 }
-            
-            await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
-            
-            saved = await self.data_service.save_fund_fh_em_data(df)
-            
+
+            # 选择用于按年份过滤的日期字段
+            date_series = None
+            if "权益登记日" in df.columns:
+                date_series = df["权益登记日"].astype(str)
+            elif "除息日期" in df.columns:
+                date_series = df["除息日期"].astype(str)
+
+            # 单年更新：按 year 过滤
+            if not batch_update and year is not None:
+                try:
+                    year_int = int(year)
+                except Exception:
+                    raise ValueError(f"无效的年份参数: {year}")
+
+                if date_series is not None:
+                    mask = date_series.str.startswith(str(year_int))
+                    df_year = df[mask]
+                else:
+                    df_year = df
+
+                if df_year is None or df_year.empty:
+                    await self._update_task_progress(task_id, 100, f"{year_int} 年没有可用的基金分红数据")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "rows": 0,
+                        "message": f"{year_int} 年没有可用的基金分红数据"
+                    }
+
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df_year)} 条 {year_int} 年的数据...")
+                saved = await self.data_service.save_fund_fh_em_data(df_year)
+                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved} 条 {year_int} 年记录")
+
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df_year),
+                    "message": f"成功更新 {year_int} 年基金分红数据，保存 {saved} 条记录"
+                }
+
+            # 保留原有行为：未指定批量更新或年份时，一次性保存全部数据
+            if not batch_update:
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
+                saved = await self.data_service.save_fund_fh_em_data(df)
+                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved} 条记录")
+
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df),
+                    "message": f"成功更新基金分红数据，保存 {saved} 条记录"
+                }
+
+            # 批量更新：按年份范围切分并发保存
+            if start_year > end_year:
+                start_year, end_year = end_year, start_year
+
+            if date_series is None:
+                # 没有日期字段时，退回为一次性保存全部数据
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
+                saved = await self.data_service.save_fund_fh_em_data(df)
+                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved} 条记录")
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df),
+                    "message": f"成功更新基金分红数据，保存 {saved} 条记录"
+                }
+
+            years = list(range(start_year, end_year + 1))
             await self._update_task_progress(
-                task_id, 100, f"更新完成，保存 {saved} 条记录"
+                task_id,
+                30,
+                f"准备批量更新基金分红数据，年份范围 {start_year}-{end_year}，并发 {concurrency}...",
             )
-            
+
+            sem = asyncio.Semaphore(concurrency)
+
+            async def save_year(y: int) -> int:
+                async with sem:
+                    mask = date_series.str.startswith(str(y))
+                    df_year = df[mask]
+                    if df_year is None or df_year.empty:
+                        return 0
+                    return await self.data_service.save_fund_fh_em_data(df_year)
+
+            tasks = [save_year(y) for y in years]
+            results = await asyncio.gather(*tasks)
+            total_saved = sum(results)
+
+            await self._update_task_progress(
+                task_id,
+                100,
+                f"更新完成，保存 {total_saved} 条 {start_year}-{end_year} 年记录",
+            )
+
+            rows_count = 0
+            try:
+                rows_count = int(
+                    (df["权益登记日"].astype(str).str.slice(0, 4).astype(int).between(start_year, end_year)).sum()
+                    if "权益登记日" in df.columns
+                    else (df["除息日期"].astype(str).str.slice(0, 4).astype(int).between(start_year, end_year)).sum()
+                )
+            except Exception:
+                rows_count = 0
+
             return {
                 "success": True,
-                "saved": saved,
-                "rows": len(df),
-                "message": f"成功更新基金分红数据，保存 {saved} 条记录"
+                "saved": total_saved,
+                "rows": rows_count,
+                "message": f"成功更新 {start_year}-{end_year} 年基金分红数据，保存 {total_saved} 条记录"
             }
-            
+
         except Exception as e:
             logger.error(f"刷新基金分红数据失败: {e}", exc_info=True)
             raise
@@ -3646,38 +3809,150 @@ class FundRefreshService:
             刷新结果
         """
         try:
+            # 解析参数：支持单年更新和按年份范围批量更新
+            year = params.get("year")
+            batch_update = bool(params.get("batch_update", False))
+            start_year = int(params.get("start_year", 2005))
+            # end_year 默认取当前年份
+            try:
+                end_year = int(params.get("end_year", time.localtime().tm_year))
+            except Exception:
+                end_year = time.localtime().tm_year
+            concurrency = int(params.get("concurrency", 3))
+            if concurrency <= 0:
+                concurrency = 3
+
             await self._update_task_progress(task_id, 5, "开始刷新基金拆分数据...")
-            
+
             await self._update_task_progress(task_id, 10, "正在从东方财富网获取基金拆分数据...")
-            
+
             loop = asyncio.get_event_loop()
             df = await loop.run_in_executor(
                 _executor, self._fetch_fund_cf_em
             )
-            
+
             if df is None or df.empty:
                 await self._update_task_progress(task_id, 100, "未获取到基金拆分数据")
                 return {
                     "success": True,
                     "saved": 0,
-                    "message": "未获取到基金拆分数据"
+                    "message": "未获取到基金拆分数据",
                 }
-            
-            await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
-            
-            saved = await self.data_service.save_fund_cf_em_data(df)
-            
+
+            # 用于按年份过滤的日期字段
+            date_series = None
+            if "拆分折算日" in df.columns:
+                date_series = df["拆分折算日"].astype(str)
+
+            # 单年更新：按 year 过滤
+            if not batch_update and year is not None:
+                try:
+                    year_int = int(year)
+                except Exception:
+                    raise ValueError(f"无效的年份参数: {year}")
+
+                if date_series is not None:
+                    mask = date_series.str.startswith(str(year_int))
+                    df_year = df[mask]
+                else:
+                    df_year = df
+
+                if df_year is None or df_year.empty:
+                    await self._update_task_progress(task_id, 100, f"{year_int} 年没有可用的基金拆分数据")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "rows": 0,
+                        "message": f"{year_int} 年没有可用的基金拆分数据",
+                    }
+
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df_year)} 条 {year_int} 年的数据...")
+                saved = await self.data_service.save_fund_cf_em_data(df_year)
+                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved} 条 {year_int} 年记录")
+
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df_year),
+                    "message": f"成功更新 {year_int} 年基金拆分数据，保存 {saved} 条记录",
+                }
+
+            # 保留原有行为：未指定批量更新或年份时，一次性保存全部数据
+            if not batch_update:
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
+                saved = await self.data_service.save_fund_cf_em_data(df)
+                await self._update_task_progress(
+                    task_id, 100, f"更新完成，保存 {saved} 条记录"
+                )
+
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df),
+                    "message": f"成功更新基金拆分数据，保存 {saved} 条记录",
+                }
+
+            # 批量更新：按年份范围切分并发保存，默认 2005-当前年份
+            if start_year > end_year:
+                start_year, end_year = end_year, start_year
+
+            if date_series is None:
+                # 没有日期字段时，退回为一次性保存全部数据
+                await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
+                saved = await self.data_service.save_fund_cf_em_data(df)
+                await self._update_task_progress(
+                    task_id, 100, f"更新完成，保存 {saved} 条记录"
+                )
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df),
+                    "message": f"成功更新基金拆分数据，保存 {saved} 条记录",
+                }
+
+            years = list(range(start_year, end_year + 1))
             await self._update_task_progress(
-                task_id, 100, f"更新完成，保存 {saved} 条记录"
+                task_id,
+                30,
+                f"准备批量更新基金拆分数据，年份范围 {start_year}-{end_year}，并发 {concurrency}...",
             )
-            
+
+            sem = asyncio.Semaphore(concurrency)
+
+            async def save_year(y: int) -> int:
+                async with sem:
+                    mask = date_series.str.startswith(str(y))
+                    df_year = df[mask]
+                    if df_year is None or df_year.empty:
+                        return 0
+                    return await self.data_service.save_fund_cf_em_data(df_year)
+
+            tasks = [save_year(y) for y in years]
+            results = await asyncio.gather(*tasks)
+            total_saved = sum(results)
+
+            # 估算选定年份范围内的行数
+            rows_count = 0
+            try:
+                rows_count = int(
+                    date_series.str.slice(0, 4).astype(int).between(start_year, end_year).sum()
+                )
+            except Exception:
+                rows_count = 0
+
+            await self._update_task_progress(
+                task_id,
+                100,
+                f"更新完成，保存 {total_saved} 条 {start_year}-{end_year} 年记录",
+            )
+
             return {
                 "success": True,
-                "saved": saved,
-                "rows": len(df),
-                "message": f"成功更新基金拆分数据，保存 {saved} 条记录"
+                "saved": total_saved,
+                "rows": rows_count,
+                "message": f"成功更新 {start_year}-{end_year} 年基金拆分数据，保存 {total_saved} 条记录",
             }
-            
+
         except Exception as e:
             logger.error(f"刷新基金拆分数据失败: {e}", exc_info=True)
             raise
@@ -4088,13 +4363,14 @@ class FundRefreshService:
                 - fund_code: 单个基金代码
                 - batch: 是否批量更新
                 - limit: 批量更新的数量限制
+                - concurrency: 并发协程数量（默认3）
             
         Returns:
             刷新结果
         """
         try:
-            fund_code = params.get('fund_code')
-            batch_mode = params.get('batch', False)
+            fund_code = params.get("fund_code")
+            batch_mode = params.get("batch", False)
             
             if fund_code:
                 # 单个基金更新
@@ -4112,7 +4388,7 @@ class FundRefreshService:
                     return {
                         "success": True,
                         "saved": 0,
-                        "message": f"未获取到基金 {fund_code} 的业绩数据"
+                        "message": f"未获取到基金 {fund_code} 的业绩数据",
                     }
                 
                 await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条数据...")
@@ -4128,19 +4404,22 @@ class FundRefreshService:
                     "saved": saved,
                     "rows": len(df),
                     "fund_code": fund_code,
-                    "message": f"成功更新基金 {fund_code} 业绩数据，保存 {saved} 条记录"
+                    "message": f"成功更新基金 {fund_code} 业绩数据，保存 {saved} 条记录",
                 }
             
             elif batch_mode:
-                # 批量更新：从fund_name_em获取基金代码列表
+                # 批量更新：从雪球基金基本信息集合（fund_basic_info）获取基金代码列表
                 await self._update_task_progress(task_id, 5, "开始批量刷新基金业绩数据...")
                 
-                limit = params.get('limit', 100)
+                limit = int(params.get("limit", 100) or 100)
+                concurrency = int(params.get("concurrency", 3) or 3)
+                if concurrency <= 0:
+                    concurrency = 1
                 
                 # 获取基金代码列表
-                fund_codes = []
-                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}).limit(limit):
-                    code = doc.get('基金代码')
+                fund_codes: List[str] = []
+                async for doc in self.data_service.col_fund_basic_info.find({}, {"基金代码": 1}).limit(limit):
+                    code = doc.get("基金代码")
                     if code:
                         fund_codes.append(code)
                 
@@ -4149,11 +4428,13 @@ class FundRefreshService:
                     return {
                         "success": True,
                         "saved": 0,
-                        "message": "未找到可更新的基金代码"
+                        "message": "未找到可更新的基金代码",
                     }
                 
                 await self._update_task_progress(
-                    task_id, 10, f"找到 {len(fund_codes)} 只基金，开始批量更新..."
+                    task_id,
+                    10,
+                    f"找到 {len(fund_codes)} 只基金，开始批量并发更新（并发数={concurrency}）...",
                 )
                 
                 total_saved = 0
@@ -4161,37 +4442,47 @@ class FundRefreshService:
                 failed_count = 0
                 
                 loop = asyncio.get_event_loop()
+                semaphore = asyncio.Semaphore(concurrency)
                 
-                for idx, code in enumerate(fund_codes):
+                async def process_fund(idx: int, code: str) -> None:
+                    nonlocal total_saved, success_count, failed_count
                     try:
-                        progress = 10 + int((idx / len(fund_codes)) * 80)
-                        await self._update_task_progress(
-                            task_id, progress, 
-                            f"正在更新基金 {code} ({idx+1}/{len(fund_codes)})..."
-                        )
-                        
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_individual_achievement_xq, code
-                        )
-                        
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_individual_achievement_xq_data(df)
-                            total_saved += saved
-                            success_count += 1
-                        else:
-                            failed_count += 1
-                        
-                        # 添加延迟避免请求过快
-                        await asyncio.sleep(0.5)
-                        
-                    except Exception as e:
-                        logger.error(f"更新基金 {code} 业绩数据失败: {e}")
+                        async with semaphore:
+                            df_local = await loop.run_in_executor(
+                                _executor, self._fetch_fund_individual_achievement_xq, code
+                            )
+                            
+                            if df_local is not None and not df_local.empty:
+                                saved_local = await self.data_service.save_fund_individual_achievement_xq_data(df_local)
+                                total_saved += saved_local
+                                success_count += 1
+                            else:
+                                failed_count += 1
+                            
+                            progress = 10 + int(((idx + 1) / len(fund_codes)) * 80)
+                            await self._update_task_progress(
+                                task_id,
+                                min(progress, 95),
+                                f"正在更新基金 {code} ({idx + 1}/{len(fund_codes)})...",
+                            )
+                            
+                            # 添加适当延迟避免请求过快
+                            await asyncio.sleep(0.5)
+                    
+                    except Exception as exc:
+                        logger.error(f"更新基金 {code} 业绩数据失败: {exc}", exc_info=True)
                         failed_count += 1
-                        continue
+                
+                tasks = [
+                    process_fund(idx, code)
+                    for idx, code in enumerate(fund_codes)
+                ]
+                await asyncio.gather(*tasks)
                 
                 await self._update_task_progress(
-                    task_id, 100, 
-                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    task_id,
+                    100,
+                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录",
                 )
                 
                 return {
@@ -4200,21 +4491,71 @@ class FundRefreshService:
                     "success_count": success_count,
                     "failed_count": failed_count,
                     "total_funds": len(fund_codes),
-                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录",
                 }
             
             else:
                 raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新")
-            
+        
         except Exception as e:
             logger.error(f"刷新基金业绩数据失败: {e}", exc_info=True)
             raise
+    
+    def _process_fund_value_estimation_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """处理净值估算数据的列名：提取日期并重命名列
+        
+        Args:
+            df: 原始数据
+            
+        Returns:
+            处理后的数据，包含日期字段
+        """
+        import re
+        
+        # 提取日期（从列名中找到日期）
+        date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})')
+        dates_found = set()
+        
+        for col in df.columns:
+            match = date_pattern.search(str(col))
+            if match:
+                dates_found.add(match.group(1))
+        
+        # 使用最新的日期作为数据日期
+        if dates_found:
+            estimation_date = sorted(dates_found, reverse=True)[0]
+            logger.info(f"提取到估算日期: {estimation_date}")
+        else:
+            # 如果没有找到日期，使用当前日期
+            from datetime import datetime
+            estimation_date = datetime.now().strftime('%Y-%m-%d')
+            logger.warning(f"未在列名中找到日期，使用当前日期: {estimation_date}")
+        
+        # 重命名列：去除日期前缀
+        new_columns = {}
+        for col in df.columns:
+            # 如果列名包含日期，去除日期部分
+            if date_pattern.search(str(col)):
+                # 去除 "YYYY-MM-DD-" 前缀
+                new_col = date_pattern.sub('', str(col)).lstrip('-')
+                new_columns[col] = new_col
+            else:
+                new_columns[col] = col
+        
+        df = df.rename(columns=new_columns)
+        
+        # 添加日期字段
+        df['日期'] = estimation_date
+        
+        logger.info(f"处理后的列名: {df.columns.tolist()}")
+        
+        return df
     
     def _fetch_fund_value_estimation_em(self, symbol: str = "全部"):
         """获取净值估算数据（同步方法，在线程池中执行）
         
         Args:
-            symbol: 基金类型，默认为“全部”
+            symbol: 基金类型
             
         Returns:
             DataFrame: 净值估算数据
@@ -4258,6 +4599,11 @@ class FundRefreshService:
                     "symbol": symbol,
                     "message": f"未获取到净值估算数据 (symbol={symbol})"
                 }
+            
+            await self._update_task_progress(task_id, 40, f"正在处理列名和日期...")
+            
+            # 处理列名：提取日期并重命名列
+            df = self._process_fund_value_estimation_columns(df)
             
             await self._update_task_progress(task_id, 50, f"正在保存 {len(df)} 条数据...")
             
@@ -4440,9 +4786,11 @@ class FundRefreshService:
         """
         try:
             import akshare as ak
+            from datetime import datetime
             df = ak.fund_individual_profit_probability_xq(symbol=symbol)
             if df is not None and not df.empty:
                 df['基金代码'] = symbol
+                df['日期'] = datetime.now().strftime('%Y-%m-%d')  # 添加当日日期
             return df
         except Exception as e:
             logger.error(f"获取基金 {symbol} 盈利概率失败: {e}")
@@ -4600,30 +4948,61 @@ class FundRefreshService:
             logger.error(f"获取基金 {symbol} 在 {date} 的持仓资产比例失败: {e}")
             return pd.DataFrame()
     
+    def _generate_quarter_end_dates(self, start_year: int = 2000):
+        """生成从指定年份至今的所有季度末日期
+        
+        季度末日期：3月30日、6月30日、9月30日、12月31日
+        
+        Args:
+            start_year: 起始年份，默认2000年
+            
+        Returns:
+            日期列表，格式为 YYYY-MM-DD
+        """
+        from datetime import datetime
+        current_year = datetime.now().year
+        dates = []
+        
+        for year in range(start_year, current_year + 1):
+            dates.extend([
+                f"{year}-03-30",
+                f"{year}-06-30",
+                f"{year}-09-30",
+                f"{year}-12-31"
+            ])
+        
+        # 只保留不晚于当前日期的季度末日期
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        dates = [d for d in dates if d <= current_date]
+        
+        return dates
+    
     async def _refresh_fund_individual_detail_hold_xq(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """刷新基金持仓资产比例（支持单个更新和批量更新，需要日期参数）
+        """刷新基金持仓资产比例（支持单个更新和批量更新）
         
         Args:
             task_id: 任务ID
             params: 参数，支持:
-                - fund_code: 单个基金代码
-                - date: 季度日期 (必需)
-                - batch: 是否批量更新
-                - limit: 批量更新的数量限制
+                - symbol: 单个基金代码（单个更新）
+                - date: 季度日期（单个更新必需）
+                - batch: 是否批量更新（自动生成2000年以来季度末日期）
+                - limit: 批量更新的基金数量限制
+                - concurrency: 并发线程数
             
         Returns:
             刷新结果
         """
         try:
-            fund_code = params.get('fund_code')
+            fund_code = params.get('symbol') or params.get('fund_code')
             date = params.get('date')
             batch_mode = params.get('batch', False)
             
-            if not date:
-                raise ValueError("必须提供 date 参数（季度日期，例如 2024-09-30）")
-            
-            if fund_code:
-                # 单个基金更新
+            # 单个更新模式
+            if fund_code and not batch_mode:
+                # 单个基金更新，必须提供日期
+                if not date:
+                    raise ValueError("单个更新必须提供 date 参数（季度日期，例如 2024-09-30）")
+                    
                 await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 在 {date} 的持仓资产比例...")
                 
                 await self._update_task_progress(task_id, 20, f"正在从雪球获取基金 {fund_code} 在 {date} 的持仓资产比例...")
@@ -4641,7 +5020,7 @@ class FundRefreshService:
                         "message": f"未获取到基金 {fund_code} 在 {date} 的持仓资产比例"
                     }
                 
-                await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条数据...")
+                await self._update_task_progress(task_id, 60, f"正在保存数据...")
                 
                 saved = await self.data_service.save_fund_individual_detail_hold_xq_data(df)
                 
@@ -4652,17 +5031,17 @@ class FundRefreshService:
                 return {
                     "success": True,
                     "saved": saved,
-                    "rows": len(df),
                     "fund_code": fund_code,
                     "date": date,
                     "message": f"成功更新基金 {fund_code} 在 {date} 的持仓资产比例，保存 {saved} 条记录"
                 }
             
             elif batch_mode:
-                # 批量更新：从fund_name_em获取基金代码列表
-                await self._update_task_progress(task_id, 5, f"开始批量刷新基金持仓资产比例（日期: {date}）...")
+                # 批量更新：从fund_name_em获取基金代码列表，遍历所有季度末日期
+                await self._update_task_progress(task_id, 2, "开始批量刷新基金持仓资产比例...")
                 
                 limit = params.get('limit', 100)
+                concurrency = params.get('concurrency', 3)
                 
                 # 获取基金代码列表
                 fund_codes = []
@@ -4679,46 +5058,57 @@ class FundRefreshService:
                         "message": "未找到可更新的基金代码"
                     }
                 
+                # 生成2000年以来的所有季度末日期
+                quarter_dates = self._generate_quarter_end_dates(2000)
+                
                 await self._update_task_progress(
-                    task_id, 10, f"找到 {len(fund_codes)} 只基金，开始批量更新（日期: {date}）..."
+                    task_id, 5, 
+                    f"找到 {len(fund_codes)} 只基金，{len(quarter_dates)} 个季度末日期，开始批量更新..."
                 )
                 
                 total_saved = 0
                 success_count = 0
                 failed_count = 0
+                total_tasks = len(fund_codes) * len(quarter_dates)
+                completed_tasks = 0
                 
                 loop = asyncio.get_event_loop()
+                semaphore = asyncio.Semaphore(concurrency)  # 并发控制
                 
-                for idx, code in enumerate(fund_codes):
-                    try:
-                        progress = 10 + int((idx / len(fund_codes)) * 80)
-                        await self._update_task_progress(
-                            task_id, progress, 
-                            f"正在更新基金 {code} ({idx+1}/{len(fund_codes)})..."
-                        )
-                        
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_individual_detail_hold_xq, code, date
-                        )
-                        
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_individual_detail_hold_xq_data(df)
-                            total_saved += saved
-                            success_count += 1
-                        else:
-                            failed_count += 1
-                        
-                        # 添加延迟避免请求过快
-                        await asyncio.sleep(0.5)
-                        
-                    except Exception as e:
-                        logger.error(f"更新基金 {code} 在 {date} 的持仓资产比例失败: {e}")
-                        failed_count += 1
-                        continue
+                # 遍历每个基金代码和每个日期
+                for code in fund_codes:
+                    for date_item in quarter_dates:
+                        async with semaphore:
+                            try:
+                                completed_tasks += 1
+                                progress = 5 + int((completed_tasks / total_tasks) * 90)
+                                await self._update_task_progress(
+                                    task_id, progress,
+                                    f"正在更新基金 {code} 在 {date_item} 的持仓（{completed_tasks}/{total_tasks}）..."
+                                )
+                                
+                                df = await loop.run_in_executor(
+                                    _executor, self._fetch_fund_individual_detail_hold_xq, code, date_item
+                                )
+                                
+                                if df is not None and not df.empty:
+                                    saved = await self.data_service.save_fund_individual_detail_hold_xq_data(df)
+                                    total_saved += saved
+                                    success_count += 1
+                                else:
+                                    failed_count += 1
+                                
+                                # 添加延迟避免请求过快
+                                await asyncio.sleep(0.2)
+                                
+                            except Exception as e:
+                                logger.error(f"更新基金 {code} 在 {date_item} 的持仓资产比例失败: {e}")
+                                failed_count += 1
+                                continue
                 
                 await self._update_task_progress(
-                    task_id, 100, 
-                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    task_id, 100,
+                    f"批量更新完成: 成功 {success_count} 次，失败 {failed_count} 次，保存 {total_saved} 条记录"
                 )
                 
                 return {
@@ -4727,13 +5117,13 @@ class FundRefreshService:
                     "success_count": success_count,
                     "failed_count": failed_count,
                     "total_funds": len(fund_codes),
-                    "date": date,
-                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    "total_dates": len(quarter_dates),
+                    "total_tasks": total_tasks,
+                    "message": f"批量更新完成: 成功 {success_count} 次，失败 {failed_count} 次，保存 {total_saved} 条记录"
                 }
             
             else:
-                raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新（必须提供 date 参数）")
-            
+                raise ValueError("请提供 symbol 参数进行单个更新，或设置 batch=True 进行批量更新")
         except Exception as e:
             logger.error(f"刷新基金持仓资产比例失败: {e}", exc_info=True)
             raise
@@ -5188,65 +5578,66 @@ class FundRefreshService:
             logger.error(f"刷新基金交易规则失败: {e}", exc_info=True)
             raise
     
-    def _fetch_fund_portfolio_hold_em(self, symbol: str, date: str):
+    def _fetch_fund_portfolio_hold_em(self, symbol: str, year: str):
         """获取单个基金持仓（同步方法，在线程池中执行）
         
         Args:
             symbol: 基金代码
-            date: 查询日期 (YYYY-MM-DD)
+            year: 查询年份 (YYYY)
             
         Returns:
             DataFrame: 基金持仓
         """
         try:
             import akshare as ak
-            df = ak.fund_portfolio_hold_em(symbol=symbol, date=date)
+            df = ak.fund_portfolio_hold_em(symbol=symbol, date=year)
             if df is not None and not df.empty:
                 df['基金代码'] = symbol
             return df
         except Exception as e:
-            logger.error(f"获取基金 {symbol} 持仓失败: {e}")
-            return pd.DataFrame()
+            logger.error(f"获取基金 {symbol} 年份 {year} 持仓失败: {e}")
+            return None
     
     async def _refresh_fund_portfolio_hold_em(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """刷新基金持仓（支持单个更新和批量更新，必须提供date参数）
+        """刷新基金持仓（支持单个更新和批量更新）
         
         Args:
             task_id: 任务ID
             params: 参数，支持:
                 - fund_code: 单个基金代码
-                - date: 查询日期 (必须)
+                - year: 查询年份 (单个更新必须，格式: YYYY)
                 - batch: 是否批量更新
-                - limit: 批量更新的数量限制
+                - concurrency: 并发数
             
         Returns:
             刷新结果
         """
         try:
             fund_code = params.get('fund_code')
-            date = params.get('date')
+            year = params.get('year')
             batch_mode = params.get('batch', False)
             
-            if not date:
-                raise ValueError("必须提供 date 参数（格式: YYYY-MM-DD）")
+            # 单个更新需要年份
+            if not batch_mode and not year:
+                raise ValueError("单个更新必须提供 year 参数（格式: YYYY）")
             
             if fund_code:
                 # 单个基金更新
-                await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 的持仓 ({date})...")
+                await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 的持仓 (年份 {year})...")
                 
-                await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} 持仓...")
+                await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} {year}年持仓...")
                 
                 loop = asyncio.get_event_loop()
                 df = await loop.run_in_executor(
-                    _executor, self._fetch_fund_portfolio_hold_em, fund_code, date
+                    _executor, self._fetch_fund_portfolio_hold_em, fund_code, year
                 )
                 
                 if df is None or df.empty:
-                    await self._update_task_progress(task_id, 100, f"未获取到基金 {fund_code} 的持仓")
+                    await self._update_task_progress(task_id, 100, f"未获取到基金 {fund_code} {year}年的持仓")
                     return {
                         "success": True,
                         "saved": 0,
-                        "message": f"未获取到基金 {fund_code} 的持仓"
+                        "message": f"未获取到基金 {fund_code} {year}年的持仓"
                     }
                 
                 await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条数据...")
@@ -5262,19 +5653,19 @@ class FundRefreshService:
                     "saved": saved,
                     "rows": len(df),
                     "fund_code": fund_code,
-                    "date": date,
-                    "message": f"成功更新基金 {fund_code} 持仓，保存 {saved} 条记录"
+                    "year": year,
+                    "message": f"成功更新基金 {fund_code} {year}年持仓，保存 {saved} 条记录"
                 }
             
             elif batch_mode:
-                # 批量更新：从fund_name_em获取基金代码列表
-                await self._update_task_progress(task_id, 5, f"开始批量刷新基金持仓 ({date})...")
+                # 批量更新：从fund_name_em获取所有基金代码，遍历年份
+                await self._update_task_progress(task_id, 5, "开始批量刷新基金持仓...")
                 
-                limit = params.get('limit', 100)
+                concurrency = params.get('concurrency', 3)
                 
-                # 获取基金代码列表
+                # 获取所有基金代码（不设置limit）
                 fund_codes = []
-                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}).limit(limit):
+                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}):
                     code = doc.get('基金代码')
                     if code:
                         fund_codes.append(code)
@@ -5287,46 +5678,172 @@ class FundRefreshService:
                         "message": "未找到可更新的基金代码"
                     }
                 
+                # 生成年份列表
+                from datetime import datetime
+                current_year = datetime.now().year
+                
+                years = []
+                if year:
+                    # 指定年份，只更新该年份
+                    try:
+                        year_int = int(year)
+                        years = [str(year_int)]
+                    except ValueError:
+                        raise ValueError(f"年份参数无效: {year}")
+                else:
+                    # 未指定年份，遍历2010年到今年的所有年份
+                    years = [str(y) for y in range(2010, current_year + 1)]
+                
+                # 生成所有可能的（基金代码，年份）组合
+                all_combinations = [(code, y) for code in fund_codes for y in years]
+                total_possible = len(all_combinations)
+                
+                year_info = f"年份 {year}" if year else f"2010-{current_year} 所有年份"
                 await self._update_task_progress(
-                    task_id, 10, f"找到 {len(fund_codes)} 只基金，开始批量更新..."
+                    task_id, 5, 
+                    f"找到 {len(fund_codes)} 只基金，{len(years)} 个年份（{year_info}），共 {total_possible} 个可能组合，正在查询已有数据..."
                 )
+                
+                # 查询数据库中已有的（基金代码，年份）组合
+                existing_combinations = set()
+                async for doc in self.data_service.col_fund_portfolio_hold_em.find({}, {'基金代码': 1, '季度': 1}):
+                    fund_code_db = doc.get('基金代码')
+                    quarter = doc.get('季度', '')
+                    # 从季度字段提取年份（如"2024年1季度股票投资明细" -> "2024"）
+                    import re
+                    year_match = re.search(r'(\d{4})年', str(quarter))
+                    if fund_code_db and year_match:
+                        year_db = year_match.group(1)
+                        existing_combinations.add((fund_code_db, year_db))
+                
+                # 过滤出需要更新的组合（排除已存在的）
+                combinations_to_update = [(code, y) for code, y in all_combinations 
+                                         if (code, y) not in existing_combinations]
+                
+                total_tasks = len(combinations_to_update)
+                skipped_count = total_possible - total_tasks
+                
+                await self._update_task_progress(
+                    task_id, 10, 
+                    f"增量更新：总计 {total_possible} 个组合，已存在 {skipped_count} 个，需要更新 {total_tasks} 个"
+                )
+                
+                if total_tasks == 0:
+                    await self._update_task_progress(task_id, 100, "所有数据已存在，无需更新")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "skipped": skipped_count,
+                        "message": f"所有数据已存在（{skipped_count} 个组合），无需更新"
+                    }
                 
                 total_saved = 0
                 success_count = 0
                 failed_count = 0
+                completed = 0
+                no_data_count = 0
+                failed_tasks = []  # 记录失败任务明细: 基金代码 + 年份
                 
                 loop = asyncio.get_event_loop()
+                semaphore = asyncio.Semaphore(concurrency)
                 
-                for idx, code in enumerate(fund_codes):
-                    try:
-                        progress = 10 + int((idx / len(fund_codes)) * 80)
-                        await self._update_task_progress(
-                            task_id, progress, 
-                            f"正在更新基金 {code} ({idx+1}/{len(fund_codes)})..."
-                        )
-                        
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_portfolio_hold_em, code, date
-                        )
-                        
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_portfolio_hold_em_data(df)
-                            total_saved += saved
-                            success_count += 1
-                        else:
+                # 创建终端进度条
+                pbar = tqdm(total=total_tasks, desc="基金持仓批量更新", unit="任务", 
+                           bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+                
+                async def update_one(code, y):
+                    nonlocal total_saved, success_count, failed_count, completed, no_data_count
+                    async with semaphore:
+                        try:
+                            # 更新进度 - 开始处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress, 
+                                f"正在处理: {code} ({y}年) | 进度: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count}"
+                            )
+                            
+                            df = await loop.run_in_executor(
+                                _executor, self._fetch_fund_portfolio_hold_em, code, y
+                            )
+                            
+                            if df is None:
+                                # 调用 AkShare 过程中发生异常等，视为真实失败
+                                failed_count += 1
+                                failed_tasks.append({
+                                    '基金代码': code,
+                                    '年份': y,
+                                    '原因': 'fetch_returned_none'
+                                })
+                                logger.error(
+                                    f"基金持仓批量失败任务: 基金 {code}, 年份 {y}，原因: fetch 返回 None"
+                                )
+                            elif not df.empty:
+                                # 正常获取到非空数据，执行保存
+                                saved = await self.data_service.save_fund_portfolio_hold_em_data(df)
+                                total_saved += saved
+                                success_count += 1
+                            else:
+                                # AkShare 返回空数据，视为该组合当前无数据
+                                no_data_count += 1
+                            
+                            completed += 1
+                            
+                            # 更新终端进度条
+                            pbar.update(1)
+                            pbar.set_postfix({
+                                '成功': success_count, 
+                                '无数据': no_data_count,
+                                '失败': failed_count,
+                                '已保存': f'{total_saved}条'
+                            })
+                            
+                            # 更新进度 - 完成处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress, 
+                                f"已完成: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count} | 已保存: {total_saved}条"
+                            )
+                            
+                            # 添加延迟避免请求过快
+                            await asyncio.sleep(0.3)
+                            
+                        except Exception as e:
+                            logger.error(f"更新基金 {code} 年份 {y} 持仓失败: {e}")
                             failed_count += 1
+                            completed += 1
+                            failed_tasks.append({
+                                '基金代码': code,
+                                '年份': y,
+                                '原因': f'exception: {e}'
+                            })
+                            pbar.update(1)
+                
+                # 分批处理任务，避免创建过多协程导致内存溢出
+                BATCH_SIZE = 100  # 每批处理100个任务
+                try:
+                    for batch_start in range(0, len(combinations_to_update), BATCH_SIZE):
+                        batch_end = min(batch_start + BATCH_SIZE, len(combinations_to_update))
+                        batch_combinations = combinations_to_update[batch_start:batch_end]
                         
-                        # 添加延迟避免请求过快
-                        await asyncio.sleep(0.5)
+                        # 创建当前批次的任务
+                        batch_tasks = []
+                        for code, y in batch_combinations:
+                            batch_tasks.append(update_one(code, y))
                         
-                    except Exception as e:
-                        logger.error(f"更新基金 {code} 持仓失败: {e}")
-                        failed_count += 1
-                        continue
+                        # 执行当前批次
+                        await asyncio.gather(*batch_tasks, return_exceptions=True)
+                finally:
+                    pbar.close()
+                    # 统一输出失败任务明细，便于后续排查
+                    if failed_tasks:
+                        for item in failed_tasks:
+                            logger.error(
+                                f"基金持仓批量失败任务汇总: 基金 {item['基金代码']}, 年份 {item['年份']}，原因: {item['原因']}"
+                            )
                 
                 await self._update_task_progress(
                     task_id, 100, 
-                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    f"批量更新完成: 总任务 {total_tasks}，成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}，跳过 {skipped_count}，保存 {total_saved} 条记录"
                 )
                 
                 return {
@@ -5334,120 +5851,249 @@ class FundRefreshService:
                     "saved": total_saved,
                     "success_count": success_count,
                     "failed_count": failed_count,
+                    "no_data_count": no_data_count,
+                    "skipped_count": skipped_count,
                     "total_funds": len(fund_codes),
-                    "date": date,
-                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    "total_years": len(years),
+                    "total_possible": total_possible,
+                    "total_tasks": total_tasks,
+                    "year": year if year else f"2010-{current_year}",
+                    "message": f"增量更新完成: 可能 {total_possible}，已存在 {skipped_count}，更新 {total_tasks}（成功 {success_count}，失败 {failed_count}），保存 {total_saved} 条记录"
                 }
             
             else:
-                raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新（必须提供 date 参数）")
+                raise ValueError("请提供 fund_code 和 year 参数进行单个更新，或设置 batch=True 进行批量更新")
             
         except Exception as e:
             logger.error(f"刷新基金持仓失败: {e}", exc_info=True)
             raise
     
-    def _fetch_fund_portfolio_bond_hold_em(self, symbol: str, date: str):
-        """获取单个基金债券持仓"""
+    def _fetch_fund_portfolio_bond_hold_em(self, symbol: str, year: str):
+        """获取单个基金债券持仓（同步方法，在线程池中执行）
+        
+        Args:
+            symbol: 基金代码
+            year: 查询年份 (YYYY)
+            
+        Returns:
+            DataFrame: 基金债券持仓
+        """
         try:
             import akshare as ak
-            df = ak.fund_portfolio_bond_hold_em(symbol=symbol, date=date)
+            df = ak.fund_portfolio_bond_hold_em(symbol=symbol, date=year)
             if df is not None and not df.empty:
                 df['基金代码'] = symbol
             return df
         except Exception as e:
-            logger.error(f"获取基金 {symbol} 债券持仓失败: {e}")
-            return pd.DataFrame()
+            logger.error(f"获取基金 {symbol} 年份 {year} 债券持仓失败: {e}")
+            return None
     
     async def _refresh_fund_portfolio_bond_hold_em(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """刷新债券持仓"""
+        """刷新基金债券持仓（支持单个更新和批量更新）
+        
+        Args:
+            task_id: 任务ID
+            params: 参数，支持:
+                - fund_code: 单个基金代码
+                - year: 查询年份 (单个更新必须，格式: YYYY)
+                - batch: 是否批量更新
+                - concurrency: 并发数
+            
+        Returns:
+            刷新结果
+        """
         try:
             fund_code = params.get('fund_code')
-            date = params.get('date')
+            year = params.get('year')
             batch_mode = params.get('batch', False)
             
-            if not date:
-                raise ValueError("必须提供 date 参数（格式: YYYY-MM-DD）")
+            # 单个更新需要年份
+            if not batch_mode and not year:
+                raise ValueError("单个更新必须提供 year 参数（格式: YYYY）")
             
-            if fund_code:
-                await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 的债券持仓 ({date})...")
-                await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} 债券持仓...")
+            if batch_mode:
+                # 批量更新：从fund_name_em获取所有基金代码，遍历年份
+                await self._update_task_progress(task_id, 5, "开始批量刷新债券持仓...")
                 
-                loop = asyncio.get_event_loop()
-                df = await loop.run_in_executor(
-                    _executor, self._fetch_fund_portfolio_bond_hold_em, fund_code, date
-                )
+                concurrency = params.get('concurrency', 3)
                 
-                if df is None or df.empty:
-                    await self._update_task_progress(task_id, 100, f"未获取到基金 {fund_code} 的债券持仓")
-                    return {
-                        "success": True,
-                        "saved": 0,
-                        "message": f"未获取到基金 {fund_code} 的债券持仓"
-                    }
-                
-                await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条数据...")
-                saved = await self.data_service.save_fund_portfolio_bond_hold_em_data(df)
-                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved} 条记录")
-                
-                return {
-                    "success": True,
-                    "saved": saved,
-                    "rows": len(df),
-                    "fund_code": fund_code,
-                    "date": date,
-                    "message": f"成功更新基金 {fund_code} 债券持仓，保存 {saved} 条记录"
-                }
-            
-            elif batch_mode:
-                await self._update_task_progress(task_id, 5, f"开始批量刷新债券持仓 ({date})...")
-                limit = params.get('limit', 100)
-                
+                # 获取所有基金代码（不设置limit）
                 fund_codes = []
-                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}).limit(limit):
+                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}):
                     code = doc.get('基金代码')
                     if code:
                         fund_codes.append(code)
                 
                 if not fund_codes:
                     await self._update_task_progress(task_id, 100, "未找到可更新的基金代码")
-                    return {"success": True, "saved": 0, "message": "未找到可更新的基金代码"}
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "message": "未找到可更新的基金代码"
+                    }
                 
-                await self._update_task_progress(task_id, 10, f"找到 {len(fund_codes)} 只基金，开始批量更新...")
+                # 生成年份列表
+                from datetime import datetime
+                current_year = datetime.now().year
+                
+                years = []
+                if year:
+                    # 指定年份，只更新该年份
+                    try:
+                        year_int = int(year)
+                        years = [str(year_int)]
+                    except ValueError:
+                        raise ValueError(f"年份参数无效: {year}")
+                else:
+                    # 未指定年份，遍历2010年到今年的所有年份
+                    years = [str(y) for y in range(2010, current_year + 1)]
+                
+                # 生成所有可能的（基金代码，年份）组合
+                all_combinations = [(code, y) for code in fund_codes for y in years]
+                total_possible = len(all_combinations)
+                
+                year_info = f"年份 {year}" if year else f"2010-{current_year} 所有年份"
+                await self._update_task_progress(
+                    task_id, 5, 
+                    f"找到 {len(fund_codes)} 只基金，{len(years)} 个年份（{year_info}），共 {total_possible} 个可能组合，正在查询已有数据..."
+                )
+                
+                # 查询数据库中已有的（基金代码，年份）组合
+                existing_combinations = set()
+                async for doc in self.data_service.col_fund_portfolio_bond_hold_em.find({}, {'基金代码': 1, '季度': 1}):
+                    fund_code_db = doc.get('基金代码')
+                    quarter = doc.get('季度', '')
+                    # 从季度字段提取年份（如"2024年4季度债券投资明细" -> "2024"）
+                    import re
+                    year_match = re.search(r'(\d{4})年', str(quarter))
+                    if fund_code_db and year_match:
+                        year_db = year_match.group(1)
+                        existing_combinations.add((fund_code_db, year_db))
+                
+                # 过滤出需要更新的组合（排除已存在的）
+                combinations_to_update = [(code, y) for code, y in all_combinations 
+                                         if (code, y) not in existing_combinations]
+                
+                total_tasks = len(combinations_to_update)
+                skipped_count = total_possible - total_tasks
+                
+                await self._update_task_progress(
+                    task_id, 10, 
+                    f"增量更新：总计 {total_possible} 个组合，已存在 {skipped_count} 个，需要更新 {total_tasks} 个"
+                )
+                
+                if total_tasks == 0:
+                    await self._update_task_progress(task_id, 100, "所有数据已存在，无需更新")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "skipped": skipped_count,
+                        "message": f"所有数据已存在（{skipped_count} 个组合），无需更新"
+                    }
                 
                 total_saved = 0
                 success_count = 0
                 failed_count = 0
-                loop = asyncio.get_event_loop()
+                completed = 0
+                no_data_count = 0
+                failed_tasks = []
                 
-                for idx, code in enumerate(fund_codes):
-                    try:
-                        progress = 10 + int((idx / len(fund_codes)) * 80)
-                        await self._update_task_progress(
-                            task_id, progress, 
-                            f"正在更新基金 {code} ({idx+1}/{len(fund_codes)})..."
-                        )
-                        
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_portfolio_bond_hold_em, code, date
-                        )
-                        
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_portfolio_bond_hold_em_data(df)
-                            total_saved += saved
-                            success_count += 1
-                        else:
+                loop = asyncio.get_event_loop()
+                semaphore = asyncio.Semaphore(concurrency)
+                
+                # 创建终端进度条
+                pbar = tqdm(total=total_tasks, desc="债券持仓批量更新", unit="任务", 
+                           bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+                
+                async def update_one(code, y):
+                    nonlocal total_saved, success_count, failed_count, completed, no_data_count
+                    async with semaphore:
+                        try:
+                            # 更新进度 - 开始处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress, 
+                                f"正在处理债券持仓: {code} ({y}年) | 进度: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count}"
+                            )
+                            
+                            df = await loop.run_in_executor(
+                                _executor, self._fetch_fund_portfolio_bond_hold_em, code, y
+                            )
+                            
+                            if df is None:
+                                failed_count += 1
+                                failed_tasks.append({
+                                    '基金代码': code,
+                                    '年份': y,
+                                    '原因': 'fetch_returned_none'
+                                })
+                                logger.error(
+                                    f"基金债券持仓批量失败任务: 基金 {code}, 年份 {y}，原因: fetch 返回 None"
+                                )
+                            elif not df.empty:
+                                saved = await self.data_service.save_fund_portfolio_bond_hold_em_data(df)
+                                total_saved += saved
+                                success_count += 1
+                            else:
+                                no_data_count += 1
+                            
+                            completed += 1
+                            
+                            # 更新终端进度条
+                            pbar.update(1)
+                            pbar.set_postfix({
+                                '成功': success_count, 
+                                '无数据': no_data_count,
+                                '失败': failed_count,
+                                '已保存': f'{total_saved}条'
+                            })
+                            
+                            # 更新进度 - 完成处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress, 
+                                f"已完成: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count} | 已保存: {total_saved}条"
+                            )
+                            
+                            # 添加延迟避免请求过快
+                            await asyncio.sleep(0.3)
+                            
+                        except Exception as e:
+                            logger.error(f"更新基金 {code} 年份 {y} 债券持仓失败: {e}")
                             failed_count += 1
+                            completed += 1
+                            failed_tasks.append({
+                                '基金代码': code,
+                                '年份': y,
+                                '原因': f'exception: {e}'
+                            })
+                            pbar.update(1)
+                
+                # 分批处理任务，避免创建过多协程导致内存溢出
+                BATCH_SIZE = 100  # 每批处理100个任务
+                try:
+                    for batch_start in range(0, len(combinations_to_update), BATCH_SIZE):
+                        batch_end = min(batch_start + BATCH_SIZE, len(combinations_to_update))
+                        batch_combinations = combinations_to_update[batch_start:batch_end]
                         
-                        await asyncio.sleep(0.5)
+                        # 创建当前批次的任务
+                        batch_tasks = []
+                        for code, y in batch_combinations:
+                            batch_tasks.append(update_one(code, y))
                         
-                    except Exception as e:
-                        logger.error(f"更新基金 {code} 债券持仓失败: {e}")
-                        failed_count += 1
-                        continue
+                        # 执行当前批次
+                        await asyncio.gather(*batch_tasks, return_exceptions=True)
+                finally:
+                    pbar.close()
+                    if failed_tasks:
+                        for item in failed_tasks:
+                            logger.error(
+                                f"基金债券持仓批量失败任务汇总: 基金 {item['基金代码']}, 年份 {item['年份']}，原因: {item['原因']}"
+                            )
                 
                 await self._update_task_progress(
                     task_id, 100, 
-                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    f"批量更新完成: 总任务 {total_tasks}，成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}，跳过 {skipped_count}，保存 {total_saved} 条记录"
                 )
                 
                 return {
@@ -5455,13 +6101,54 @@ class FundRefreshService:
                     "saved": total_saved,
                     "success_count": success_count,
                     "failed_count": failed_count,
+                    "no_data_count": no_data_count,
+                    "skipped_count": skipped_count,
                     "total_funds": len(fund_codes),
-                    "date": date,
-                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
+                    "total_years": len(years),
+                    "total_possible": total_possible,
+                    "total_tasks": total_tasks,
+                    "year": year if year else f"2010-{current_year}",
+                    "message": f"增量更新完成: 可能 {total_possible}，已存在 {skipped_count}，更新 {total_tasks}（成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}），保存 {total_saved} 条记录"
+                }
+            
+            elif fund_code:
+                # 单个基金更新
+                await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 的债券持仓 (年份 {year})...")
+                
+                await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} {year}年债券持仓...")
+                
+                loop = asyncio.get_event_loop()
+                df = await loop.run_in_executor(
+                    _executor, self._fetch_fund_portfolio_bond_hold_em, fund_code, year
+                )
+                
+                if df is None or df.empty:
+                    await self._update_task_progress(task_id, 100, f"未获取到基金 {fund_code} {year}年的债券持仓")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "message": f"未获取到基金 {fund_code} {year}年的债券持仓"
+                    }
+                
+                await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条数据...")
+                
+                saved = await self.data_service.save_fund_portfolio_bond_hold_em_data(df)
+                
+                await self._update_task_progress(
+                    task_id, 100, f"更新完成，保存 {saved} 条记录"
+                )
+                
+                return {
+                    "success": True,
+                    "saved": saved,
+                    "rows": len(df),
+                    "fund_code": fund_code,
+                    "year": year,
+                    "message": f"成功更新基金 {fund_code} {year}年债券持仓，保存 {saved} 条记录"
                 }
             
             else:
-                raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新（必须提供 date 参数）")
+                raise ValueError("请提供 fund_code 和 year 参数进行单个更新，或设置 batch=True 进行批量更新")
             
         except Exception as e:
             logger.error(f"刷新债券持仓失败: {e}", exc_info=True)
@@ -5477,19 +6164,218 @@ class FundRefreshService:
             return df
         except Exception as e:
             logger.error(f"获取基金 {symbol} 行业配置失败: {e}")
-            return pd.DataFrame()
+            return None
     
     async def _refresh_fund_portfolio_industry_allocation_em(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """刷新行业配置"""
+        """刷新行业配置（支持单个更新和批量更新，增量更新）
+        
+        Args:
+            task_id: 任务ID
+            params: 参数，支持:
+                - fund_code: 单个基金代码
+                - date: 截止日期 (格式: YYYY-MM-DD，如 2023-12-31)
+                - year: 年份 (批量更新时使用，会转换为该年第4季度末日期)
+                - batch: 是否批量更新
+                - concurrency: 并发数
+            
+        Returns:
+            刷新结果
+        """
         try:
             fund_code = params.get('fund_code')
             date = params.get('date')
+            year = params.get('year')
             batch_mode = params.get('batch', False)
             
-            if not date:
-                raise ValueError("必须提供 date 参数（格式: YYYY-MM-DD）")
+            # 处理日期参数：优先使用date，否则使用year转换为季度末日期
+            if not date and not year:
+                raise ValueError("必须提供 date 参数（格式: YYYY-MM-DD）或 year 参数（格式: YYYY）")
             
-            if fund_code:
+            # 如果提供了year而没有date，转换为该年第4季度末日期
+            if not date and year:
+                try:
+                    year_int = int(year)
+                    date = f"{year_int}-12-31"
+                except ValueError:
+                    raise ValueError(f"年份参数无效: {year}")
+            
+            if batch_mode:
+                # 批量更新：从fund_name_em获取所有基金代码，使用增量更新
+                await self._update_task_progress(task_id, 5, f"开始批量刷新行业配置 ({date})...")
+                
+                concurrency = params.get('concurrency', 3)
+                
+                # 获取所有基金代码（不设置limit）
+                fund_codes = []
+                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}):
+                    code = doc.get('基金代码')
+                    if code:
+                        fund_codes.append(code)
+                
+                if not fund_codes:
+                    await self._update_task_progress(task_id, 100, "未找到可更新的基金代码")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "message": "未找到可更新的基金代码"
+                    }
+                
+                await self._update_task_progress(
+                    task_id, 5,
+                    f"找到 {len(fund_codes)} 只基金，正在查询已有数据..."
+                )
+                
+                # 查询数据库中已有的（基金代码，截止时间）组合
+                existing_combinations = set()
+                async for doc in self.data_service.col_fund_portfolio_industry_allocation_em.find({}, {'基金代码': 1, '截止时间': 1}):
+                    fund_code_db = doc.get('基金代码')
+                    end_date = doc.get('截止时间', '')
+                    if fund_code_db and end_date:
+                        existing_combinations.add((fund_code_db, end_date))
+                
+                # 过滤出需要更新的基金（排除已存在的）
+                funds_to_update = [code for code in fund_codes if (code, date) not in existing_combinations]
+                
+                total_possible = len(fund_codes)
+                total_tasks = len(funds_to_update)
+                skipped_count = total_possible - total_tasks
+                
+                await self._update_task_progress(
+                    task_id, 10,
+                    f"增量更新：总计 {total_possible} 只基金，已存在 {skipped_count} 只，需要更新 {total_tasks} 只"
+                )
+                
+                if total_tasks == 0:
+                    await self._update_task_progress(task_id, 100, "所有数据已存在，无需更新")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "skipped": skipped_count,
+                        "message": f"所有数据已存在（{skipped_count} 只基金），无需更新"
+                    }
+                
+                total_saved = 0
+                success_count = 0
+                failed_count = 0
+                completed = 0
+                no_data_count = 0
+                failed_tasks = []
+                
+                loop = asyncio.get_event_loop()
+                semaphore = asyncio.Semaphore(concurrency)
+                
+                # 创建终端进度条
+                pbar = tqdm(total=total_tasks, desc="行业配置批量更新", unit="基金",
+                           bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+                
+                async def update_one(code):
+                    nonlocal total_saved, success_count, failed_count, completed, no_data_count
+                    async with semaphore:
+                        try:
+                            # 更新进度 - 开始处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress,
+                                f"正在处理: {code} ({date}) | 进度: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count}"
+                            )
+                            
+                            df = await loop.run_in_executor(
+                                _executor, self._fetch_fund_portfolio_industry_allocation_em, code, date
+                            )
+                            
+                            if df is None:
+                                failed_count += 1
+                                failed_tasks.append({
+                                    '基金代码': code,
+                                    '截止时间': date,
+                                    '原因': 'fetch_returned_none'
+                                })
+                                logger.error(
+                                    f"行业配置批量失败任务: 基金 {code}, 截止时间 {date}，原因: fetch 返回 None"
+                                )
+                            elif not df.empty:
+                                saved = await self.data_service.save_fund_portfolio_industry_allocation_em_data(df)
+                                total_saved += saved
+                                success_count += 1
+                            else:
+                                no_data_count += 1
+                            
+                            completed += 1
+                            
+                            # 更新终端进度条
+                            pbar.update(1)
+                            pbar.set_postfix({
+                                '成功': success_count,
+                                '无数据': no_data_count,
+                                '失败': failed_count,
+                                '已保存': f'{total_saved}条'
+                            })
+                            
+                            # 更新进度 - 完成处理
+                            progress = 10 + int((completed / total_tasks) * 85)
+                            await self._update_task_progress(
+                                task_id, progress,
+                                f"已完成: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count} | 已保存: {total_saved}条"
+                            )
+                            
+                            # 添加延迟避免请求过快
+                            await asyncio.sleep(0.3)
+                            
+                        except Exception as e:
+                            logger.error(f"更新基金 {code} 行业配置失败: {e}")
+                            failed_count += 1
+                            completed += 1
+                            failed_tasks.append({
+                                '基金代码': code,
+                                '截止时间': date,
+                                '原因': f'exception: {e}'
+                            })
+                            pbar.update(1)
+                
+                # 分批处理任务，避免创建过多协程导致内存溢出
+                BATCH_SIZE = 100  # 每批处理100个任务
+                try:
+                    for batch_start in range(0, len(funds_to_update), BATCH_SIZE):
+                        batch_end = min(batch_start + BATCH_SIZE, len(funds_to_update))
+                        batch_codes = funds_to_update[batch_start:batch_end]
+                        
+                        # 创建当前批次的任务
+                        batch_tasks = []
+                        for code in batch_codes:
+                            batch_tasks.append(update_one(code))
+                        
+                        # 执行当前批次
+                        await asyncio.gather(*batch_tasks, return_exceptions=True)
+                finally:
+                    pbar.close()
+                    if failed_tasks:
+                        for item in failed_tasks:
+                            logger.error(
+                                f"行业配置批量失败任务汇总: 基金 {item['基金代码']}, 截止时间 {item['截止时间']}，原因: {item['原因']}"
+                            )
+                
+                await self._update_task_progress(
+                    task_id, 100,
+                    f"批量更新完成: 总任务 {total_tasks}，成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}，跳过 {skipped_count}，保存 {total_saved} 条记录"
+                )
+                
+                return {
+                    "success": True,
+                    "saved": total_saved,
+                    "success_count": success_count,
+                    "failed_count": failed_count,
+                    "no_data_count": no_data_count,
+                    "skipped_count": skipped_count,
+                    "total_funds": len(fund_codes),
+                    "total_possible": total_possible,
+                    "total_tasks": total_tasks,
+                    "date": date,
+                    "year": year if year else date[:4],
+                    "message": f"增量更新完成: 可能 {total_possible}，已存在 {skipped_count}，更新 {total_tasks}（成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}），保存 {total_saved} 条记录"
+                }
+            
+            elif fund_code:
+                # 单个基金更新
                 await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} 的行业配置 ({date})...")
                 await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} 行业配置...")
                 
@@ -5515,75 +6401,25 @@ class FundRefreshService:
                     "message": f"成功更新基金 {fund_code} 行业配置，保存 {saved} 条记录"
                 }
             
-            elif batch_mode:
-                await self._update_task_progress(task_id, 5, f"开始批量刷新行业配置 ({date})...")
-                limit = params.get('limit', 100)
-                
-                fund_codes = []
-                async for doc in self.data_service.col_fund_name_em.find({}, {'基金代码': 1}).limit(limit):
-                    code = doc.get('基金代码')
-                    if code:
-                        fund_codes.append(code)
-                
-                if not fund_codes:
-                    await self._update_task_progress(task_id, 100, "未找到可更新的基金代码")
-                    return {"success": True, "saved": 0, "message": "未找到可更新的基金代码"}
-                
-                await self._update_task_progress(task_id, 10, f"找到 {len(fund_codes)} 只基金，开始批量更新...")
-                
-                total_saved = 0
-                success_count = 0
-                failed_count = 0
-                loop = asyncio.get_event_loop()
-                
-                for idx, code in enumerate(fund_codes):
-                    try:
-                        progress = 10 + int((idx / len(fund_codes)) * 80)
-                        await self._update_task_progress(
-                            task_id, progress, 
-                            f"正在更新基金 {code} ({idx+1}/{len(fund_codes)})..."
-                        )
-                        
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_portfolio_industry_allocation_em, code, date
-                        )
-                        
-                        if df is not None and not df.empty:
-                            saved = await self.data_service.save_fund_portfolio_industry_allocation_em_data(df)
-                            total_saved += saved
-                            success_count += 1
-                        else:
-                            failed_count += 1
-                        
-                        await asyncio.sleep(0.5)
-                        
-                    except Exception as e:
-                        logger.error(f"更新基金 {code} 行业配置失败: {e}")
-                        failed_count += 1
-                        continue
-                
-                await self._update_task_progress(
-                    task_id, 100, 
-                    f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
-                )
-                
-                return {
-                    "success": True,
-                    "saved": total_saved,
-                    "success_count": success_count,
-                    "failed_count": failed_count,
-                    "total_funds": len(fund_codes),
-                    "date": date,
-                    "message": f"批量更新完成: 成功 {success_count} 只，失败 {failed_count} 只，保存 {total_saved} 条记录"
-                }
-            
             else:
-                raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新（必须提供 date 参数）")
+                raise ValueError("请提供 fund_code 和 date 参数进行单个更新，或设置 batch=True 进行批量更新（必须提供 date 或 year 参数）")
             
         except Exception as e:
             logger.error(f"刷新行业配置失败: {e}", exc_info=True)
             raise
 
+    def _fetch_single_indicator_change(self, symbol: str, indicator: str, date: str):
+        """调用akshare获取单个指标的重大变动（同步方法）"""
+        try:
+            import akshare as ak
+            df = ak.fund_portfolio_change_em(symbol=symbol, indicator=indicator, date=date)
+            if df is not None and not df.empty:
+                df['基金代码'] = symbol
+            return df
+        except Exception as e:
+            logger.debug(f"获取基金 {symbol} {indicator} {date}年重大变动失败: {e}")
+            return pd.DataFrame()
+    
     def _fetch_fund_portfolio_change_em(self, symbol: str, date: str = ""):
         """
         调用akshare获取重大变动（同步方法，在线程池中执行）
@@ -5638,116 +6474,253 @@ class FundRefreshService:
             return None
 
     async def _refresh_fund_portfolio_change_em(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        刷新重大变动数据
-        
-        Args:
-            task_id: 任务ID
-            params: 参数
-                - fund_code: 基金代码（单个更新）
-                - batch: 是否批量更新
-                - limit: 批量更新限制数量
-                - date: 年份，如 "2024"
-                
-        Returns:
-            刷新结果
-        """
+        """刷新重大变动数据（支持单个更新和批量增量更新）"""
         try:
             target_fund_code = params.get('fund_code')
             batch = params.get('batch', False)
             limit = params.get('limit', 0)
-            date = params.get('date', '2024') # 默认2024年
+            date = params.get('date', '2024')  # 默认2024年
             
             if not date:
                 raise ValueError("必须提供 date 参数 (年份，如 2024)")
-                
-            fund_codes = []
-            if target_fund_code:
-                fund_codes = [str(target_fund_code)]
-                self.task_manager.update_progress(task_id, 5, 100, f"准备更新单个基金重大变动: {target_fund_code}")
-            elif batch:
-                # 获取基金列表
+
+            # 单个基金更新：按基金代码 + 年份更新单只基金的重大变动
+            if target_fund_code and not batch:
+                fund_code = str(target_fund_code)
+                await self._update_task_progress(task_id, 5, f"开始刷新基金 {fund_code} {date} 年重大变动...")
+                await self._update_task_progress(task_id, 20, f"正在从东财获取基金 {fund_code} {date} 年重大变动数据...")
+
+                loop = asyncio.get_event_loop()
+                df = await loop.run_in_executor(
+                    _executor, self._fetch_fund_portfolio_change_em, fund_code, date
+                )
+
+                if df is None or df.empty:
+                    await self._update_task_progress(task_id, 100, f"未获取到基金 {fund_code} {date} 年的重大变动数据")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "rows": 0,
+                        "fund_code": fund_code,
+                        "date": date,
+                        "message": f"未获取到基金 {fund_code} {date} 年的重大变动数据"
+                    }
+
+                # 补全必要字段
+                if '基金代码' not in df.columns:
+                    df['基金代码'] = fund_code
+                if '季度' not in df.columns:
+                    df['季度'] = f"{date}年"
+
+                await self._update_task_progress(task_id, 60, f"正在保存 {len(df)} 条重大变动数据...")
+                saved_rows = await self.data_service.save_fund_portfolio_change_em_data(df)
+
+                await self._update_task_progress(task_id, 100, f"更新完成，保存 {saved_rows} 条记录")
+                return {
+                    "success": True,
+                    "saved": saved_rows,
+                    "rows": len(df),
+                    "fund_code": fund_code,
+                    "date": date,
+                    "message": f"成功更新基金 {fund_code} {date} 年重大变动，保存 {saved_rows} 条记录"
+                }
+
+            # 批量增量更新：按年份对所有基金进行重大变动更新
+            if batch:
+                await self._update_task_progress(task_id, 5, "开始批量刷新重大变动数据...")
+
+                concurrency = params.get('concurrency', 3)
+
+                # 1. 获取基金列表
                 self.task_manager.update_progress(task_id, 5, 100, "正在获取基金列表...")
                 loop = asyncio.get_event_loop()
                 fund_list_df = await loop.run_in_executor(_executor, self._fetch_fund_name_em)
-                
+
                 if fund_list_df is None or fund_list_df.empty:
                     raise ValueError("未获取到基金列表")
-                    
+
+                fund_codes: List[str] = []
                 if '基金代码' in fund_list_df.columns:
                     fund_codes = fund_list_df['基金代码'].astype(str).tolist()
                 elif 'code' in fund_list_df.columns:
                     fund_codes = fund_list_df['code'].astype(str).tolist()
-                
-                if limit > 0:
-                    fund_codes = fund_codes[:limit]
-                    
-                self.task_manager.update_progress(task_id, 10, 100, f"获取到 {len(fund_codes)} 只基金，准备更新重大变动...")
-            else:
-                raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新")
-                
-            total_funds = len(fund_codes)
-            concurrency = params.get('concurrency', 3) # 并发数
-            
-            processed_count = 0
-            saved_count = 0
-            failed_count = 0
-            
-            # 信号量限制并发
-            sem = asyncio.Semaphore(concurrency)
-            loop = asyncio.get_event_loop()
-            
-            async def fetch_and_save(code):
-                async with sem:
-                    try:
-                        # 1. 获取数据
-                        df = await loop.run_in_executor(
-                            _executor, self._fetch_fund_portfolio_change_em, code, date
-                        )
-                        
-                        if df is None or df.empty:
-                            return False
-                            
-                        # 添加基金代码和季度/年份
-                        df['基金代码'] = code
-                        if '季度' not in df.columns:
-                            df['季度'] = date # 如果接口没返回季度，暂且用date填充
-                        
-                        # 2. 保存数据
-                        count = await self.data_service.save_fund_portfolio_change_em_data(df)
-                        return count > 0
-                    except Exception:
-                        return False
 
-            # 分批处理任务
-            chunk_size = 50
-            for i in range(0, total_funds, chunk_size):
-                chunk = fund_codes[i:i + chunk_size]
-                tasks = [fetch_and_save(code) for code in chunk]
-                
-                results = await asyncio.gather(*tasks)
-                
-                success_in_batch = sum(1 for r in results if r)
-                saved_count += success_in_batch
-                failed_count += (len(chunk) - success_in_batch)
-                processed_count += len(chunk)
-                
-                # 更新进度
-                progress = 10 + int((processed_count / total_funds) * 90)
-                self.task_manager.update_progress(
-                    task_id, 
-                    progress, 
-                    100, 
-                    f"已处理 {processed_count}/{total_funds}, 成功 {saved_count}, 失败 {failed_count}"
+                if limit and limit > 0:
+                    fund_codes = fund_codes[:limit]
+
+                if not fund_codes:
+                    await self._update_task_progress(task_id, 100, "未找到可更新的基金代码")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "message": "未找到可更新的基金代码"
+                    }
+
+                total_possible = len(fund_codes)
+                await self._update_task_progress(
+                    task_id,
+                    10,
+                    f"获取到 {total_possible} 只基金，正在查询 {date} 年已存在的重大变动数据..."
                 )
-                
-            return {
-                'success': True,
-                'saved': saved_count,
-                'failed': failed_count,
-                'total': total_funds,
-                'message': f"更新完成: 成功 {saved_count}, 失败 {failed_count}"
-            }
+
+                # 2. 查询指定年份已存在重大变动数据的基金代码（按季度字段中的年份判断）
+                existing_funds: set = set()
+                async for doc in self.data_service.col_fund_portfolio_change_em.find(
+                    {'季度': {'$regex': f'{date}年'}},
+                    {'基金代码': 1, '季度': 1}
+                ):
+                    code_db = doc.get('基金代码')
+                    if code_db:
+                        existing_funds.add(str(code_db))
+
+                # 3. 过滤出需要更新的基金代码（排除已存在该年份数据的基金）
+                codes_to_update = [code for code in fund_codes if code not in existing_funds]
+                total_tasks = len(codes_to_update)
+                skipped_count = total_possible - total_tasks
+
+                await self._update_task_progress(
+                    task_id,
+                    15,
+                    f"增量更新：总计 {total_possible} 只基金，{date} 年已存在 {skipped_count} 只，需要更新 {total_tasks} 只"
+                )
+
+                if total_tasks == 0:
+                    await self._update_task_progress(task_id, 100, f"{date} 年的重大变动数据已全部存在，无需更新")
+                    return {
+                        "success": True,
+                        "saved": 0,
+                        "success_count": 0,
+                        "failed_count": 0,
+                        "no_data_count": 0,
+                        "skipped_count": skipped_count,
+                        "total_funds": total_possible,
+                        "total_tasks": total_tasks,
+                        "date": date,
+                        "message": f"{date} 年的重大变动数据已全部存在，无需更新（跳过 {skipped_count} 只基金）"
+                    }
+
+                total_saved = 0
+                success_count = 0
+                failed_count = 0
+                no_data_count = 0
+                completed = 0
+                failed_tasks: List[Dict[str, Any]] = []
+
+                semaphore = asyncio.Semaphore(concurrency)
+
+                # 终端进度条
+                pbar = tqdm(
+                    total=total_tasks,
+                    desc="重大变动批量更新",
+                    unit="任务",
+                    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'
+                )
+
+                async def update_one(code: str):
+                    nonlocal total_saved, success_count, failed_count, no_data_count, completed
+                    async with semaphore:
+                        try:
+                            progress = 15 + int((completed / total_tasks) * 80)
+                            await self._update_task_progress(
+                                task_id,
+                                progress,
+                                f"正在处理重大变动: {code} ({date} 年) | 进度: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count}"
+                            )
+
+                            df = await loop.run_in_executor(
+                                _executor, self._fetch_fund_portfolio_change_em, code, date
+                            )
+
+                            if df is None:
+                                failed_count += 1
+                                failed_tasks.append({
+                                    "基金代码": code,
+                                    "年份": date,
+                                    "原因": "fetch_returned_none"
+                                })
+                                logger.error(
+                                    f"重大变动批量失败任务: 基金 {code}, 年份 {date}，原因: fetch 返回 None"
+                                )
+                            elif not df.empty:
+                                if '基金代码' not in df.columns:
+                                    df['基金代码'] = code
+                                if '季度' not in df.columns:
+                                    df['季度'] = f"{date}年"
+                                saved_rows = await self.data_service.save_fund_portfolio_change_em_data(df)
+                                total_saved += saved_rows
+                                success_count += 1
+                            else:
+                                no_data_count += 1
+
+                            completed += 1
+
+                            # 更新终端进度条
+                            pbar.update(1)
+                            pbar.set_postfix({
+                                "成功": success_count,
+                                "无数据": no_data_count,
+                                "失败": failed_count,
+                                "已保存": f"{total_saved}条"
+                            })
+
+                            progress = 15 + int((completed / total_tasks) * 80)
+                            await self._update_task_progress(
+                                task_id,
+                                progress,
+                                f"已完成: {completed}/{total_tasks} | 成功: {success_count} | 无数据: {no_data_count} | 失败: {failed_count} | 已保存: {total_saved} 条"
+                            )
+
+                            await asyncio.sleep(0.3)
+
+                        except Exception as e:
+                            logger.error(f"更新基金 {code} {date} 年重大变动失败: {e}")
+                            failed_count += 1
+                            completed += 1
+                            failed_tasks.append({
+                                "基金代码": code,
+                                "年份": date,
+                                "原因": f"exception: {e}"
+                            })
+                            pbar.update(1)
+
+                # 分批执行，避免一次创建过多协程
+                BATCH_SIZE = 100
+                try:
+                    for batch_start in range(0, len(codes_to_update), BATCH_SIZE):
+                        batch_end = min(batch_start + BATCH_SIZE, len(codes_to_update))
+                        batch_codes = codes_to_update[batch_start:batch_end]
+                        batch_tasks = [update_one(code) for code in batch_codes]
+                        await asyncio.gather(*batch_tasks, return_exceptions=True)
+                finally:
+                    pbar.close()
+                    if failed_tasks:
+                        for item in failed_tasks:
+                            logger.error(
+                                f"重大变动批量失败任务汇总: 基金 {item['基金代码']}, 年份 {item['年份']}，原因: {item['原因']}"
+                            )
+
+                await self._update_task_progress(
+                    task_id,
+                    100,
+                    f"批量更新完成: 总任务 {total_tasks}，成功 {success_count}，无数据 {no_data_count}，失败 {failed_count}，跳过 {skipped_count}，保存 {total_saved} 条记录"
+                )
+
+                return {
+                    "success": True,
+                    "saved": total_saved,
+                    "success_count": success_count,
+                    "failed_count": failed_count,
+                    "no_data_count": no_data_count,
+                    "skipped_count": skipped_count,
+                    "total_funds": total_possible,
+                    "total_tasks": total_tasks,
+                    "date": date,
+                    "message": f"增量更新完成: 总基金 {total_possible}，已存在 {skipped_count}，本次更新 {total_tasks}（成功 {success_count}，失败 {failed_count}），保存 {total_saved} 条记录"
+                }
+
+            # 未提供 fund_code 且未开启 batch
+            raise ValueError("请提供 fund_code 参数进行单个更新，或设置 batch=True 进行批量更新")
+
         except Exception as e:
             logger.error(f"刷新重大变动失败: {e}", exc_info=True)
             raise

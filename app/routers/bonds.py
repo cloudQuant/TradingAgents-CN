@@ -625,19 +625,345 @@ async def list_bond_collections(
 ):
     """获取所有债券相关数据集合列表及其说明"""
     collections = [
+        # 01 基础数据
         {
             "name": "bond_info_cm",
-            "display_name": "债券数据查询",
+            "display_name": "债券信息查询",
             "description": "中国外汇交易中心债券信息查询，支持按债券名称、代码、发行人、债券类型、付息方式、发行年份、承销商、评级等条件查询",
             "route": "/bonds/collections/bond_info_cm",
-            "fields": ["code", "债券简称", "债券代码", "发行人/受托机构", "债券类型", "发行日期", "最新债项评级", "查询代码"],
+            "source": "中国外汇交易中心",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "基础数据",
         },
+        # 02
         {
-            "name": "bond_basic_info",
+            "name": "bond_info_detail_cm",
             "display_name": "债券基础信息",
-            "description": "债券的基础信息，包括代码、名称、类别、发行人、息票率、上市日期、到期日等",
-            "route": "/bonds/collections/bond_basic_info",
-            "fields": ["code", "name", "exchange", "category", "issuer", "coupon_rate", "list_date", "maturity_date", "type"],
+            "description": "债券详细信息，包括发行条款、评级等详细数据",
+            "route": "/bonds/collections/bond_info_detail_cm",
+            "source": "中国外汇交易中心",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "基础数据",
+        },
+        # 03 沪深债券行情
+        {
+            "name": "bond_zh_hs_spot",
+            "display_name": "沪深债券实时行情",
+            "description": "沪深债券实时行情数据，包括最新价、涨跌幅、成交量等",
+            "route": "/bonds/collections/bond_zh_hs_spot",
+            "source": "新浪财经",
+            "priority": "⭐⭐⭐⭐",
+            "category": "沪深债券行情",
+        },
+        # 04
+        {
+            "name": "bond_zh_hs_daily",
+            "display_name": "沪深债券历史行情",
+            "description": "沪深债券历史行情数据（日线），支持按日期查询",
+            "route": "/bonds/collections/bond_zh_hs_daily",
+            "source": "新浪财经",
+            "priority": "⭐⭐⭐⭐",
+            "category": "沪深债券行情",
+        },
+        # 05 可转债行情数据
+        {
+            "name": "bond_zh_hs_cov_spot",
+            "display_name": "可转债实时行情",
+            "description": "沪深可转债实时行情数据",
+            "route": "/bonds/collections/bond_zh_hs_cov_spot",
+            "source": "新浪财经",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "可转债行情",
+        },
+        # 06
+        {
+            "name": "bond_zh_hs_cov_daily",
+            "display_name": "可转债历史行情",
+            "description": "沪深可转债历史行情数据（日线）",
+            "route": "/bonds/collections/bond_zh_hs_cov_daily",
+            "source": "新浪财经",
+            "priority": "⭐⭐⭐⭐",
+            "category": "可转债行情",
+        },
+        # 07
+        {
+            "name": "bond_zh_cov",
+            "display_name": "可转债数据一览表",
+            "description": "可转债综合数据，包括申购、转股价、溢价率等",
+            "route": "/bonds/collections/bond_zh_cov",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "可转债行情",
+        },
+        # 08 市场概览数据
+        {
+            "name": "bond_cash_summary_sse",
+            "display_name": "债券现券市场概览",
+            "description": "上交所债券现券市场托管概览",
+            "route": "/bonds/collections/bond_cash_summary_sse",
+            "source": "上海证券交易所",
+            "priority": "⭐⭐⭐",
+            "category": "市场概览",
+        },
+        # 09
+        {
+            "name": "bond_deal_summary_sse",
+            "display_name": "债券成交概览",
+            "description": "上交所债券成交概览",
+            "route": "/bonds/collections/bond_deal_summary_sse",
+            "source": "上海证券交易所",
+            "priority": "⭐⭐⭐",
+            "category": "市场概览",
+        },
+        # 10 银行间市场
+        {
+            "name": "bond_debt_nafmii",
+            "display_name": "银行间市场债券发行",
+            "description": "银行间市场债券发行基础数据",
+            "route": "/bonds/collections/bond_debt_nafmii",
+            "source": "中国银行间市场交易商协会",
+            "priority": "⭐⭐⭐",
+            "category": "银行间市场",
+        },
+        # 11
+        {
+            "name": "bond_spot_quote",
+            "display_name": "现券市场做市报价",
+            "description": "银行间现券市场做市报价",
+            "route": "/bonds/collections/bond_spot_quote",
+            "source": "中国外汇交易中心",
+            "priority": "⭐⭐⭐",
+            "category": "银行间市场",
+        },
+        # 12
+        {
+            "name": "bond_spot_deal",
+            "display_name": "现券市场成交行情",
+            "description": "银行间现券市场成交行情",
+            "route": "/bonds/collections/bond_spot_deal",
+            "source": "中国外汇交易中心",
+            "priority": "⭐⭐⭐",
+            "category": "银行间市场",
+        },
+        # 13 可转债分时
+        {
+            "name": "bond_zh_hs_cov_min",
+            "display_name": "可转债分时行情",
+            "description": "可转债分时行情数据，支持多周期",
+            "route": "/bonds/collections/bond_zh_hs_cov_min",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐",
+            "category": "可转债行情",
+        },
+        # 14
+        {
+            "name": "bond_zh_hs_cov_pre_min",
+            "display_name": "可转债盘前分时",
+            "description": "可转债盘前分时数据",
+            "route": "/bonds/collections/bond_zh_hs_cov_pre_min",
+            "source": "东方财富网",
+            "priority": "⭐⭐",
+            "category": "可转债行情",
+        },
+        # 15 可转债详细数据
+        {
+            "name": "bond_zh_cov_info",
+            "display_name": "可转债详情-东财",
+            "description": "可转债详情（基本信息、中签号、筹资用途、重要日期）",
+            "route": "/bonds/collections/bond_zh_cov_info",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐⭐",
+            "category": "可转债详细",
+        },
+        # 16
+        {
+            "name": "bond_zh_cov_info_ths",
+            "display_name": "可转债详情-同花顺",
+            "description": "可转债详情（同花顺数据源）",
+            "route": "/bonds/collections/bond_zh_cov_info_ths",
+            "source": "同花顺",
+            "priority": "⭐⭐⭐",
+            "category": "可转债详细",
+        },
+        # 17
+        {
+            "name": "bond_cov_comparison",
+            "display_name": "可转债比价表",
+            "description": "可转债与正股比价数据",
+            "route": "/bonds/collections/bond_cov_comparison",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "可转债详细",
+        },
+        # 18
+        {
+            "name": "bond_zh_cov_value_analysis",
+            "display_name": "可转债价值分析",
+            "description": "可转债价值分析（纯债价值、转股价值、溢价率）",
+            "route": "/bonds/collections/bond_zh_cov_value_analysis",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "可转债详细",
+        },
+        # 19 质押式回购
+        {
+            "name": "bond_sh_buy_back_em",
+            "display_name": "上证质押式回购",
+            "description": "上证质押式回购实时行情",
+            "route": "/bonds/collections/bond_sh_buy_back_em",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐",
+            "category": "质押式回购",
+        },
+        # 20
+        {
+            "name": "bond_sz_buy_back_em",
+            "display_name": "深证质押式回购",
+            "description": "深证质押式回购实时行情",
+            "route": "/bonds/collections/bond_sz_buy_back_em",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐",
+            "category": "质押式回购",
+        },
+        # 21
+        {
+            "name": "bond_buy_back_hist_em",
+            "display_name": "质押式回购历史数据",
+            "description": "质押式回购历史行情",
+            "route": "/bonds/collections/bond_buy_back_hist_em",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐",
+            "category": "质押式回购",
+        },
+        # 22 集思录数据
+        {
+            "name": "bond_cb_jsl",
+            "display_name": "可转债实时数据-集思录",
+            "description": "集思录可转债实时数据（需要Cookie）",
+            "route": "/bonds/collections/bond_cb_jsl",
+            "source": "集思录",
+            "priority": "⭐⭐⭐⭐⭐",
+            "category": "集思录数据",
+        },
+        # 23
+        {
+            "name": "bond_cb_redeem_jsl",
+            "display_name": "可转债强赎-集思录",
+            "description": "可转债强赎信息",
+            "route": "/bonds/collections/bond_cb_redeem_jsl",
+            "source": "集思录",
+            "priority": "⭐⭐⭐⭐",
+            "category": "集思录数据",
+        },
+        # 24
+        {
+            "name": "bond_cb_index_jsl",
+            "display_name": "可转债等权指数-集思录",
+            "description": "集思录可转债等权指数",
+            "route": "/bonds/collections/bond_cb_index_jsl",
+            "source": "集思录",
+            "priority": "⭐⭐⭐",
+            "category": "集思录数据",
+        },
+        # 25
+        {
+            "name": "bond_cb_adj_logs_jsl",
+            "display_name": "转股价调整记录-集思录",
+            "description": "可转债转股价调整记录",
+            "route": "/bonds/collections/bond_cb_adj_logs_jsl",
+            "source": "集思录",
+            "priority": "⭐⭐⭐",
+            "category": "集思录数据",
+        },
+        # 26 收益率曲线
+        {
+            "name": "bond_china_close_return",
+            "display_name": "收益率曲线历史数据",
+            "description": "中国债券收益率曲线历史数据",
+            "route": "/bonds/collections/bond_china_close_return",
+            "source": "中国外汇交易中心",
+            "priority": "⭐⭐⭐",
+            "category": "收益率曲线",
+        },
+        # 27
+        {
+            "name": "bond_zh_us_rate",
+            "display_name": "中美国债收益率",
+            "description": "中美国债收益率对比数据",
+            "route": "/bonds/collections/bond_zh_us_rate",
+            "source": "东方财富网",
+            "priority": "⭐⭐⭐",
+            "category": "收益率曲线",
+        },
+        # 28 债券发行数据
+        {
+            "name": "bond_treasure_issue_cninfo",
+            "display_name": "国债发行",
+            "description": "国债发行信息",
+            "route": "/bonds/collections/bond_treasure_issue_cninfo",
+            "source": "巨潮资讯",
+            "priority": "⭐⭐",
+            "category": "债券发行",
+        },
+        # 29
+        {
+            "name": "bond_local_government_issue_cninfo",
+            "display_name": "地方债发行",
+            "description": "地方债发行信息",
+            "route": "/bonds/collections/bond_local_government_issue_cninfo",
+            "source": "巨潮资讯",
+            "priority": "⭐⭐",
+            "category": "债券发行",
+        },
+        # 30
+        {
+            "name": "bond_corporate_issue_cninfo",
+            "display_name": "企业债发行",
+            "description": "企业债发行信息",
+            "route": "/bonds/collections/bond_corporate_issue_cninfo",
+            "source": "巨潮资讯",
+            "priority": "⭐⭐",
+            "category": "债券发行",
+        },
+        # 31
+        {
+            "name": "bond_cov_issue_cninfo",
+            "display_name": "可转债发行",
+            "description": "可转债发行信息",
+            "route": "/bonds/collections/bond_cov_issue_cninfo",
+            "source": "巨潮资讯",
+            "priority": "⭐⭐⭐",
+            "category": "债券发行",
+        },
+        # 32
+        {
+            "name": "bond_cov_stock_issue_cninfo",
+            "display_name": "可转债转股",
+            "description": "可转债转股信息",
+            "route": "/bonds/collections/bond_cov_stock_issue_cninfo",
+            "source": "巨潮资讯",
+            "priority": "⭐⭐⭐",
+            "category": "债券发行",
+        },
+        # 33 中债指数
+        {
+            "name": "bond_new_composite_index_cbond",
+            "display_name": "中债新综合指数",
+            "description": "中债新综合指数",
+            "route": "/bonds/collections/bond_new_composite_index_cbond",
+            "source": "中国债券信息网",
+            "priority": "⭐⭐",
+            "category": "中债指数",
+        },
+        # 34
+        {
+            "name": "bond_composite_index_cbond",
+            "display_name": "中债综合指数",
+            "description": "中债综合指数",
+            "route": "/bonds/collections/bond_composite_index_cbond",
+            "source": "中国债券信息网",
+            "priority": "⭐⭐",
+            "category": "中债指数",
         },
     ]
     return {"success": True, "data": collections}
@@ -658,10 +984,54 @@ async def get_collection_data(
     db = get_mongo_db()
     svc = BondDataService(db)
     
-    # 获取集合（仅保留债券数据查询和债券基础信息）
+    # 映射所有34个债券数据集合到对应的MongoDB集合
     collection_map = {
+        # 01-02 基础数据
         "bond_info_cm": svc.col_info_cm,
-        "bond_basic_info": svc.col_basic,
+        "bond_info_detail_cm": svc.col_basic,
+        # 03-04 沪深债券行情
+        "bond_zh_hs_spot": svc.col_zh_hs_spot,
+        "bond_zh_hs_daily": svc.col_zh_hs_daily,
+        # 05-07 可转债行情
+        "bond_zh_hs_cov_spot": svc.col_zh_hs_cov_spot,
+        "bond_zh_hs_cov_daily": svc.col_zh_hs_cov_daily,
+        "bond_zh_cov": svc.col_zh_cov,
+        # 08-09 市场概览
+        "bond_cash_summary_sse": svc.col_cash_summary_sse,
+        "bond_deal_summary_sse": svc.col_deal_summary_sse,
+        # 10-12 银行间市场
+        "bond_debt_nafmii": svc.col_debt_nafmii,
+        "bond_spot_quote": svc.col_spot_quote,
+        "bond_spot_deal": svc.col_spot_deal,
+        # 13-14 可转债分时
+        "bond_zh_hs_cov_min": svc.col_zh_hs_cov_min,
+        "bond_zh_hs_cov_pre_min": svc.col_zh_hs_cov_pre_min,
+        # 15-18 可转债详细
+        "bond_zh_cov_info": svc.col_zh_cov_info,
+        "bond_zh_cov_info_ths": svc.col_zh_cov_info_ths,
+        "bond_cov_comparison": svc.col_cov_comparison,
+        "bond_zh_cov_value_analysis": svc.col_zh_cov_value_analysis,
+        # 19-21 质押式回购
+        "bond_sh_buy_back_em": svc.col_sh_buy_back,
+        "bond_sz_buy_back_em": svc.col_sz_buy_back,
+        "bond_buy_back_hist_em": svc.col_buybacks_hist,
+        # 22-25 集思录数据
+        "bond_cb_jsl": svc.col_cov_jsl,
+        "bond_cb_redeem_jsl": svc.col_cov_redeem_jsl,
+        "bond_cb_index_jsl": svc.col_cov_index_jsl,
+        "bond_cb_adj_logs_jsl": svc.col_cov_adj_jsl,
+        # 26-27 收益率曲线
+        "bond_china_close_return": svc.col_yield_curve_hist,
+        "bond_zh_us_rate": svc.col_cn_us_yield,
+        # 28-32 债券发行
+        "bond_treasure_issue_cninfo": svc.col_treasury_issue,
+        "bond_local_government_issue_cninfo": svc.col_local_issue,
+        "bond_corporate_issue_cninfo": svc.col_corporate_issue,
+        "bond_cov_issue_cninfo": svc.col_cov_issue,
+        "bond_cov_stock_issue_cninfo": svc.col_cov_convert,
+        # 33-34 中债指数
+        "bond_new_composite_index_cbond": svc.col_zh_bond_new_index,
+        "bond_composite_index_cbond": svc.col_zh_bond_index,
     }
     
     collection = collection_map.get(collection_name)
@@ -839,7 +1209,55 @@ async def get_collection_stats(
     db = get_mongo_db()
     svc = BondDataService(db)
     
+    # 映射所有债券数据集合到对应的MongoDB集合（包含34个主要集合和其他辅助集合）
     collection_map = {
+        # 01-02 基础数据
+        "bond_info_cm": svc.col_info_cm,
+        "bond_info_detail_cm": svc.col_basic,
+        # 03-04 沪深债券行情
+        "bond_zh_hs_spot": svc.col_zh_hs_spot,
+        "bond_zh_hs_daily": svc.col_zh_hs_daily,
+        # 05-07 可转债行情
+        "bond_zh_hs_cov_spot": svc.col_zh_hs_cov_spot,
+        "bond_zh_hs_cov_daily": svc.col_zh_hs_cov_daily,
+        "bond_zh_cov": svc.col_zh_cov,
+        # 08-09 市场概览
+        "bond_cash_summary_sse": svc.col_cash_summary_sse,
+        "bond_deal_summary_sse": svc.col_deal_summary_sse,
+        # 10-12 银行间市场
+        "bond_debt_nafmii": svc.col_debt_nafmii,
+        "bond_spot_quote": svc.col_spot_quote,
+        "bond_spot_deal": svc.col_spot_deal,
+        # 13-14 可转债分时
+        "bond_zh_hs_cov_min": svc.col_zh_hs_cov_min,
+        "bond_zh_hs_cov_pre_min": svc.col_zh_hs_cov_pre_min,
+        # 15-18 可转债详细
+        "bond_zh_cov_info": svc.col_zh_cov_info,
+        "bond_zh_cov_info_ths": svc.col_zh_cov_info_ths,
+        "bond_cov_comparison": svc.col_cov_comparison,
+        "bond_zh_cov_value_analysis": svc.col_zh_cov_value_analysis,
+        # 19-21 质押式回购
+        "bond_sh_buy_back_em": svc.col_sh_buy_back,
+        "bond_sz_buy_back_em": svc.col_sz_buy_back,
+        "bond_buy_back_hist_em": svc.col_buybacks_hist,
+        # 22-25 集思录数据
+        "bond_cb_jsl": svc.col_cov_jsl,
+        "bond_cb_redeem_jsl": svc.col_cov_redeem_jsl,
+        "bond_cb_index_jsl": svc.col_cov_index_jsl,
+        "bond_cb_adj_logs_jsl": svc.col_cov_adj_jsl,
+        # 26-27 收益率曲线
+        "bond_china_close_return": svc.col_yield_curve_hist,
+        "bond_zh_us_rate": svc.col_cn_us_yield,
+        # 28-32 债券发行
+        "bond_treasure_issue_cninfo": svc.col_treasury_issue,
+        "bond_local_government_issue_cninfo": svc.col_local_issue,
+        "bond_corporate_issue_cninfo": svc.col_corporate_issue,
+        "bond_cov_issue_cninfo": svc.col_cov_issue,
+        "bond_cov_stock_issue_cninfo": svc.col_cov_convert,
+        # 33-34 中债指数
+        "bond_new_composite_index_cbond": svc.col_zh_bond_new_index,
+        "bond_composite_index_cbond": svc.col_zh_bond_index,
+        # 其他辅助集合（保留原有的映射）
         "bond_basic_info": svc.col_basic,
         "bond_daily": svc.col_daily,
         "yield_curve_daily": svc.col_curve,
@@ -852,7 +1270,6 @@ async def get_collection_stats(
         "bond_cb_redeems": svc.col_cb_redeems,
         "bond_issues": svc.col_issues,
         "bond_buybacks": svc.col_buybacks,
-        "bond_buybacks_hist": svc.col_buybacks_hist,
         "bond_indices_daily": svc.col_indices,
         "us_yield_daily": svc.col_us_yield,
         "bond_spot_quote_detail": svc.col_spot_quote_detail,
@@ -860,7 +1277,6 @@ async def get_collection_stats(
         "bond_deal_summary": svc.col_deal_summary,
         "bond_cash_summary": svc.col_cash_summary,
         "bond_nafmii_debts": svc.col_nafmii,
-        "bond_info_cm": svc.col_info_cm,
         "bond_cov_list": svc.col_cov_list,
         "bond_cb_list_jsl": svc.col_cb_list_jsl,
         "bond_cb_summary": svc.col_cb_summary,

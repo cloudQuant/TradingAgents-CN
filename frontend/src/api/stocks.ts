@@ -248,6 +248,20 @@ export const stocksApi = {
     return ApiClient.delete<{ deleted_count: number; message: string }>(
       `/api/stocks/collections/${collectionName}/clear`
     )
+  },
+
+  /**
+   * 上传数据文件
+   */
+  async uploadData(collectionName: string, file: File, onProgress?: (progress: number) => void) {
+    return await ApiClient.upload(`/api/stocks/collections/${collectionName}/upload`, file, onProgress)
+  },
+
+  /**
+   * 远程同步数据
+   */
+  async syncData(collectionName: string, config: any) {
+    return await ApiClient.post(`/api/stocks/collections/${collectionName}/sync`, config)
   }
 }
 

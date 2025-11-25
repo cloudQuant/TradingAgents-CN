@@ -10,8 +10,20 @@
           <p class="page-description">{{ collectionInfo?.description || '' }}</p>
         </div>
         <div class="header-actions">
+          <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
           <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
-          <el-button :icon="Download" type="primary" @click="showRefreshDialog" :loading="refreshing">更新数据</el-button>
+          <el-dropdown @command="handleUpdateCommand">
+            <el-button :icon="Download" type="primary" :loading="refreshing">
+              更新数据<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="api">API更新</el-dropdown-item>
+                <el-dropdown-item command="file">文件导入</el-dropdown-item>
+                <el-dropdown-item command="sync">远程同步</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
         </div>
       </div>
@@ -54,9 +66,6 @@
           <div class="card-header">
             <div style="display: flex; align-items: center; gap: 12px;">
               <span>数据列表</span>
-              <el-tag v-if="collectionInfo?.dynamic_columns && items.length > 0" type="info" size="small">
-                显示前 {{ fields.length - 1 }} 个货币列
-              </el-tag>
             </div>
             <div class="header-actions">
               <el-input
@@ -116,105 +125,127 @@
       </el-card>
     </div>
 
-    <!-- 更新数据对话框 -->
+    <!-- 文件导入对话框 -->
     <el-dialog
-      v-model="refreshDialogVisible"
-      title="更新数据"
+      v-model="uploadDialogVisible"
+      title="文件导入"
       width="600px"
       :close-on-click-modal="false"
     >
-      <!-- 集合名称 -->
-      <el-form label-width="80px">
-        <el-form-item label="集合名称">
-          <el-input :value="collectionInfo?.display_name || collectionName" disabled />
-        </el-form-item>
-      </el-form>
-
-      <!-- 文件导入区域 -->
-      <el-divider content-position="left">文件导入</el-divider>
       <el-upload
         ref="uploadRef"
         :auto-upload="false"
         :on-change="handleFileChange"
+        :on-remove="handleImportFileRemove"
         :limit="1"
         accept=".csv,.xlsx"
         drag
       >
-        <div class="el-upload__text">拖拽文件到此处或<em style="color: #409eff; cursor: pointer;">点击选择文件</em></div>
-      </el-upload>
-      <div style="margin-top: 8px; color: #909399; font-size: 12px;">
-        支持 CSV 或 Excel 文件，列结构需包含{{ collectionName === 'currency_latest' ? '货币代码、日期、基础货币、比率' : collectionName === 'currency_currencies' ? '货币代码、名称、符号' : '相关字段' }}
-      </div>
-      <el-button style="margin-top: 12px;" type="primary" @click="handleImport" :loading="refreshing" :disabled="!importFile">导入文件</el-button>
-
-      <!-- 远程同步区域 (从 MongoDB) -->
-      <el-divider content-position="left">远程同步</el-divider>
-      <el-form label-position="top">
-        <el-row :gutter="16">
-          <el-col :span="24">
-            <el-form-item label="远程 MongoDB 地址">
-              <el-input
-                v-model="remoteSyncHost"
-                placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="数据库类型">
-              <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-                <el-option label="MongoDB" value="mongodb" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="批次大小">
-              <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-                <el-option label="1000" :value="1000" />
-                <el-option label="2000" :value="2000" />
-                <el-option label="5000" :value="5000" />
-                <el-option label="10000" :value="10000" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="远程集合名称">
-              <el-input v-model="remoteSyncCollection" :placeholder="`默认 ${collectionName}`" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="远程用户名（可选）">
-              <el-input v-model="remoteSyncUsername" placeholder="远程用户名" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="24">
-            <el-form-item label="认证库（authSource）">
-              <el-input v-model="remoteSyncAuthSource" placeholder="例如 admin 或 tradingagents" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="24">
-            <el-form-item label="远程密码（可选）">
-              <el-input v-model="remoteSyncPassword" type="password" show-password placeholder="远程密码" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-button type="primary" @click="handleRemoteSync" :loading="remoteSyncing" :disabled="!remoteSyncHost || remoteSyncing">
-          远程同步
-        </el-button>
-        <div v-if="remoteSyncStats" style="margin-top: 8px; font-size: 12px; color: #606266;">
-          最近一次同步：远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新 {{ remoteSyncStats.synced }} 条
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">
+          拖拽文件到此处或<em>点击选择文件</em>
         </div>
+        <template #tip>
+          <div class="el-upload__tip">
+            支持 CSV 或 Excel 文件，列结构需包含{{ collectionName === 'currency_latest' ? '货币代码、日期、基础货币、比率' : collectionName === 'currency_currencies' ? '货币代码、名称、符号' : '相关字段' }}
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleImport"
+          :loading="importing"
+          :disabled="!importFile || importing"
+        >
+          导入
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 远程同步对话框 -->
+    <el-dialog
+      v-model="syncDialogVisible"
+      title="远程同步"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="120px">
+        <el-form-item label="远程主机">
+          <el-input
+            v-model="remoteSyncHost"
+            placeholder="IP地址或URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
+          />
+        </el-form-item>
+        <el-form-item label="数据库类型">
+          <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
+            <el-option label="MongoDB" value="mongodb" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="批次大小">
+          <el-select v-model="remoteSyncBatchSize" style="width: 100%">
+            <el-option label="1000" :value="1000" />
+            <el-option label="2000" :value="2000" />
+            <el-option label="5000" :value="5000" />
+            <el-option label="10000" :value="10000" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="远程集合名">
+          <el-input
+            v-model="remoteSyncCollection"
+            :placeholder="`默认使用当前集合名: ${collectionName}`"
+          />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input
+            v-model="remoteSyncUsername"
+            placeholder="可选"
+          />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="remoteSyncPassword"
+            type="password"
+            placeholder="可选"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="认证数据库">
+          <el-input
+            v-model="remoteSyncAuthSource"
+            placeholder="通常为 admin"
+          />
+        </el-form-item>
       </el-form>
 
-      <!-- 在线更新区域 (从 AKShare API) -->
-      <el-divider content-position="left">在线更新</el-divider>
+      <el-alert
+        v-if="remoteSyncStats"
+        :title="`同步完成: ${remoteSyncStats.synced || remoteSyncStats.synced_count}/${remoteSyncStats.remote_total || remoteSyncStats.total_count} 条`"
+        type="success"
+        style="margin-top: 16px"
+        show-icon
+      />
+
+      <template #footer>
+        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleRemoteSync"
+          :loading="remoteSyncing"
+        >
+          开始同步
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- API更新对话框 -->
+    <el-dialog
+      v-model="apiUpdateDialogVisible"
+      title="API更新"
+      width="600px"
+      :close-on-click-modal="false"
+    >
       <el-form label-position="top">
         <el-form-item label="API Key" required>
           <el-input v-model="apiKey" type="password" show-password placeholder="请输入 CurrencyScoop API Key" />
@@ -298,9 +329,6 @@
       <div style="margin-top: 24px; background-color: #fdf6ec; padding: 16px; border-radius: 4px;">
         <div style="color: #e6a23c; font-weight: bold; margin-bottom: 8px;">更新说明</div>
         <div style="font-size: 13px; color: #e6a23c; line-height: 1.6;">
-          <p style="margin: 0 0 8px 0;"><strong>文件导入：</strong>支持 CSV 或 Excel 文件导入数据。</p>
-          <p style="margin: 0 0 8px 0;"><strong>远程同步：</strong>从远程 MongoDB 数据库同步数据到本地。</p>
-          <p style="margin: 0 0 8px 0;"><strong>在线更新：</strong>使用 CurrencyScoop API 在线获取最新数据。</p>
           <template v-if="collectionName === 'currency_latest'">
             <p style="margin: 0;">- 单个更新：输入货币代码更新指定货币（逗号分隔可更新多个）<br/>- 批量更新：同时获取 USD 和 CNY 两个基准货币的所有汇率数据</p>
           </template>
@@ -320,9 +348,52 @@
       </div>
 
       <template #footer>
-        <div style="text-align: right;">
-          <el-button @click="refreshDialogVisible = false">关闭</el-button>
-        </div>
+        <el-button @click="apiUpdateDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 数据概览对话框 -->
+    <el-dialog
+      v-model="overviewDialogVisible"
+      title="数据概览"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 10px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="集合名称" label-align="right">
+            {{ currentCollectionInfo.name }}
+          </el-descriptions-item>
+          <el-descriptions-item label="显示名称" label-align="right">
+            {{ currentCollectionInfo.displayName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据总数" label-align="right">
+            {{ formatNumber(currencyStats.total_count) }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="字段数量" label-align="right">
+            {{ currentCollectionInfo.fieldCount }} 个
+          </el-descriptions-item>
+          <el-descriptions-item label="最后更新" label-align="right" :span="2">
+            {{ currencyStats.latest_date || '暂无数据' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据来源" label-align="right" :span="2">
+            <el-link
+              :href="currentCollectionInfo.dataSource"
+              target="_blank"
+              type="primary"
+              v-if="currentCollectionInfo.dataSource !== '暂无'"
+            >
+              {{ currentCollectionInfo.dataSource }}
+            </el-link>
+            <span v-else>{{ currentCollectionInfo.dataSource }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" label-align="right" :span="2">
+            {{ collectionInfo?.description || `数据集合：${collectionName}` }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="overviewDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -331,7 +402,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { Box, Refresh, Search, Download, Delete } from '@element-plus/icons-vue'
+import { Box, Refresh, Search, Download, Delete, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { currenciesApi } from '@/api/currencies'
 import * as echarts from 'echarts'
@@ -343,7 +414,10 @@ const collectionInfo = ref<any>(null)
 const loading = ref(false)
 const refreshing = ref(false)
 const clearing = ref(false)
-const refreshDialogVisible = ref(false)
+const overviewDialogVisible = ref(false)
+const uploadDialogVisible = ref(false)
+const syncDialogVisible = ref(false)
+const apiUpdateDialogVisible = ref(false)
 const items = ref([])
 const total = ref(0)
 const page = ref(1)
@@ -427,6 +501,8 @@ const syncBase = ref('USD')
 const syncSymbols = ref('')
 const apiKey = ref('')
 const importFile = ref<File | null>(null)
+const importing = ref(false)
+const uploadRef = ref()
 const syncDate = ref('')
 const syncDateRange = ref([])
 const syncStartDate = ref('')
@@ -727,28 +803,40 @@ const resetChart = () => {
   updateChart()
 }
 
-const showRefreshDialog = async () => {
-  activeTab.value = 'sync'
-  syncSymbols.value = ''
-  syncDate.value = ''
-  syncDateRange.value = []
-  syncStartDate.value = ''
-  syncEndDate.value = ''
-  
-  // Load default API key from backend config
-  try {
-    const configRes = await currenciesApi.getConfig()
-    if (configRes.success && configRes.data.default_api_key) {
-      apiKey.value = configRes.data.default_api_key
-    } else {
+// 处理更新数据下拉菜单命令
+const handleUpdateCommand = async (command: string) => {
+  if (command === 'api') {
+    // 清空表单数据
+    syncSymbols.value = ''
+    syncDate.value = ''
+    syncDateRange.value = []
+    syncStartDate.value = ''
+    syncEndDate.value = ''
+    
+    // 加载默认 API Key
+    try {
+      const configRes = await currenciesApi.getConfig()
+      if (configRes.success && configRes.data.default_api_key) {
+        apiKey.value = configRes.data.default_api_key
+      } else {
+        apiKey.value = ''
+      }
+    } catch (error) {
+      console.error('Failed to load config:', error)
       apiKey.value = ''
     }
-  } catch (error) {
-    console.error('Failed to load config:', error)
-    apiKey.value = ''
+    
+    apiUpdateDialogVisible.value = true
+  } else if (command === 'file') {
+    uploadDialogVisible.value = true
+  } else if (command === 'sync') {
+    syncDialogVisible.value = true
   }
-  
-  refreshDialogVisible.value = true
+}
+
+// 文件导入处理
+const handleImportFileRemove = () => {
+  importFile.value = null
 }
 
 const handleFilter = () => {
@@ -812,6 +900,7 @@ const handleSync = async () => {
                 c_type: 'fiat',
                 api_key: apiKey.value
             })
+        }
 
         if (res && res.success) {
             ElMessage.success(res.message)
@@ -863,6 +952,7 @@ const handleBatchSync = async () => {
                 end_date: syncEndDate.value,
                 api_key: apiKey.value
             })
+        }
 
         if (res && res.success) {
             ElMessage.success(res.message)
@@ -880,7 +970,7 @@ const handleBatchSync = async () => {
 
 const handleImport = async () => {
     if (!importFile.value) return
-    refreshing.value = true
+    importing.value = true
     try {
         let res;
         if (collectionName.value === 'currency_latest') {
@@ -893,17 +983,19 @@ const handleImport = async () => {
             res = await currenciesApi.uploadCurrencyCurrencies(importFile.value)
         }
         
-         if (res && res.success) {
+        if (res && res.success) {
             ElMessage.success(res.message)
-            refreshDialogVisible.value = false
+            if (uploadRef.value) uploadRef.value.clearFiles()
+            importFile.value = null
+            uploadDialogVisible.value = false
             loadData()
         } else {
             ElMessage.error(res?.message || '导入失败')
         }
     } catch (error) {
-         ElMessage.error('导入失败')
+        ElMessage.error('导入失败')
     } finally {
-        refreshing.value = false
+        importing.value = false
     }
 }
 
@@ -913,11 +1005,13 @@ const handleFileChange = (file: any) => {
 
 const handleRemoteSync = async () => {
     if (!remoteSyncHost.value) {
-        ElMessage.warning('请输入远程 MongoDB 地址')
+        ElMessage.warning('请输入远程主机地址')
         return
     }
     
     remoteSyncing.value = true
+    remoteSyncStats.value = null
+    
     try {
         let res
         const collection = remoteSyncCollection.value || collectionName.value
@@ -961,14 +1055,14 @@ const handleRemoteSync = async () => {
         }
 
         if (res && res.success) {
-            ElMessage.success(res.message || '远程同步成功')
+            ElMessage.success(res.message || '同步成功')
             remoteSyncStats.value = res.data
             loadData()
         } else {
-            ElMessage.error(res?.message || '远程同步失败')
+            ElMessage.error(res?.message || '同步失败')
         }
     } catch (error) {
-        ElMessage.error('远程同步失败')
+        ElMessage.error('同步失败')
     } finally {
         remoteSyncing.value = false
     }
@@ -991,7 +1085,7 @@ const handleClearData = async () => {
 
     clearing.value = true
     try {
-        let res
+        let res;
         if (collectionName.value === 'currency_latest') {
             res = await currenciesApi.clearCurrencyLatest()
         } else if (collectionName.value === 'currency_history') {
@@ -1015,10 +1109,79 @@ const handleClearData = async () => {
     }
 }
 
+const currencyCollectionStaticInfo: Record<string, { dataSource: string }> = {
+  currency_latest: {
+    dataSource: 'https://currencyscoop.com/'
+  },
+  currency_history: {
+    dataSource: 'https://currencyscoop.com/'
+  },
+  currency_time_series: {
+    dataSource: 'https://currencyscoop.com/'
+  },
+  currency_currencies: {
+    dataSource: 'https://currencyscoop.com/'
+  }
+}
+
+const currentCollectionInfo = computed(() => {
+  const fieldCount = Array.isArray(fields.value) ? (fields.value as any[]).length : 0
+  const staticInfo = currencyCollectionStaticInfo[collectionName.value] || { dataSource: '暂无' }
+  return {
+    name: collectionName.value,
+    displayName: collectionInfo.value?.display_name || collectionName.value,
+    fieldCount,
+    dataSource: staticInfo.dataSource
+  }
+})
+
+const currencyStats = computed(() => {
+  const result: { total_count: number; latest_date: string } = {
+    total_count: total.value || 0,
+    latest_date: ''
+  }
+
+  if (!items.value || items.value.length === 0) {
+    return result
+  }
+
+  const rows = items.value as any[]
+  let dateField = ''
+
+  if (collectionName.value === 'currency_currencies') {
+    if ('updated_at' in rows[0]) {
+      dateField = 'updated_at'
+    }
+  } else {
+    if ('date' in rows[0]) {
+      dateField = 'date'
+    }
+  }
+
+  if (dateField) {
+    const dates = rows
+      .map((row: any) => row[dateField])
+      .filter((v: any) => typeof v === 'string' && v.length > 0)
+    if (dates.length > 0) {
+      dates.sort()
+      result.latest_date = dates[dates.length - 1]
+    }
+  }
+
+  return result
+})
+
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('zh-CN')
+}
+
+const showOverviewDialog = () => {
+  overviewDialogVisible.value = true
+}
+
 onMounted(() => {
   loadData()
   
-  // Add resize listener for chart
   const handleResize = () => {
     if (chartInstance.value) {
       chartInstance.value.resize()
@@ -1027,7 +1190,6 @@ onMounted(() => {
   
   window.addEventListener('resize', handleResize)
   
-  // Cleanup on unmount
   return () => {
     window.removeEventListener('resize', handleResize)
     if (chartInstance.value) {

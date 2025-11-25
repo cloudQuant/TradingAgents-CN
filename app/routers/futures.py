@@ -1,12 +1,15 @@
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
 import hashlib
 import logging
 import uuid
 import asyncio
+import pandas as pd
+import io
 from fastapi.responses import JSONResponse
+from pymongo import MongoClient
 
 from app.routers.auth_db import get_current_user, get_current_user_optional
 from app.core.database import get_mongo_db
@@ -127,6 +130,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_fees_info",
                 "display_name": "期货交易费用参照表",
                 "description": "openctp 期货交易费用参照表",
+                "data_source": "http://openctp.cn/fees.html",
                 "route": "/futures/collections/futures_fees_info",
                 "fields": ["交易所", "合约代码", "合约名称", "品种代码", "品种名称", "合约乘数", "最小跳动", "最新价"],
             },
@@ -134,6 +138,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_comm_info",
                 "display_name": "期货手续费与保证金",
                 "description": "九期网-期货手续费数据",
+                "data_source": "https://www.9qihuo.com/qihuoshouxufei",
                 "route": "/futures/collections/futures_comm_info",
                 "fields": ["交易所名称", "合约名称", "合约代码", "现价", "涨停板", "跌停板", "保证金-买开", "保证金-卖开"],
             },
@@ -141,6 +146,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_rule",
                 "display_name": "期货规则-交易日历表",
                 "description": "国泰君安期货-交易日历数据表",
+                "data_source": "https://www.gtjaqh.com/pc/calendar.html",
                 "route": "/futures/collections/futures_rule",
                 "fields": ["交易所", "品种", "代码", "交易保证金比例", "涨跌停板幅度", "合约乘数", "最小变动价位"],
             },
@@ -148,6 +154,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_inventory_99",
                 "display_name": "库存数据-99期货网",
                 "description": "99 期货网-大宗商品库存数据",
+                "data_source": "https://www.99qh.com/data/stockIn?productId=61",
                 "route": "/futures/collections/futures_inventory_99",
                 "fields": ["日期", "收盘价", "库存", "symbol"],
             },
@@ -155,6 +162,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_inventory_em",
                 "display_name": "库存数据-东方财富",
                 "description": "东方财富网-期货数据-库存数据",
+                "data_source": "http://data.eastmoney.com/ifdata/kcsj.html",
                 "route": "/futures/collections/futures_inventory_em",
                 "fields": ["日期", "库存", "增减", "symbol"],
             },
@@ -162,6 +170,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_dce_position_rank",
                 "display_name": "大连商品交易所",
                 "description": "大连商品交易所指定交易日的具体合约的持仓排名",
+                "data_source": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/rtj/rcjccpm/index.html",
                 "route": "/futures/collections/futures_dce_position_rank",
                 "fields": ["date", "symbol", "rank", "member_name", "vol", "vol_chg"],
             },
@@ -169,6 +178,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_gfex_position_rank",
                 "display_name": "广州期货交易所",
                 "description": "广州期货交易所-日成交持仓排名",
+                "data_source": "http://www.gfex.com.cn/gfex/rcjccpm/hqsj_tjsj.shtml",
                 "route": "/futures/collections/futures_gfex_position_rank",
                 "fields": ["date", "symbol", "rank", "member_name", "vol", "vol_chg"],
             },
@@ -176,6 +186,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_warehouse_receipt_czce",
                 "display_name": "仓单日报-郑州商品交易所",
                 "description": "郑州商品交易所-交易数据-仓单日报",
+                "data_source": "http://www.czce.com.cn/cn/jysj/cdrb/H770310index_1.htm",
                 "route": "/futures/collections/futures_warehouse_receipt_czce",
                 "fields": ["date", "symbol", "warehouse", "receipt"],
             },
@@ -183,6 +194,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_warehouse_receipt_dce",
                 "display_name": "仓单日报-大连商品交易所",
                 "description": "大连商品交易所-行情数据-统计数据-日统计-仓单日报",
+                "data_source": "http://www.dce.com.cn/dce/channel/list/187.html",
                 "route": "/futures/collections/futures_warehouse_receipt_dce",
                 "fields": ["date", "symbol", "warehouse", "receipt"],
             },
@@ -190,6 +202,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_shfe_warehouse_receipt",
                 "display_name": "仓单日报-上海期货交易所",
                 "description": "上海期货交易所-仓单日报",
+                "data_source": "https://tsite.shfe.com.cn/statements/dataview.html?paramid=dailystock&paramdate=20200703",
                 "route": "/futures/collections/futures_shfe_warehouse_receipt",
                 "fields": ["date", "symbol", "warehouse", "receipt"],
             },
@@ -197,6 +210,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_gfex_warehouse_receipt",
                 "display_name": "仓单日报-广州期货交易所",
                 "description": "广州期货交易所-行情数据-仓单日报",
+                "data_source": "http://www.gfex.com.cn/gfex/cdrb/hqsj_tjsj.shtml",
                 "route": "/futures/collections/futures_gfex_warehouse_receipt",
                 "fields": ["date", "symbol", "warehouse", "receipt"],
             },
@@ -204,6 +218,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_to_spot_dce",
                 "display_name": "期转现-大商所",
                 "description": "大连商品交易所-期转现统计数据",
+                "data_source": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/jgtj/qzxcx/index.html",
                 "route": "/futures/collections/futures_to_spot_dce",
                 "fields": ["date", "合约代码", "期转现发生日期", "期转现数量"],
             },
@@ -211,6 +226,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_to_spot_czce",
                 "display_name": "期转现-郑商所",
                 "description": "郑州商品交易所-期转现统计数据",
+                "data_source": "http://www.czce.com.cn/cn/jysj/qzxtj/H770311index_1.htm",
                 "route": "/futures/collections/futures_to_spot_czce",
                 "fields": ["date", "合约代码", "合约数量"],
             },
@@ -218,6 +234,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_to_spot_shfe",
                 "display_name": "期转现-上期所",
                 "description": "上海期货交易所-期转现数据",
+                "data_source": "https://tsite.shfe.com.cn/statements/dataview.html?paramid=kx",
                 "route": "/futures/collections/futures_to_spot_shfe",
                 "fields": ["date", "日期", "合约", "交割量", "期转现量"],
             },
@@ -225,6 +242,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_delivery_dce",
                 "display_name": "交割统计-大商所",
                 "description": "大连商品交易所-交割统计",
+                "data_source": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/jgtj/jgsj/index.html",
                 "route": "/futures/collections/futures_delivery_dce",
                 "fields": ["date", "品种", "合约", "交割日期", "交割量", "交割金额"],
             },
@@ -232,6 +250,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_delivery_czce",
                 "display_name": "交割统计-郑商所",
                 "description": "郑州商品交易所-交割统计",
+                "data_source": "http://www.czce.com.cn/cn/jysj/ydjgcx/H770316index_1.htm",
                 "route": "/futures/collections/futures_delivery_czce",
                 "fields": ["date", "品种", "交割数量", "交割额"],
             },
@@ -239,6 +258,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_delivery_shfe",
                 "display_name": "交割统计-上期所",
                 "description": "上海期货交易所-交割统计",
+                "data_source": "https://tsite.shfe.com.cn/statements/dataview.html?paramid=kx",
                 "route": "/futures/collections/futures_delivery_shfe",
                 "fields": ["date", "品种", "交割量-本月", "交割量-比重", "交割量-本年累计", "交割量-累计同比"],
             },
@@ -246,6 +266,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_delivery_match_dce",
                 "display_name": "交割配对-大商所",
                 "description": "大连商品交易所-交割配对",
+                "data_source": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/jgtj/jgsj/index.html",
                 "route": "/futures/collections/futures_delivery_match_dce",
                 "fields": ["symbol", "合约号", "配对日期", "买会员号", "配对手数", "卖会员号"],
             },
@@ -253,6 +274,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_delivery_match_czce",
                 "display_name": "交割配对-郑商所",
                 "description": "郑州商品交易所-交割配对",
+                "data_source": "http://www.czce.com.cn/cn/jysj/jgpd/H770308index_1.htm",
                 "route": "/futures/collections/futures_delivery_match_czce",
                 "fields": ["date", "卖方会员", "卖方会员-会员简称", "买方会员", "买方会员-会员简称", "交割量"],
             },
@@ -260,6 +282,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_stock_shfe_js",
                 "display_name": "上海期货交易所库存周报",
                 "description": "金十财经-上海期货交易所指定交割仓库库存周报",
+                "data_source": "https://datacenter.jin10.com/reportType/dc_shfe_weekly_stock",
                 "route": "/futures/collections/futures_stock_shfe_js",
                 "fields": ["date", "商品", "增减", "增减幅度"],
             },
@@ -267,6 +290,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hold_pos_sina",
                 "display_name": "成交持仓",
                 "description": "新浪财经-期货-成交持仓",
+                "data_source": "https://vip.stock.finance.sina.com.cn/q/view/vFutures_Positions_cjcc.php",
                 "route": "/futures/collections/futures_hold_pos_sina",
                 "fields": ["symbol", "contract", "date", "名次", "会员简称", "成交量"],
             },
@@ -275,6 +299,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_spot_sys",
                 "display_name": "现期图",
                 "description": "生意社-商品与期货-现期图",
+                "data_source": "https://www.100ppi.com/sf/792.html",
                 "route": "/futures/collections/futures_spot_sys",
                 "fields": ["日期", "主力基差", "symbol", "indicator"],
             },
@@ -282,6 +307,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_shfe",
                 "display_name": "上海期货交易所",
                 "description": "上海期货交易所-交易参数汇总查询",
+                "data_source": "https://tsite.shfe.com.cn/bourseService/businessdata/summaryinquiry/",
                 "route": "/futures/collections/futures_contract_info_shfe",
                 "fields": ["合约代码", "上市日", "到期日", "开始交割日", "最后交割日", "挂牌基准价"],
             },
@@ -289,6 +315,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_ine",
                 "display_name": "上海国际能源交易中心",
                 "description": "上海国际能源交易中心-交易参数汇总",
+                "data_source": "https://www.ine.cn/bourseService/summary/?name=currinstrumentprop",
                 "route": "/futures/collections/futures_contract_info_ine",
                 "fields": ["合约代码", "上市日", "到期日", "开始交割日", "最后交割日", "挂牌基准价"],
             },
@@ -296,6 +323,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_dce",
                 "display_name": "大连商品交易所",
                 "description": "大连商品交易所-合约信息",
+                "data_source": "http://www.dce.com.cn/dce/channel/list/180.html",
                 "route": "/futures/collections/futures_contract_info_dce",
                 "fields": ["品种", "合约代码", "交易单位", "最小变动价位", "开始交易日", "最后交易日"],
             },
@@ -303,6 +331,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_czce",
                 "display_name": "郑州商品交易所",
                 "description": "郑州商品交易所-参考数据",
+                "data_source": "http://www.czce.com.cn/cn/jysj/cksj/H770322index_1.htm",
                 "route": "/futures/collections/futures_contract_info_czce",
                 "fields": ["产品名称", "合约代码", "产品代码", "交易单位", "最小变动价位"],
             },
@@ -310,6 +339,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_gfex",
                 "display_name": "广州期货交易所",
                 "description": "广州期货交易所-合约信息",
+                "data_source": "http://www.gfex.com.cn/gfex/hyxx/ywcs.shtml",
                 "route": "/futures/collections/futures_contract_info_gfex",
                 "fields": ["品种", "合约代码", "交易单位", "最小变动单位", "开始交易日", "最后交易日"],
             },
@@ -317,6 +347,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_info_cffex",
                 "display_name": "中国金融期货交易所",
                 "description": "中国金融期货交易所-交易参数",
+                "data_source": "http://www.gfex.com.cn/gfex/hyxx/ywcs.shtml",
                 "route": "/futures/collections/futures_contract_info_cffex",
                 "fields": ["合约代码", "合约月份", "挂盘基准价", "上市日", "最后交易日"],
             },
@@ -325,6 +356,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_zh_spot",
                 "display_name": "内盘-实时行情数据",
                 "description": "新浪财经-期货实时行情",
+                "data_source": "https://finance.sina.com.cn/futuremarket/",
                 "route": "/futures/collections/futures_zh_spot",
                 "fields": ["symbol", "time", "open", "high", "low", "current_price", "volume"],
             },
@@ -332,6 +364,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_zh_realtime",
                 "display_name": "内盘-实时行情数据(品种)",
                 "description": "新浪财经-期货实时行情(按品种)",
+                "data_source": "https://vip.stock.finance.sina.com.cn/quotes_service/view/qihuohangqing.html#titlePos_1",
                 "route": "/futures/collections/futures_zh_realtime",
                 "fields": ["symbol", "exchange", "name", "trade", "open", "high", "low", "volume"],
             },
@@ -339,6 +372,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_zh_minute_sina",
                 "display_name": "内盘-分时行情数据",
                 "description": "新浪财经-期货分时数据",
+                "data_source": "http://vip.stock.finance.sina.com.cn/quotes_service/view/qihuohangqing.html#titlePos_3",
                 "route": "/futures/collections/futures_zh_minute_sina",
                 "fields": ["datetime", "open", "high", "low", "close", "volume", "hold"],
             },
@@ -346,6 +380,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hist_em",
                 "display_name": "内盘-历史行情数据-东财",
                 "description": "东方财富网-期货历史行情",
+                "data_source": "https://qhweb.eastmoney.com/quote",
                 "route": "/futures/collections/futures_hist_em",
                 "fields": ["时间", "开盘", "最高", "最低", "收盘", "涨跌", "涨跌幅", "成交量"],
             },
@@ -353,6 +388,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_zh_daily_sina",
                 "display_name": "内盘-历史行情数据-新浪",
                 "description": "新浪财经-期货日频数据",
+                "data_source": "https://finance.sina.com.cn/futures/quotes/V2105.shtml",
                 "route": "/futures/collections/futures_zh_daily_sina",
                 "fields": ["date", "open", "high", "low", "close", "volume", "hold", "settle"],
             },
@@ -368,6 +404,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hq_subscribe_exchange_symbol",
                 "display_name": "外盘-品种代码表",
                 "description": "新浪财经-外盘期货品种代码表",
+                "data_source": "https://finance.sina.com.cn/money/future/hf.html",
                 "route": "/futures/collections/futures_hq_subscribe_exchange_symbol",
                 "fields": ["symbol", "code"],
             },
@@ -375,6 +412,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_foreign_commodity_realtime",
                 "display_name": "外盘-实时行情数据",
                 "description": "新浪财经-外盘商品期货实时数据",
+                "data_source": "https://finance.sina.com.cn/money/future/hf.html",
                 "route": "/futures/collections/futures_foreign_commodity_realtime",
                 "fields": ["名称", "最新价", "人民币报价", "涨跌额", "涨跌幅", "开盘价"],
             },
@@ -382,6 +420,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_global_spot_em",
                 "display_name": "外盘-实时行情数据-东财",
                 "description": "东方财富网-国际期货实时行情",
+                "data_source": "https://quote.eastmoney.com/center/gridlist.html#futures_global",
                 "route": "/futures/collections/futures_global_spot_em",
                 "fields": ["序号", "代码", "名称", "最新价", "涨跌额", "涨跌幅", "今开"],
             },
@@ -389,6 +428,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_global_hist_em",
                 "display_name": "外盘-历史行情数据-东财",
                 "description": "东方财富网-国际期货历史行情",
+                "data_source": "https://quote.eastmoney.com/globalfuture/HG25J.html",
                 "route": "/futures/collections/futures_global_hist_em",
                 "fields": ["日期", "代码", "名称", "开盘", "最新价", "最高", "最低"],
             },
@@ -396,6 +436,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_foreign_hist",
                 "display_name": "外盘-历史行情数据-新浪",
                 "description": "新浪财经-外盘期货历史行情",
+                "data_source": "https://finance.sina.com.cn/futuremarket/",
                 "route": "/futures/collections/futures_foreign_hist",
                 "fields": ["date", "open", "high", "low", "close", "volume"],
             },
@@ -403,6 +444,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_foreign_detail",
                 "display_name": "外盘-合约详情",
                 "description": "新浪财经-外盘期货合约详情",
+                "data_source": "https://finance.sina.com.cn/futuremarket/",
                 "route": "/futures/collections/futures_foreign_detail",
                 "fields": ["交易品种", "最小变动价位", "交易时间", "交易代码"],
             },
@@ -411,6 +453,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_settlement_price_sgx",
                 "display_name": "新加坡交易所期货",
                 "description": "新加坡交易所-历史结算价格",
+                "data_source": "https://www.sgx.com/zh-hans/research-education/derivatives",
                 "route": "/futures/collections/futures_settlement_price_sgx",
                 "fields": ["DATE", "COM", "OPEN", "HIGH", "LOW", "CLOSE", "SETTLE"],
             },
@@ -418,6 +461,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_main_sina",
                 "display_name": "期货连续合约",
                 "description": "新浪财经-主力连续合约历史数据",
+                "data_source": "https://vip.stock.finance.sina.com.cn/quotes_service/view/qihuohangqing.html#titlePos_0",
                 "route": "/futures/collections/futures_main_sina",
                 "fields": ["日期", "开盘价", "最高价", "最低价", "收盘价", "成交量", "持仓量"],
             },
@@ -425,6 +469,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_detail",
                 "display_name": "期货合约详情-新浪",
                 "description": "新浪财经-期货合约详情",
+                "data_source": "https://finance.sina.com.cn/futures/quotes/V2101.shtml",
                 "route": "/futures/collections/futures_contract_detail",
                 "fields": ["item", "value"],
             },
@@ -432,6 +477,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_contract_detail_em",
                 "display_name": "期货合约详情-东财",
                 "description": "东方财富-期货合约详情",
+                "data_source": "https://quote.eastmoney.com/qihuo/v2602F.html",
                 "route": "/futures/collections/futures_contract_detail_em",
                 "fields": ["item", "value"],
             },
@@ -439,6 +485,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_index_ccidx",
                 "display_name": "中证商品指数",
                 "description": "中证商品指数数据",
+                "data_source": "http://www.ccidx.com/index.html",
                 "route": "/futures/collections/futures_index_ccidx",
                 "fields": ["日期", "指数代码", "收盘点位", "结算点位", "涨跌", "涨跌幅"],
             },
@@ -446,6 +493,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_spot_stock",
                 "display_name": "现货与股票",
                 "description": "东方财富网-现货与股票",
+                "data_source": "https://data.eastmoney.com/ifdata/xhgp.html",
                 "route": "/futures/collections/futures_spot_stock",
                 "fields": ["商品名称", "最新价", "近半年涨跌幅"],
             },
@@ -454,6 +502,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_comex_inventory",
                 "display_name": "COMEX 库存数据",
                 "description": "东方财富网-COMEX库存数据",
+                "data_source": "https://data.eastmoney.com/pmetal/comex/by.html",
                 "route": "/futures/collections/futures_comex_inventory",
                 "fields": ["序号", "日期", "库存量"],
             },
@@ -461,6 +510,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hog_core",
                 "display_name": "核心数据",
                 "description": "玄田数据-核心数据",
+                "data_source": "https://zhujia.zhuwang.com.cn",
                 "route": "/futures/collections/futures_hog_core",
                 "fields": ["date", "value", "symbol"],
             },
@@ -468,6 +518,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hog_cost",
                 "display_name": "成本维度",
                 "description": "玄田数据-成本维度",
+                "data_source": "https://zhujia.zhuwang.com.cn",
                 "route": "/futures/collections/futures_hog_cost",
                 "fields": ["date", "value", "symbol"],
             },
@@ -475,6 +526,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_hog_supply",
                 "display_name": "供应维度",
                 "description": "玄田数据-供应维度",
+                "data_source": "https://zhujia.zhuwang.com.cn",
                 "route": "/futures/collections/futures_hog_supply",
                 "fields": ["date", "value", "symbol"],
             },
@@ -482,6 +534,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "index_hog_spot_price",
                 "display_name": "生猪市场价格指数",
                 "description": "行情宝-生猪市场价格指数",
+                "data_source": "https://hqb.nxin.com/pigindex/index.shtml",
                 "route": "/futures/collections/index_hog_spot_price",
                 "fields": ["日期", "指数", "预售均价", "成交均价", "成交均重"],
             },
@@ -489,6 +542,7 @@ async def list_futures_collections(current_user: Optional[dict] = Depends(get_cu
                 "name": "futures_news_shmet",
                 "display_name": "期货资讯",
                 "description": "上海金属网-快讯",
+                "data_source": "https://www.shmet.com/newsFlash/newsFlash.html?searchKeyword=",
                 "route": "/futures/collections/futures_news_shmet",
                 "fields": ["发布时间", "内容"],
             },
@@ -1544,3 +1598,174 @@ async def update_futures_hold_pos_sina_task(symbol: str, contract: str, date: st
         logger.info(f"新浪财经成交持仓更新完成，共处理 {count} 条记录")
     except Exception as e:
         logger.error(f"更新新浪财经成交持仓失败: {e}", exc_info=True)
+
+
+@router.post("/collections/{collection_name}/upload")
+async def upload_futures_collection_data(
+    collection_name: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """上传文件导入期货数据集合"""
+    try:
+        # 读取文件内容
+        contents = await file.read()
+        
+        # 根据文件类型解析
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(contents))
+        elif file.filename.endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="仅支持 CSV 或 Excel 文件"
+            )
+        
+        if df.empty:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="文件为空"
+            )
+        
+        # 转换为字典列表
+        data = df.to_dict(orient="records")
+        
+        # 插入数据库
+        db = get_mongo_db()
+        collection = db.get_collection(collection_name)
+        
+        # 批量插入
+        result = await collection.insert_many(data)
+        inserted_count = len(result.inserted_ids)
+        
+        logger.info(f"文件导入成功: {collection_name}, 插入 {inserted_count} 条记录")
+        
+        return {
+            "success": True,
+            "data": {
+                "inserted_count": inserted_count,
+                "message": f"成功导入 {inserted_count} 条记录"
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"文件导入失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+class RemoteSyncConfig(BaseModel):
+    host: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    authSource: str = "admin"
+    collection: Optional[str] = None
+    batch_size: int = 1000
+
+
+@router.post("/collections/{collection_name}/sync")
+async def sync_futures_collection_from_remote(
+    collection_name: str,
+    config: RemoteSyncConfig,
+    current_user: dict = Depends(get_current_user),
+):
+    """从远程数据库同步期货数据集合"""
+    try:
+        # 构建远程 MongoDB 连接字符串
+        if config.username and config.password:
+            # 带认证
+            remote_uri = f"mongodb://{config.username}:{config.password}@{config.host}/?authSource={config.authSource}"
+        else:
+            # 无认证
+            if config.host.startswith("mongodb://") or config.host.startswith("mongodb+srv://"):
+                remote_uri = config.host
+            else:
+                remote_uri = f"mongodb://{config.host}"
+        
+        # 连接远程数据库
+        remote_client = MongoClient(remote_uri, serverSelectionTimeoutMS=5000)
+        remote_db = remote_client.get_default_database()
+        
+        # 远程集合名，默认与当前集合名一致
+        remote_collection_name = config.collection or collection_name
+        remote_collection = remote_db.get_collection(remote_collection_name)
+        
+        # 获取本地数据库
+        local_db = get_mongo_db()
+        local_collection = local_db.get_collection(collection_name)
+        
+        # 批量同步
+        total_count = remote_collection.count_documents({})
+        synced_count = 0
+        
+        cursor = remote_collection.find().batch_size(config.batch_size)
+        batch = []
+        
+        for doc in cursor:
+            batch.append(doc)
+            
+            if len(batch) >= config.batch_size:
+                await local_collection.insert_many(batch, ordered=False)
+                synced_count += len(batch)
+                batch = []
+                logger.info(f"同步进度: {synced_count}/{total_count}")
+        
+        # 处理剩余的文档
+        if batch:
+            await local_collection.insert_many(batch, ordered=False)
+            synced_count += len(batch)
+        
+        # 关闭远程连接
+        remote_client.close()
+        
+        logger.info(f"远程同步成功: {collection_name}, 同步 {synced_count}/{total_count} 条记录")
+        
+        return {
+            "success": True,
+            "data": {
+                "synced_count": synced_count,
+                "total_count": total_count,
+                "message": f"成功同步 {synced_count}/{total_count} 条记录"
+            }
+        }
+    except Exception as e:
+        logger.error(f"远程同步失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.delete("/collections/{collection_name}")
+async def clear_futures_collection(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """清空期货数据集合"""
+    try:
+        db = get_mongo_db()
+        collection = db.get_collection(collection_name)
+        
+        # 删除所有文档
+        result = await collection.delete_many({})
+        deleted_count = result.deleted_count
+        
+        logger.info(f"清空集合成功: {collection_name}, 删除 {deleted_count} 条记录")
+        
+        return {
+            "success": True,
+            "data": {
+                "deleted_count": deleted_count,
+                "message": f"成功清空 {deleted_count} 条记录"
+            }
+        }
+    except Exception as e:
+        logger.error(f"清空集合失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

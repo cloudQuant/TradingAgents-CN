@@ -1,18 +1,14 @@
-import axios from 'axios'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { ApiClient, type ApiResponse } from './request'
 
 export const optionsApi = {
   // 获取期权概览
-  async getOverview() {
-    const response = await axios.get(`${API_BASE_URL}/api/options/overview`)
-    return response.data
+  async getOverview(): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/options/overview')
   },
 
   // 获取期权集合列表
-  async getCollections() {
-    const response = await axios.get(`${API_BASE_URL}/api/options/collections`)
-    return response.data
+  async getCollections(): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/options/collections')
   },
 
   // 获取指定集合的数据
@@ -26,49 +22,47 @@ export const optionsApi = {
       filter_field?: string
       filter_value?: string
     }
-  ) {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/options/collections/${collectionName}`,
-      { params }
-    )
-    return response.data
+  ): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/options/collections/${collectionName}`, params)
   },
 
   // 获取集合统计信息
-  async getCollectionStats(collectionName: string) {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/options/collections/${collectionName}/stats`
-    )
-    return response.data
+  async getCollectionStats(collectionName: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/options/collections/${collectionName}/stats`)
   },
 
   // 刷新集合数据
-  async refreshCollection(collectionName: string) {
-    const response = await axios.post(
-      `${API_BASE_URL}/api/options/collections/${collectionName}/refresh`
-    )
-    return response.data
+  async refreshCollection(collectionName: string, payload?: any): Promise<ApiResponse<any>> {
+    return await ApiClient.post(`/api/options/collections/${collectionName}/refresh`, payload || {})
   },
 
   // 清空集合数据
-  async clearCollection(collectionName: string) {
-    const response = await axios.post(
-      `${API_BASE_URL}/api/options/collections/${collectionName}/clear`
-    )
-    return response.data
+  async clearCollection(collectionName: string): Promise<ApiResponse<any>> {
+    // 后端为 POST /clear，因此这里仍然使用 POST
+    return await ApiClient.post(`/api/options/collections/${collectionName}/clear`, {})
   },
 
   // 搜索期权
-  async searchOptions(keyword: string) {
-    const response = await axios.get(`${API_BASE_URL}/api/options/search`, {
-      params: { keyword }
-    })
-    return response.data
+  async searchOptions(keyword: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get('/api/options/search', { keyword })
   },
 
   // 获取期权分析
-  async getOptionAnalysis(optionCode: string) {
-    const response = await axios.get(`${API_BASE_URL}/api/options/analysis/${optionCode}`)
-    return response.data
+  async getOptionAnalysis(optionCode: string): Promise<ApiResponse<any>> {
+    return await ApiClient.get(`/api/options/analysis/${optionCode}`)
+  },
+
+  // 上传数据文件
+  async uploadData(
+    collectionName: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<ApiResponse<any>> {
+    return await ApiClient.upload(`/api/options/collections/${collectionName}/upload`, file, onProgress)
+  },
+
+  // 远程同步数据
+  async syncData(collectionName: string, config: any): Promise<ApiResponse<any>> {
+    return await ApiClient.post(`/api/options/collections/${collectionName}/sync`, config)
   }
 }

@@ -1,0 +1,2669 @@
+export const collectionConfig: Record<string, any> = {
+  "stock_hk_fhpx_detail_ths": {
+    "name": "stock_hk_fhpx_detail_ths",
+    "displayName": "分红配送详情-港股-同花顺",
+    "description": "分红配送详情-港股-同花顺",
+    "dataSource": "https://stockpage.10jqka.com.cn/HK0700/bonus/",
+    "fieldCount": 9
+  },
+  "stock_basic_info": {
+    "name": "stock_basic_info",
+    "displayName": "股票基础信息",
+    "description": "涵盖A股、港股、美股等股票的基础信息，包含代码、名称、行业、市场、总市值、流通市值等核心要素",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_hk_spot": {
+    "name": "stock_hk_spot",
+    "displayName": "港股实时行情-新浪",
+    "description": "新浪的港股实时行情数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/mkt/#qbgg_hk",
+    "fieldCount": 14
+  },
+  "stock_hk_valuation_baidu": {
+    "name": "stock_hk_valuation_baidu",
+    "displayName": "港股估值指标",
+    "description": "百度财经的港股估值指标数据",
+    "dataSource": "https://gushitong.baidu.com/stock/hk-06969",
+    "fieldCount": 2
+  },
+  "stock_hot_tweet_xq": {
+    "name": "stock_hot_tweet_xq",
+    "displayName": "讨论排行榜",
+    "description": "讨论排行榜数据",
+    "dataSource": "https://xueqiu.com/hq",
+    "fieldCount": 4
+  },
+  "stock_zh_a_cdr_daily": {
+    "name": "stock_zh_a_cdr_daily",
+    "displayName": "历史行情数据",
+    "description": "历史行情数据数据",
+    "dataSource": "https://finance.sina.com.cn/realstock/company/sh689009/nc.shtml",
+    "fieldCount": 6
+  },
+  "stock_report_fund_hold": {
+    "name": "stock_report_fund_hold",
+    "displayName": "基金持股",
+    "description": "基金持股数据",
+    "dataSource": "http://data.eastmoney.com/zlsj/2020-06-30-1-2.html",
+    "fieldCount": 9
+  },
+  "stock_rank_cxfl_ths": {
+    "name": "stock_rank_cxfl_ths",
+    "displayName": "持续放量",
+    "description": "持续放量数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/cxfl/",
+    "fieldCount": 10
+  },
+  "stock_hk_ggt_components_em": {
+    "name": "stock_hk_ggt_components_em",
+    "displayName": "港股通成份股",
+    "description": "东方财富网行情中心港股市场港股通成份股的完整股票列表",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#hk_components",
+    "fieldCount": 11
+  },
+  "stock_lh_yyb_control": {
+    "name": "stock_lh_yyb_control",
+    "displayName": "龙虎榜-营业部排行-抱团操作实力",
+    "description": "龙虎榜-营业部排行-抱团操作实力数据",
+    "dataSource": "https://data.10jqka.com.cn/market/longhu/",
+    "fieldCount": 5
+  },
+  "stock_cash_flow_sheet_by_report_em": {
+    "name": "stock_cash_flow_sheet_by_report_em",
+    "displayName": "现金流量表-按报告期",
+    "description": "现金流量表-按报告期",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_fund_flow_industry": {
+    "name": "stock_fund_flow_industry",
+    "displayName": "行业资金流",
+    "description": "行业资金流",
+    "dataSource": "http://data.10jqka.com.cn/funds/hyzjl/#refCountId=data_55f13c2c_254",
+    "fieldCount": 19
+  },
+  "stock_us_daily": {
+    "name": "stock_us_daily",
+    "displayName": "美股历史行情-新浪",
+    "description": "新浪的美股历史行情数据",
+    "dataSource": "http://finance.sina.com.cn/stock/usstock/sector.shtml",
+    "fieldCount": 9
+  },
+  "stock_zh_kcb_daily": {
+    "name": "stock_zh_kcb_daily",
+    "displayName": "历史行情数据",
+    "description": "历史行情数据数据",
+    "dataSource": "https://finance.sina.com.cn/realstock/company/sh688001/nc.shtml(示例)",
+    "fieldCount": 10
+  },
+  "stock_hk_main_board_spot_em": {
+    "name": "stock_hk_main_board_spot_em",
+    "displayName": "港股主板实时行情数据-东财",
+    "description": "港股主板实时行情数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#hk_mainboard",
+    "fieldCount": 11
+  },
+  "stock_financial_cash_ths": {
+    "name": "stock_financial_cash_ths",
+    "displayName": "现金流量表",
+    "description": "现金流量表",
+    "dataSource": "https://basic.10jqka.com.cn/new/000063/finance.html",
+    "fieldCount": 1
+  },
+  "stock_zh_ah_spot_em": {
+    "name": "stock_zh_ah_spot_em",
+    "displayName": "实时行情数据-东财",
+    "description": "实时行情数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#ah_comparison",
+    "fieldCount": 9
+  },
+  "stock_restricted_release_queue_sina": {
+    "name": "stock_restricted_release_queue_sina",
+    "displayName": "个股限售解禁-新浪",
+    "description": "个股限售解禁-新浪数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/xsjj/index.phtml?symbol=sh600000",
+    "fieldCount": 6
+  },
+  "stock_yjbb_em": {
+    "name": "stock_yjbb_em",
+    "displayName": "业绩报表",
+    "description": "业绩报表数据",
+    "dataSource": "http://data.eastmoney.com/bbsj/202003/yjbb.html",
+    "fieldCount": 16
+  },
+  "stock_profile_cninfo": {
+    "name": "stock_profile_cninfo",
+    "displayName": "公司概况-巨潮资讯",
+    "description": "公司概况-巨潮资讯数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/company",
+    "fieldCount": 24
+  },
+  "stock_balance_sheet_by_yearly_em": {
+    "name": "stock_balance_sheet_by_yearly_em",
+    "displayName": "资产负债表-按年度",
+    "description": "资产负债表-按年度数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_fhps_em": {
+    "name": "stock_fhps_em",
+    "displayName": "分红配送-东财",
+    "description": "分红配送-东财数据",
+    "dataSource": "https://data.eastmoney.com/yjfp/",
+    "fieldCount": 17
+  },
+  "stock_gdfx_holding_analyse_em": {
+    "name": "stock_gdfx_holding_analyse_em",
+    "displayName": "股东持股分析-十大股东",
+    "description": "股东持股分析-十大股东",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 14
+  },
+  "stock_info_a_code_name": {
+    "name": "stock_info_a_code_name",
+    "displayName": "股票列表-A股",
+    "description": "股票列表-A股数据",
+    "dataSource": "沪深京三个交易所",
+    "fieldCount": 2
+  },
+  "stock_lhb_yybph_em": {
+    "name": "stock_lhb_yybph_em",
+    "displayName": "营业部排行",
+    "description": "营业部排行数据",
+    "dataSource": "https://data.eastmoney.com/stock/yybph.html",
+    "fieldCount": 16
+  },
+  "stock_us_famous_spot_em": {
+    "name": "stock_us_famous_spot_em",
+    "displayName": "知名美股实时行情-东方财富",
+    "description": "东方财富的知名美股实时行情数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#us_wellknown",
+    "fieldCount": 11
+  },
+  "stock_gpzy_distribute_statistics_bank_em": {
+    "name": "stock_gpzy_distribute_statistics_bank_em",
+    "displayName": "质押机构分布统计-银行",
+    "description": "质押机构分布统计-银行数据",
+    "dataSource": "https://data.eastmoney.com/gpzy/distributeStatistics.aspx",
+    "fieldCount": 8
+  },
+  "stock_rank_cxsl_ths": {
+    "name": "stock_rank_cxsl_ths",
+    "displayName": "持续缩量",
+    "description": "持续缩量数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/cxsl/",
+    "fieldCount": 10
+  },
+  "stock_share_change_cninfo": {
+    "name": "stock_share_change_cninfo",
+    "displayName": "公司股本变动-巨潮资讯",
+    "description": "公司股本变动-巨潮资讯数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/apiDoc",
+    "fieldCount": 43
+  },
+  "stock_analyst_detail_em": {
+    "name": "stock_analyst_detail_em",
+    "displayName": "分析师详情",
+    "description": "分析师详情数据",
+    "dataSource": "https://data.eastmoney.com/invest/invest/11000257131.html",
+    "fieldCount": 15
+  },
+  "stock_dxsyl_em": {
+    "name": "stock_dxsyl_em",
+    "displayName": "打新收益率",
+    "description": "打新收益率数据",
+    "dataSource": "https://data.eastmoney.com/xg/xg/dxsyl.html",
+    "fieldCount": 16
+  },
+  "stock_us_pink_spot_em": {
+    "name": "stock_us_pink_spot_em",
+    "displayName": "粉单市场",
+    "description": "粉单市场数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#us_pinksheet",
+    "fieldCount": 11
+  },
+  "stock_zh_b_spot_em": {
+    "name": "stock_zh_b_spot_em",
+    "displayName": "实时行情数据-东财",
+    "description": "实时行情数据-东财数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#hs_b_board",
+    "fieldCount": 22
+  },
+  "stock_sh_a_spot_em": {
+    "name": "stock_sh_a_spot_em",
+    "displayName": "沪 A 股",
+    "description": "沪 A 股数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#sh_a_board",
+    "fieldCount": 22
+  },
+  "stock_lhb_jgmmtj_em": {
+    "name": "stock_lhb_jgmmtj_em",
+    "displayName": "机构买卖每日统计",
+    "description": "机构买卖每日统计数据",
+    "dataSource": "https://data.eastmoney.com/stock/jgmmtj.html",
+    "fieldCount": 15
+  },
+  "stock_fund_stock_holder": {
+    "name": "stock_fund_stock_holder",
+    "displayName": "基金持股",
+    "description": "基金持股数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_FundStockHolder/stockid/600004.phtml",
+    "fieldCount": 6
+  },
+  "stock_zh_a_st_em": {
+    "name": "stock_zh_a_st_em",
+    "displayName": "风险警示板",
+    "description": "风险警示板数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#st_board",
+    "fieldCount": 16
+  },
+  "stock_info_sz_delist": {
+    "name": "stock_info_sz_delist",
+    "displayName": "终止-暂停上市-深证",
+    "description": "终止-暂停上市-深证数据",
+    "dataSource": "https://www.szse.cn/market/stock/suspend/index.html",
+    "fieldCount": 4
+  },
+  "stock_sse_deal_daily": {
+    "name": "stock_sse_deal_daily",
+    "displayName": "上海证券交易所-每日概况",
+    "description": "上海证券交易所-每日概况数据",
+    "dataSource": "http://www.sse.com.cn/market/stockdata/overview/day/",
+    "fieldCount": 6
+  },
+  "stock_sector_detail": {
+    "name": "stock_sector_detail",
+    "displayName": "板块详情",
+    "description": "板块详情数据",
+    "dataSource": "http://finance.sina.com.cn/stock/sl/#area_1",
+    "fieldCount": 20
+  },
+  "stock_hk_security_profile_em": {
+    "name": "stock_hk_security_profile_em",
+    "displayName": "证券资料",
+    "description": "证券资料数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/CompanyProfile",
+    "fieldCount": 13
+  },
+  "stock_profit_forecast_em": {
+    "name": "stock_profit_forecast_em",
+    "displayName": "盈利预测-东方财富",
+    "description": "盈利预测-东方财富数据",
+    "dataSource": "http://data.eastmoney.com/report/profitforecast.jshtml",
+    "fieldCount": 12
+  },
+  "stock_zyjs_ths": {
+    "name": "stock_zyjs_ths",
+    "displayName": "主营介绍-同花顺",
+    "description": "同花顺的主营介绍数据",
+    "dataSource": "https://basic.10jqka.com.cn/new/000066/operate.html",
+    "fieldCount": 4
+  },
+  "stock_a_gxl_lg": {
+    "name": "stock_a_gxl_lg",
+    "displayName": "A股股息率",
+    "description": "A股整体市场股息率数据",
+    "dataSource": "https://legulegu.com/stockdata/guxilv",
+    "fieldCount": 2
+  },
+  "stock_financial_debt_ths": {
+    "name": "stock_financial_debt_ths",
+    "displayName": "资产负债表",
+    "description": "资产负债表",
+    "dataSource": "https://basic.10jqka.com.cn/new/000063/finance.html",
+    "fieldCount": 1
+  },
+  "stock_zh_a_hist": {
+    "name": "stock_zh_a_hist",
+    "displayName": "A股历史行情-东财",
+    "description": "A股历史行情-东财数据",
+    "dataSource": "https://quote.eastmoney.com/concept/sh603777.html?from=classic(示例)",
+    "fieldCount": 12
+  },
+  "stock_dzjy_hygtj": {
+    "name": "stock_dzjy_hygtj",
+    "displayName": "活跃 A 股统计",
+    "description": "活跃 A 股统计数据",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_hygtj.html",
+    "fieldCount": 16
+  },
+  "stock_management_change_ths": {
+    "name": "stock_management_change_ths",
+    "displayName": "高管持股变动统计",
+    "description": "高管持股变动统计",
+    "dataSource": "https://basic.10jqka.com.cn/new/688981/event.html",
+    "fieldCount": 7
+  },
+  "stock_individual_basic_info_hk_xq": {
+    "name": "stock_individual_basic_info_hk_xq",
+    "displayName": "个股信息查询-雪球",
+    "description": "个股信息查询-雪球数据",
+    "dataSource": "https://xueqiu.com/S/00700",
+    "fieldCount": 2
+  },
+  "stock_rank_forecast_cninfo": {
+    "name": "stock_rank_forecast_cninfo",
+    "displayName": "投资评级",
+    "description": "投资评级数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 10
+  },
+  "stock_profit_sheet_by_report_em": {
+    "name": "stock_profit_sheet_by_report_em",
+    "displayName": "利润表-按报告期",
+    "description": "利润表-按报告期数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_lh_yyb_most": {
+    "name": "stock_lh_yyb_most",
+    "displayName": "龙虎榜-营业部排行-上榜次数最多",
+    "description": "龙虎榜-营业部排行-上榜次数最多数据",
+    "dataSource": "https://data.10jqka.com.cn/market/longhu/",
+    "fieldCount": 6
+  },
+  "stock_zh_a_spot": {
+    "name": "stock_zh_a_spot",
+    "displayName": "实时行情数据-新浪",
+    "description": "实时行情数据-新浪数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/mkt/#hs_a",
+    "fieldCount": 13
+  },
+  "stock_industry_category_cninfo": {
+    "name": "stock_industry_category_cninfo",
+    "displayName": "行业分类数据-巨潮资讯",
+    "description": "行业分类数据-巨潮资讯数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/apiDoc",
+    "fieldCount": 6
+  },
+  "stock_account_statistics_em": {
+    "name": "stock_account_statistics_em",
+    "displayName": "股票账户统计月度",
+    "description": "东方财富的月度股票账户统计数据",
+    "dataSource": "https://data.eastmoney.com/cjsj/gpkhsj.html",
+    "fieldCount": 11
+  },
+  "stock_zt_pool_zbgc_em": {
+    "name": "stock_zt_pool_zbgc_em",
+    "displayName": "炸板股池-东方财富",
+    "description": "东方财富的炸板股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=zbgc",
+    "fieldCount": 15
+  },
+  "stock_info_change_name_em": {
+    "name": "stock_info_change_name_em",
+    "displayName": "信息变更-公司更名",
+    "description": "信息变更-公司更名",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_intraday_em": {
+    "name": "stock_intraday_em",
+    "displayName": "日内分时数据-东财",
+    "description": "日内分时数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/f1.html?newcode=0.000001",
+    "fieldCount": 4
+  },
+  "stock_margin_szse": {
+    "name": "stock_margin_szse",
+    "displayName": "融资融券汇总",
+    "description": "融资融券汇总数据",
+    "dataSource": "https://www.szse.cn/disclosure/margin/margin/index.html",
+    "fieldCount": 6
+  },
+  "stock_hk_spot_em": {
+    "name": "stock_hk_spot_em",
+    "displayName": "港股实时行情-东方财富",
+    "description": "东方财富的港股实时行情数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#hk_stocks",
+    "fieldCount": 11
+  },
+  "news_report_time_baidu": {
+    "name": "news_report_time_baidu",
+    "displayName": "财报发行-百度",
+    "description": "百度财经的财报发行数据",
+    "dataSource": "https://gushitong.baidu.com/calendar",
+    "fieldCount": 4
+  },
+  "stock_hot_up_em": {
+    "name": "stock_hot_up_em",
+    "displayName": "飙升榜-A股",
+    "description": "飙升榜-A股数据",
+    "dataSource": "http://guba.eastmoney.com/rank/",
+    "fieldCount": 6
+  },
+  "stock_news_main_cx": {
+    "name": "stock_news_main_cx",
+    "displayName": "财经内容精选",
+    "description": "财经内容精选数据",
+    "dataSource": "https://cxdata.caixin.com/pc/",
+    "fieldCount": 5
+  },
+  "stock_board_concept_name_em": {
+    "name": "stock_board_concept_name_em",
+    "displayName": "东方财富-概念板块",
+    "description": "东方财富-概念板块数据",
+    "dataSource": "https://quote.eastmoney.com/center/boardlist.html#concept_board",
+    "fieldCount": 11
+  },
+  "stock_dzjy_mrtj": {
+    "name": "stock_dzjy_mrtj",
+    "displayName": "大宗交易-每日统计",
+    "description": "东方财富-数据中心-特色数据-大宗交易-每日统计",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_mrtj.html",
+    "fieldCount": 12
+  },
+  "stock_irm_ans_cninfo": {
+    "name": "stock_irm_ans_cninfo",
+    "displayName": "互动易-回答",
+    "description": "互动易-回答数据",
+    "dataSource": "https://irm.cninfo.com.cn/",
+    "fieldCount": 7
+  },
+  "stock_board_industry_spot_em": {
+    "name": "stock_board_industry_spot_em",
+    "displayName": "东方财富-行业板块-实时行情",
+    "description": "东方财富-行业板块-实时行情数据",
+    "dataSource": "https://quote.eastmoney.com/bk/90.BK1027.html",
+    "fieldCount": 2
+  },
+  "stock_comment_em": {
+    "name": "stock_comment_em",
+    "displayName": "千股千评",
+    "description": "千股千评数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/",
+    "fieldCount": 13
+  },
+  "stock_financial_us_report_em": {
+    "name": "stock_financial_us_report_em",
+    "displayName": "美股财务报表",
+    "description": "美股财务报表",
+    "dataSource": "https://emweb.eastmoney.com/PC_USF10/pages/index.html?code=TSLA&type=web&color=w#/cwfx/zyzb",
+    "fieldCount": 9
+  },
+  "stock_hsgt_stock_statistics_em": {
+    "name": "stock_hsgt_stock_statistics_em",
+    "displayName": "每日个股统计",
+    "description": "东方财富网-数据中心-沪深港通持股-每日个股统计",
+    "dataSource": "http://data.eastmoney.com/hsgtcg/StockStatistics.aspx",
+    "fieldCount": 11
+  },
+  "stock_zh_a_gdhs": {
+    "name": "stock_zh_a_gdhs",
+    "displayName": "股东户数",
+    "description": "股东户数数据",
+    "dataSource": "http://data.eastmoney.com/gdhs/",
+    "fieldCount": 15
+  },
+  "stock_cg_lawsuit_cninfo": {
+    "name": "stock_cg_lawsuit_cninfo",
+    "displayName": "公司诉讼",
+    "description": "公司诉讼数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 5
+  },
+  "stock_hk_growth_comparison_em": {
+    "name": "stock_hk_growth_comparison_em",
+    "displayName": "成长性对比",
+    "description": "成长性对比数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/IndustryComparison",
+    "fieldCount": 10
+  },
+  "stock_restricted_release_stockholder_em": {
+    "name": "stock_restricted_release_stockholder_em",
+    "displayName": "解禁股东",
+    "description": "解禁股东数据",
+    "dataSource": "https://data.eastmoney.com/dxf/q/600000.html",
+    "fieldCount": 8
+  },
+  "stock_zh_a_hist_tx": {
+    "name": "stock_zh_a_hist_tx",
+    "displayName": "历史行情数据-腾讯",
+    "description": "历史行情数据-腾讯数据",
+    "dataSource": "https://gu.qq.com/sh000919/zs",
+    "fieldCount": 6
+  },
+  "stock_hk_famous_spot_em": {
+    "name": "stock_hk_famous_spot_em",
+    "displayName": "知名港股",
+    "description": "知名港股数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#hk_wellknown",
+    "fieldCount": 11
+  },
+  "stock_report_disclosure": {
+    "name": "stock_report_disclosure",
+    "displayName": "预约披露时间-巨潮资讯",
+    "description": "预约披露时间-巨潮资讯数据",
+    "dataSource": "http://www.cninfo.com.cn/new/commonUrl?url=data/yypl",
+    "fieldCount": 7
+  },
+  "stock_board_industry_name_em": {
+    "name": "stock_board_industry_name_em",
+    "displayName": "行业分类",
+    "description": "行业分类",
+    "dataSource": "https://quote.eastmoney.com/center/boardlist.html#industry_board",
+    "fieldCount": 11
+  },
+  "stock_register_kcb": {
+    "name": "stock_register_kcb",
+    "displayName": "科创板",
+    "description": "科创板数据",
+    "dataSource": "https://data.eastmoney.com/xg/ipo/",
+    "fieldCount": 12
+  },
+  "stock_sse_summary": {
+    "name": "stock_sse_summary",
+    "displayName": "上海证券交易所",
+    "description": "上海证券交易所数据",
+    "dataSource": "http://www.sse.com.cn/market/stockdata/statistic/",
+    "fieldCount": 4
+  },
+  "stock_financial_analysis_indicator_em": {
+    "name": "stock_financial_analysis_indicator_em",
+    "displayName": "主要指标-东方财富",
+    "description": "主要指标-东方财富",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=SZ301389&color=b#/cwfx",
+    "fieldCount": 43
+  },
+  "stock_hk_dividend_payout_em": {
+    "name": "stock_hk_dividend_payout_em",
+    "displayName": "分红派息",
+    "description": "分红派息数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/CoreReading",
+    "fieldCount": 7
+  },
+  "stock_sy_yq_em": {
+    "name": "stock_sy_yq_em",
+    "displayName": "商誉减值预期明细",
+    "description": "商誉减值预期明细数据",
+    "dataSource": "https://data.eastmoney.com/sy/yqlist.html",
+    "fieldCount": 14
+  },
+  "stock_sgt_reference_exchange_rate_szse": {
+    "name": "stock_sgt_reference_exchange_rate_szse",
+    "displayName": "深港通参考汇率",
+    "description": "深港通-港股通业务的参考汇率信息，包含买入价、卖出价等",
+    "dataSource": "https://www.szse.cn/szhk/hkbussiness/exchangerate/index.html",
+    "fieldCount": 4
+  },
+  "stock_cg_equity_mortgage_cninfo": {
+    "name": "stock_cg_equity_mortgage_cninfo",
+    "displayName": "股权质押",
+    "description": "股权质押数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 10
+  },
+  "stock_info_sz_change_name": {
+    "name": "stock_info_sz_change_name",
+    "displayName": "名称变更-深证",
+    "description": "名称变更-深证数据",
+    "dataSource": "https://www.szse.cn/www/market/stock/changename/index.html",
+    "fieldCount": 5
+  },
+  "stock_register_sh": {
+    "name": "stock_register_sh",
+    "displayName": "上海主板",
+    "description": "上海主板数据",
+    "dataSource": "https://data.eastmoney.com/xg/ipo/",
+    "fieldCount": 12
+  },
+  "stock_sector_spot": {
+    "name": "stock_sector_spot",
+    "displayName": "板块行情",
+    "description": "板块行情数据",
+    "dataSource": "http://finance.sina.com.cn/stock/sl/",
+    "fieldCount": 12
+  },
+  "stock_hsgt_fund_min_em": {
+    "name": "stock_hsgt_fund_min_em",
+    "displayName": "沪深港通分时数据",
+    "description": "东方财富数据中心沪深港通市场概括的分时资金流动数据",
+    "dataSource": "https://data.eastmoney.com/hsgt/hsgtDetail/scgk.html",
+    "fieldCount": 10
+  },
+  "stock_zh_valuation_comparison_em": {
+    "name": "stock_zh_valuation_comparison_em",
+    "displayName": "估值比较",
+    "description": "估值比较数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=000895&color=b#/thbj/gzbj",
+    "fieldCount": 21
+  },
+  "stock_individual_basic_info_xq": {
+    "name": "stock_individual_basic_info_xq",
+    "displayName": "个股信息查询-雪球",
+    "description": "个股信息查询-雪球数据",
+    "dataSource": "https://xueqiu.com/snowman/S/SH601127/detail#/GSJJ",
+    "fieldCount": 2
+  },
+  "stock_hot_rank_latest_em": {
+    "name": "stock_hot_rank_latest_em",
+    "displayName": "A股",
+    "description": "A股数据",
+    "dataSource": "http://guba.eastmoney.com/rank/stock?code=000665",
+    "fieldCount": 2
+  },
+  "stock_hk_valuation_comparison_em": {
+    "name": "stock_hk_valuation_comparison_em",
+    "displayName": "港股估值对比",
+    "description": "东方财富的港股估值对比数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/IndustryComparison",
+    "fieldCount": 18
+  },
+  "stock_hk_company_profile_em": {
+    "name": "stock_hk_company_profile_em",
+    "displayName": "公司资料",
+    "description": "公司资料数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/CompanyProfile",
+    "fieldCount": 14
+  },
+  "stock_info_sz_name_code": {
+    "name": "stock_info_sz_name_code",
+    "displayName": "股票列表-深证",
+    "description": "股票列表-深证数据",
+    "dataSource": "https://www.szse.cn/market/product/stock/list/index.html",
+    "fieldCount": 7
+  },
+  "stock_board_concept_hist_em": {
+    "name": "stock_board_concept_hist_em",
+    "displayName": "东方财富-指数",
+    "description": "东方财富-指数数据",
+    "dataSource": "http://quote.eastmoney.com/bk/90.BK0715.html",
+    "fieldCount": 11
+  },
+  "stock_board_concept_info_ths": {
+    "name": "stock_board_concept_info_ths",
+    "displayName": "同花顺-概念板块简介",
+    "description": "同花顺-概念板块简介数据",
+    "dataSource": "http://q.10jqka.com.cn/gn/detail/code/301558/",
+    "fieldCount": 2
+  },
+  "stock_hsgt_individual_em": {
+    "name": "stock_hsgt_individual_em",
+    "displayName": "沪深港通持股-个股",
+    "description": "东方财富-数据中心-沪深港通持股-个股",
+    "dataSource": "https://data.eastmoney.com/hsgt/StockHdDetail/002008.html",
+    "fieldCount": 18
+  },
+  "stock_qsjy_em": {
+    "name": "stock_qsjy_em",
+    "displayName": "券商业绩月报",
+    "description": "券商业绩月报数据",
+    "dataSource": "http://data.eastmoney.com/other/qsjy.html",
+    "fieldCount": 14
+  },
+  "stock_hk_financial_indicator_em": {
+    "name": "stock_hk_financial_indicator_em",
+    "displayName": "财务指标",
+    "description": "财务指标数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/CoreReading",
+    "fieldCount": 21
+  },
+  "stock_margin_ratio_pa": {
+    "name": "stock_margin_ratio_pa",
+    "displayName": "标的证券名单及保证金比例查询",
+    "description": "标的证券名单及保证金比例查询数据",
+    "dataSource": "https://stock.pingan.com/static/webinfo/margin/business.html?businessType=0",
+    "fieldCount": 4
+  },
+  "stock_monthly": {
+    "name": "stock_monthly",
+    "displayName": "月线行情",
+    "description": "股票的月线历史行情数据，适用于长期趋势分析",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_yjkb_em": {
+    "name": "stock_yjkb_em",
+    "displayName": "业绩快报",
+    "description": "业绩快报数据",
+    "dataSource": "https://data.eastmoney.com/bbsj/202003/yjkb.html",
+    "fieldCount": 18
+  },
+  "stock_zh_a_disclosure_report_cninfo": {
+    "name": "stock_zh_a_disclosure_report_cninfo",
+    "displayName": "信息披露公告-巨潮资讯",
+    "description": "信息披露公告-巨潮资讯数据",
+    "dataSource": "http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search",
+    "fieldCount": 5
+  },
+  "stock_financial_hk_report_em": {
+    "name": "stock_financial_hk_report_em",
+    "displayName": "港股财务报表",
+    "description": "港股财务报表",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/FinancialAnalysis/index?type=web&code=00700",
+    "fieldCount": 11
+  },
+  "stock_market_activity_legu": {
+    "name": "stock_market_activity_legu",
+    "displayName": "赚钱效应分析",
+    "description": "赚钱效应分析数据",
+    "dataSource": "https://www.legulegu.com/stockdata/market-activity",
+    "fieldCount": 12
+  },
+  "stock_register_db": {
+    "name": "stock_register_db",
+    "displayName": "达标企业",
+    "description": "达标企业数据",
+    "dataSource": "https://data.eastmoney.com/xg/cyb/",
+    "fieldCount": 12
+  },
+  "stock_comment_detail_scrd_focus_em": {
+    "name": "stock_comment_detail_scrd_focus_em",
+    "displayName": "用户关注指数",
+    "description": "用户关注指数数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/stock/600000.html",
+    "fieldCount": 2
+  },
+  "stock_lhb_jgstatistic_em": {
+    "name": "stock_lhb_jgstatistic_em",
+    "displayName": "机构席位追踪",
+    "description": "机构席位追踪数据",
+    "dataSource": "https://data.eastmoney.com/stock/jgstatistic.html",
+    "fieldCount": 15
+  },
+  "stock_research_report_em": {
+    "name": "stock_research_report_em",
+    "displayName": "个股研报",
+    "description": "个股研报",
+    "dataSource": "https://data.eastmoney.com/report/stock.jshtml",
+    "fieldCount": 15
+  },
+  "stock_financial_hk_analysis_indicator_em": {
+    "name": "stock_financial_hk_analysis_indicator_em",
+    "displayName": "港股财务指标",
+    "description": "港股财务指标",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/NewFinancialAnalysis/index?type=web&code=00700",
+    "fieldCount": 35
+  },
+  "stock_sector_fund_flow_hist": {
+    "name": "stock_sector_fund_flow_hist",
+    "displayName": "行业历史资金流",
+    "description": "行业历史资金流",
+    "dataSource": "https://data.eastmoney.com/bkzj/BK1034.html",
+    "fieldCount": 11
+  },
+  "stock_institute_recommend": {
+    "name": "stock_institute_recommend",
+    "displayName": "机构推荐池",
+    "description": "机构推荐池数据",
+    "dataSource": "http://stock.finance.sina.com.cn/stock/go.php/vIR_RatingNewest/index.phtml",
+    "fieldCount": 1
+  },
+  "stock_lhb_stock_statistic_em": {
+    "name": "stock_lhb_stock_statistic_em",
+    "displayName": "个股上榜统计",
+    "description": "个股上榜统计数据",
+    "dataSource": "https://data.eastmoney.com/stock/tradedetail.html",
+    "fieldCount": 19
+  },
+  "stock_share_hold_change_bse": {
+    "name": "stock_share_hold_change_bse",
+    "displayName": "董监高及相关人员持股变动-北证",
+    "description": "董监高及相关人员持股变动-北证数据",
+    "dataSource": "https://www.bse.cn/disclosure/djg_sharehold_change.html",
+    "fieldCount": 10
+  },
+  "stock_a_below_net_asset_statistics": {
+    "name": "stock_a_below_net_asset_statistics",
+    "displayName": "破净股统计",
+    "description": "A股市场破净股（市净率小于1）的统计数据分析",
+    "dataSource": "https://www.legulegu.com/stockdata/below-net-asset-statistics",
+    "fieldCount": 8
+  },
+  "stock_share_hold_change_szse": {
+    "name": "stock_share_hold_change_szse",
+    "displayName": "董监高及相关人员持股变动-深证",
+    "description": "董监高及相关人员持股变动-深证数据",
+    "dataSource": "http://www.szse.cn/disclosure/supervision/change/index.html",
+    "fieldCount": 12
+  },
+  "stock_esg_rate_sina": {
+    "name": "stock_esg_rate_sina",
+    "displayName": "ESG 评级数据",
+    "description": "ESG 评级数据数据",
+    "dataSource": "https://finance.sina.com.cn/esg/grade.shtml",
+    "fieldCount": 6
+  },
+  "stock_board_concept_cons_em": {
+    "name": "stock_board_concept_cons_em",
+    "displayName": "东方财富-成份股",
+    "description": "东方财富-成份股数据",
+    "dataSource": "http://quote.eastmoney.com/center/boardlist.html#boards-BK06551",
+    "fieldCount": 15
+  },
+  "stock_irm_cninfo": {
+    "name": "stock_irm_cninfo",
+    "displayName": "互动易-提问",
+    "description": "互动易-提问数据",
+    "dataSource": "https://irm.cninfo.com.cn/",
+    "fieldCount": 14
+  },
+  "stock_gdfx_holding_change_em": {
+    "name": "stock_gdfx_holding_change_em",
+    "displayName": "股东持股变动统计-十大股东",
+    "description": "股东持股变动统计-十大股东",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 9
+  },
+  "stock_us_hist_min_em": {
+    "name": "stock_us_hist_min_em",
+    "displayName": "分时数据-东财",
+    "description": "分时数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/us/ATER.html",
+    "fieldCount": 8
+  },
+  "stock_gsrl_gsdt_em": {
+    "name": "stock_gsrl_gsdt_em",
+    "displayName": "公司动态",
+    "description": "公司动态数据",
+    "dataSource": "https://data.eastmoney.com/gsrl/gsdt.html",
+    "fieldCount": 6
+  },
+  "stock_hot_rank_relate_em": {
+    "name": "stock_hot_rank_relate_em",
+    "displayName": "相关股票",
+    "description": "相关股票数据",
+    "dataSource": "http://guba.eastmoney.com/rank/stock?code=000665",
+    "fieldCount": 4
+  },
+  "stock_add_stock_cninfo": {
+    "name": "stock_add_stock_cninfo",
+    "displayName": "增发-巨潮资讯",
+    "description": "增发-巨潮资讯",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_us_spot_em": {
+    "name": "stock_us_spot_em",
+    "displayName": "实时行情数据-东财",
+    "description": "实时行情数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#us_stocks",
+    "fieldCount": 15
+  },
+  "stock_sgt_reference_exchange_rate_sse": {
+    "name": "stock_sgt_reference_exchange_rate_sse",
+    "displayName": "沪港通参考汇率",
+    "description": "沪港通-港股通信息披露的参考汇率，为跨境投资提供汇率参考",
+    "dataSource": "http://www.sse.com.cn/services/hkexsc/disclo/ratios/",
+    "fieldCount": 4
+  },
+  "stock_zh_a_stop_em": {
+    "name": "stock_zh_a_stop_em",
+    "displayName": "两网及退市",
+    "description": "两网及退市数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#staq_net_board",
+    "fieldCount": 16
+  },
+  "stock_board_concept_index_ths": {
+    "name": "stock_board_concept_index_ths",
+    "displayName": "同花顺-概念板块指数",
+    "description": "同花顺-概念板块指数数据",
+    "dataSource": "https://q.10jqka.com.cn/gn/detail/code/301558",
+    "fieldCount": 7
+  },
+  "stock_info_change_name": {
+    "name": "stock_info_change_name",
+    "displayName": "股票更名",
+    "description": "股票更名数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_CorpInfo/stockid/300378.phtml",
+    "fieldCount": 2
+  },
+  "stock_em_hsgt_hold_stock": {
+    "name": "stock_em_hsgt_hold_stock",
+    "displayName": "历史持股统计",
+    "description": "东方财富-数据中心-沪深港通-历史持股统计",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_lhb_detail_daily_sina": {
+    "name": "stock_lhb_detail_daily_sina",
+    "displayName": "龙虎榜-每日详情",
+    "description": "龙虎榜-每日详情数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/lhb/index.phtml",
+    "fieldCount": 7
+  },
+  "stock_register_sz": {
+    "name": "stock_register_sz",
+    "displayName": "深圳主板",
+    "description": "深圳主板数据",
+    "dataSource": "https://data.eastmoney.com/xg/ipo/",
+    "fieldCount": 12
+  },
+  "stock_esg_rft_sina": {
+    "name": "stock_esg_rft_sina",
+    "displayName": "路孚特",
+    "description": "路孚特数据",
+    "dataSource": "https://finance.sina.com.cn/esg/grade.shtml",
+    "fieldCount": 13
+  },
+  "stock_concept_fund_flow_hist": {
+    "name": "stock_concept_fund_flow_hist",
+    "displayName": "概念历史资金流",
+    "description": "概念历史资金流",
+    "dataSource": "https://data.eastmoney.com/bkzj/BK0574.html",
+    "fieldCount": 11
+  },
+  "stock_comment_detail_zhpj_lspf_em": {
+    "name": "stock_comment_detail_zhpj_lspf_em",
+    "displayName": "历史评分",
+    "description": "历史评分数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/stock/600000.html",
+    "fieldCount": 2
+  },
+  "stock_index_pb_lg": {
+    "name": "stock_index_pb_lg",
+    "displayName": "指数市净率",
+    "description": "指数市净率数据",
+    "dataSource": "https://legulegu.com/stockdata/sz50-pb",
+    "fieldCount": 5
+  },
+  "stock_margin_account_info": {
+    "name": "stock_margin_account_info",
+    "displayName": "两融账户信息",
+    "description": "两融账户信息数据",
+    "dataSource": "https://data.eastmoney.com/rzrq/zhtjday.html",
+    "fieldCount": 13
+  },
+  "stock_yysj_em": {
+    "name": "stock_yysj_em",
+    "displayName": "业绩报表-预约披露",
+    "description": "东方财富-数据中心-年报季报-预约披露",
+    "dataSource": "https://data.eastmoney.com/bbsj/202003/yysj.html",
+    "fieldCount": 8
+  },
+  "stock_gdfx_top_10_em": {
+    "name": "stock_gdfx_top_10_em",
+    "displayName": "十大股东(个股)",
+    "description": "十大股东(个股)",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/ShareholderResearch/Index?type=web&code=SH688686#sdltgd-0",
+    "fieldCount": 6
+  },
+  "stock_gdfx_free_top_10_em": {
+    "name": "stock_gdfx_free_top_10_em",
+    "displayName": "十大流通股东(个股)",
+    "description": "十大流通股东(个股)",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/ShareholderResearch/Index?type=web&code=SH688686#sdltgd-0",
+    "fieldCount": 7
+  },
+  "stock_gpzy_industry_data_em": {
+    "name": "stock_gpzy_industry_data_em",
+    "displayName": "上市公司质押比例",
+    "description": "上市公司质押比例数据",
+    "dataSource": "https://data.eastmoney.com/gpzy/industryData.aspx",
+    "fieldCount": 7
+  },
+  "stock_report_fund_hold_detail": {
+    "name": "stock_report_fund_hold_detail",
+    "displayName": "基金持股明细",
+    "description": "基金持股明细数据",
+    "dataSource": "http://data.eastmoney.com/zlsj/ccjj/2020-12-31-008286.html",
+    "fieldCount": 7
+  },
+  "stock_restricted_release_summary_em": {
+    "name": "stock_restricted_release_summary_em",
+    "displayName": "限售股解禁",
+    "description": "限售股解禁数据",
+    "dataSource": "https://data.eastmoney.com/dxf/marketStatistics.html?type=day&startdate=2022-11-08&enddate=2022-12-19",
+    "fieldCount": 8
+  },
+  "stock_zh_kcb_report_em": {
+    "name": "stock_zh_kcb_report_em",
+    "displayName": "科创板公告",
+    "description": "科创板公告数据",
+    "dataSource": "https://data.eastmoney.com/notices/kcb.html",
+    "fieldCount": 5
+  },
+  "stock_hsgt_individual_detail_em": {
+    "name": "stock_hsgt_individual_detail_em",
+    "displayName": "个股详情",
+    "description": "东方财富-数据中心-沪深港通持股-个股详情",
+    "dataSource": "http://data.eastmoney.com/hsgtcg/StockHdStatistics/002008.html(示例)",
+    "fieldCount": 9
+  },
+  "stock_sns_sseinfo": {
+    "name": "stock_sns_sseinfo",
+    "displayName": "上证e互动",
+    "description": "上证e互动数据",
+    "dataSource": "https://sns.sseinfo.com/company.do?uid=65",
+    "fieldCount": 9
+  },
+  "stock_zh_a_disclosure_relation_cninfo": {
+    "name": "stock_zh_a_disclosure_relation_cninfo",
+    "displayName": "信息披露调研-巨潮资讯",
+    "description": "信息披露调研-巨潮资讯数据",
+    "dataSource": "http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search",
+    "fieldCount": 5
+  },
+  "stock_szse_area_summary": {
+    "name": "stock_szse_area_summary",
+    "displayName": "地区交易排序",
+    "description": "地区交易排序数据",
+    "dataSource": "http://www.szse.cn/market/overview/index.html",
+    "fieldCount": 16
+  },
+  "stock_board_industry_hist_min_em": {
+    "name": "stock_board_industry_hist_min_em",
+    "displayName": "东方财富-指数-分时",
+    "description": "东方财富-指数-分时数据",
+    "dataSource": "http://quote.eastmoney.com/bk/90.BK1027.html",
+    "fieldCount": 19
+  },
+  "stock_industry_change_cninfo": {
+    "name": "stock_industry_change_cninfo",
+    "displayName": "上市公司行业归属的变动情况-巨潮资讯",
+    "description": "上市公司行业归属的变动情况-巨潮资讯数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/apiDoc",
+    "fieldCount": 10
+  },
+  "stock_zh_b_daily": {
+    "name": "stock_zh_b_daily",
+    "displayName": "历史行情数据",
+    "description": "历史行情数据数据",
+    "dataSource": "https://finance.sina.com.cn/realstock/company/sh900901/nc.shtml",
+    "fieldCount": 8
+  },
+  "stock_a_ttm_lyr": {
+    "name": "stock_a_ttm_lyr",
+    "displayName": "A股等权重与中位数市盈率",
+    "description": "A股整体市场的等权重与中位数滚动市盈率数据",
+    "dataSource": "https://www.legulegu.com/stockdata/a-ttm-lyr",
+    "fieldCount": 14
+  },
+  "stock_balance_sheet_by_report_em": {
+    "name": "stock_balance_sheet_by_report_em",
+    "displayName": "资产负债表-按报告期",
+    "description": "资产负债表-按报告期",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_news_em": {
+    "name": "stock_news_em",
+    "displayName": "个股新闻-东财",
+    "description": "东方财富-个股新闻",
+    "dataSource": "https://so.eastmoney.com/news/s?keyword=603777",
+    "fieldCount": 6
+  },
+  "stock_hot_search_baidu": {
+    "name": "stock_hot_search_baidu",
+    "displayName": "热搜股票",
+    "description": "热搜股票数据",
+    "dataSource": "https://gushitong.baidu.com/expressnews",
+    "fieldCount": 2
+  },
+  "stock_individual_basic_info_us_xq": {
+    "name": "stock_individual_basic_info_us_xq",
+    "displayName": "个股信息查询-雪球",
+    "description": "个股信息查询-雪球数据",
+    "dataSource": "https://xueqiu.com/snowman/S/NVDA/detail#/GSJJ",
+    "fieldCount": 2
+  },
+  "stock_share_hold_change_sse": {
+    "name": "stock_share_hold_change_sse",
+    "displayName": "董监高及相关人员持股变动-上证",
+    "description": "董监高及相关人员持股变动-上证数据",
+    "dataSource": "http://www.sse.com.cn/disclosure/credibility/supervision/change/",
+    "fieldCount": 12
+  },
+  "stock_dzjy_hyyybtj": {
+    "name": "stock_dzjy_hyyybtj",
+    "displayName": "活跃营业部统计",
+    "description": "活跃营业部统计数据",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_hyyybtj.html",
+    "fieldCount": 8
+  },
+  "stock_gdfx_holding_detail_em": {
+    "name": "stock_gdfx_holding_detail_em",
+    "displayName": "股东持股明细-十大股东",
+    "description": "股东持股明细-十大股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 12
+  },
+  "stock_us_hist": {
+    "name": "stock_us_hist",
+    "displayName": "美股历史行情-东方财富",
+    "description": "东方财富的美股历史行情数据",
+    "dataSource": "https://quote.eastmoney.com/us/ENTX.html#fullScreenChart",
+    "fieldCount": 11
+  },
+  "stock_main_stock_holder": {
+    "name": "stock_main_stock_holder",
+    "displayName": "主要股东",
+    "description": "主要股东数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockHolder/stockid/600004.phtml",
+    "fieldCount": 9
+  },
+  "stock_esg_hz_sina": {
+    "name": "stock_esg_hz_sina",
+    "displayName": "华证指数",
+    "description": "华证指数数据",
+    "dataSource": "https://finance.sina.com.cn/esg/grade.shtml",
+    "fieldCount": 11
+  },
+  "stock_zdhtmx_em": {
+    "name": "stock_zdhtmx_em",
+    "displayName": "重大合同",
+    "description": "重大合同",
+    "dataSource": "https://data.eastmoney.com/zdht/mx.html",
+    "fieldCount": 14
+  },
+  "stock_a_high_low_statistics": {
+    "name": "stock_a_high_low_statistics",
+    "displayName": "创新高和新低股票数量统计",
+    "description": "A股市场创新高和创新低股票数量的统计数据分析",
+    "dataSource": "https://www.legulegu.com/stockdata/high-low-statistics",
+    "fieldCount": 8
+  },
+  "stock_cy_a_spot_em": {
+    "name": "stock_cy_a_spot_em",
+    "displayName": "创业板",
+    "description": "创业板数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#gem_board",
+    "fieldCount": 22
+  },
+  "stock_cash_flow_sheet_by_yearly_em": {
+    "name": "stock_cash_flow_sheet_by_yearly_em",
+    "displayName": "现金流量表-按年度",
+    "description": "现金流量表-按年度",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_zh_growth_comparison_em": {
+    "name": "stock_zh_growth_comparison_em",
+    "displayName": "成长性比较",
+    "description": "成长性比较数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=000895&color=b#/thbj/czxbj",
+    "fieldCount": 21
+  },
+  "stock_zh_a_new": {
+    "name": "stock_zh_a_new",
+    "displayName": "新股数据",
+    "description": "东方财富-数据中心-新股数据",
+    "dataSource": "http://vip.stock.finance.sina.com.cn/mkt/#new_stock",
+    "fieldCount": 10
+  },
+  "stock_info_bj_name_code": {
+    "name": "stock_info_bj_name_code",
+    "displayName": "股票列表-北证",
+    "description": "股票列表-北证数据",
+    "dataSource": "https://www.bse.cn/nq/listedcompany.html",
+    "fieldCount": 8
+  },
+  "stock_esg_zd_sina": {
+    "name": "stock_esg_zd_sina",
+    "displayName": "秩鼎",
+    "description": "秩鼎数据",
+    "dataSource": "https://finance.sina.com.cn/esg/grade.shtml",
+    "fieldCount": 6
+  },
+  "stock_hk_indicator_eniu": {
+    "name": "stock_hk_indicator_eniu",
+    "displayName": "港股个股指标",
+    "description": "港股个股指标数据",
+    "dataSource": "https://eniu.com/gu/hk01093/roe",
+    "fieldCount": 1
+  },
+  "stock_new_ipo_cninfo": {
+    "name": "stock_new_ipo_cninfo",
+    "displayName": "新股发行",
+    "description": "新股发行数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/xinguList",
+    "fieldCount": 13
+  },
+  "stock_board_industry_index_ths": {
+    "name": "stock_board_industry_index_ths",
+    "displayName": "同花顺-指数",
+    "description": "同花顺-指数数据",
+    "dataSource": "https://q.10jqka.com.cn/thshy/detail/code/881270/",
+    "fieldCount": 7
+  },
+  "stock_analyst_rank_em": {
+    "name": "stock_analyst_rank_em",
+    "displayName": "分析师指数排行",
+    "description": "分析师指数排行数据",
+    "dataSource": "https://data.eastmoney.com/invest/invest/list.html",
+    "fieldCount": 14
+  },
+  "stock_profit_sheet_by_report_delisted_em": {
+    "name": "stock_profit_sheet_by_report_delisted_em",
+    "displayName": "利润表-按报告期",
+    "description": "利润表-按报告期",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=SZ000013#/cwfx/lrb",
+    "fieldCount": 1
+  },
+  "stock_circulate_stock_holder": {
+    "name": "stock_circulate_stock_holder",
+    "displayName": "流通股东",
+    "description": "流通股东数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_CirculateStockHolder/stockid/600000.phtml",
+    "fieldCount": 6
+  },
+  "stock_rank_xzjp_ths": {
+    "name": "stock_rank_xzjp_ths",
+    "displayName": "险资举牌",
+    "description": "险资举牌数据",
+    "dataSource": "https://data.10jqka.com.cn/financial/xzjp/",
+    "fieldCount": 12
+  },
+  "stock_us_spot": {
+    "name": "stock_us_spot",
+    "displayName": "实时行情数据-新浪",
+    "description": "实时行情数据-新浪数据",
+    "dataSource": "https://finance.sina.com.cn/stock/usstock/sector.shtml",
+    "fieldCount": 1
+  },
+  "stock_board_concept_spot_em": {
+    "name": "stock_board_concept_spot_em",
+    "displayName": "东方财富-概念板块-实时行情",
+    "description": "东方财富-概念板块-实时行情数据",
+    "dataSource": "https://quote.eastmoney.com/bk/90.BK0818.html",
+    "fieldCount": 2
+  },
+  "stock_zh_valuation_baidu": {
+    "name": "stock_zh_valuation_baidu",
+    "displayName": "A 股估值指标",
+    "description": "A 股估值指标数据",
+    "dataSource": "https://gushitong.baidu.com/stock/ab-002044",
+    "fieldCount": 2
+  },
+  "stock_hk_profit_forecast_et": {
+    "name": "stock_hk_profit_forecast_et",
+    "displayName": "港股盈利预测-经济通",
+    "description": "港股盈利预测-经济通数据",
+    "dataSource": "https://www.etnet.com.hk/www/sc/stocks/realtime/quote_profit.php?code=9999",
+    "fieldCount": 8
+  },
+  "stock_margin_sse": {
+    "name": "stock_margin_sse",
+    "displayName": "融资融券汇总",
+    "description": "融资融券汇总数据",
+    "dataSource": "http://www.sse.com.cn/market/othersdata/margin/sum/",
+    "fieldCount": 7
+  },
+  "news_trade_notify_dividend_baidu": {
+    "name": "news_trade_notify_dividend_baidu",
+    "displayName": "分红派息-百度",
+    "description": "百度财经的分红派息数据",
+    "dataSource": "https://gushitong.baidu.com/calendar",
+    "fieldCount": 9
+  },
+  "stock_restricted_release_queue_em": {
+    "name": "stock_restricted_release_queue_em",
+    "displayName": "限售解禁-东财",
+    "description": "限售解禁-东财",
+    "dataSource": "https://data.eastmoney.com/dxf/q/600000.html",
+    "fieldCount": 13
+  },
+  "stock_zh_a_minute": {
+    "name": "stock_zh_a_minute",
+    "displayName": "分时数据-新浪",
+    "description": "分时数据-新浪数据",
+    "dataSource": "http://finance.sina.com.cn/realstock/company/sh600519/nc.shtml",
+    "fieldCount": 6
+  },
+  "stock_financial_us_analysis_indicator_em": {
+    "name": "stock_financial_us_analysis_indicator_em",
+    "displayName": "美股财务指标",
+    "description": "美股财务指标",
+    "dataSource": "https://emweb.eastmoney.com/PC_USF10/pages/index.html?code=TSLA&type=web&color=w#/cwfx/zyzb",
+    "fieldCount": 48
+  },
+  "stock_js_weibo_nlp_time": {
+    "name": "stock_js_weibo_nlp_time",
+    "displayName": "个股新闻-微博",
+    "description": "微博财经-个股新闻",
+    "dataSource": "暂无",
+    "fieldCount": 3
+  },
+  "stock_hsgt_board_rank_em": {
+    "name": "stock_hsgt_board_rank_em",
+    "displayName": "板块排行",
+    "description": "东方财富网-数据中心-沪深港通持股-板块排行",
+    "dataSource": "https://data.eastmoney.com/hsgtcg/bk.html",
+    "fieldCount": 16
+  },
+  "stock_gpzy_pledge_ratio_em": {
+    "name": "stock_gpzy_pledge_ratio_em",
+    "displayName": "上市公司质押比例",
+    "description": "上市公司质押比例数据",
+    "dataSource": "https://data.eastmoney.com/gpzy/pledgeRatio.aspx",
+    "fieldCount": 13
+  },
+  "stock_comment_detail_scrd_desire_em": {
+    "name": "stock_comment_detail_scrd_desire_em",
+    "displayName": "市场参与意愿",
+    "description": "市场参与意愿数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/stock/600000.html",
+    "fieldCount": 4
+  },
+  "stock_zh_ah_daily": {
+    "name": "stock_zh_ah_daily",
+    "displayName": "历史行情数据",
+    "description": "历史行情数据数据",
+    "dataSource": "https://gu.qq.com/hk02359/gp",
+    "fieldCount": 6
+  },
+  "stock_fhps_detail_em": {
+    "name": "stock_fhps_detail_em",
+    "displayName": "分红配送详情-东财",
+    "description": "分红配送详情-东财数据",
+    "dataSource": "https://data.eastmoney.com/yjfp/detail/300073.html",
+    "fieldCount": 19
+  },
+  "stock_shareholder_change_ths": {
+    "name": "stock_shareholder_change_ths",
+    "displayName": "股东持股变动统计",
+    "description": "股东持股变动统计",
+    "dataSource": "https://basic.10jqka.com.cn/new/688981/event.html",
+    "fieldCount": 7
+  },
+  "stock_margin_underlying_info_szse": {
+    "name": "stock_margin_underlying_info_szse",
+    "displayName": "标的证券信息",
+    "description": "标的证券信息数据",
+    "dataSource": "https://www.szse.cn/disclosure/margin/object/index.html",
+    "fieldCount": 8
+  },
+  "stock_sy_profile_em": {
+    "name": "stock_sy_profile_em",
+    "displayName": "A股商誉市场概况",
+    "description": "A股商誉市场概况数据",
+    "dataSource": "https://data.eastmoney.com/sy/scgk.html",
+    "fieldCount": 8
+  },
+  "stock_sector_fund_flow_summary": {
+    "name": "stock_sector_fund_flow_summary",
+    "displayName": "行业个股资金流",
+    "description": "行业个股资金流",
+    "dataSource": "https://data.eastmoney.com/bkzj/BK1034.html",
+    "fieldCount": 14
+  },
+  "stock_zcfz_em": {
+    "name": "stock_zcfz_em",
+    "displayName": "资产负债表-沪深",
+    "description": "资产负债表-沪深数据",
+    "dataSource": "https://data.eastmoney.com/bbsj/202003/zcfz.html",
+    "fieldCount": 15
+  },
+  "stock_lhb_jgmx_sina": {
+    "name": "stock_lhb_jgmx_sina",
+    "displayName": "龙虎榜-机构席位成交明细",
+    "description": "龙虎榜-机构席位成交明细数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vLHBData/kind/jgzz/index.phtml",
+    "fieldCount": 5
+  },
+  "stock_ipo_benefit_ths": {
+    "name": "stock_ipo_benefit_ths",
+    "displayName": "IPO 受益股",
+    "description": "IPO 受益股数据",
+    "dataSource": "https://data.10jqka.com.cn/ipo/syg/",
+    "fieldCount": 10
+  },
+  "stock_board_industry_hist_em": {
+    "name": "stock_board_industry_hist_em",
+    "displayName": "东方财富-指数-日频",
+    "description": "东方财富-指数-日频数据",
+    "dataSource": "https://quote.eastmoney.com/bk/90.BK1027.html",
+    "fieldCount": 11
+  },
+  "stock_zh_ah_spot": {
+    "name": "stock_zh_ah_spot",
+    "displayName": "实时行情数据-腾讯",
+    "description": "实时行情数据-腾讯数据",
+    "dataSource": "https://stockapp.finance.qq.com/mstats/#mod=list&id=hk_ah&module=HK&type=AH",
+    "fieldCount": 12
+  },
+  "stock_zh_a_hist_min_em": {
+    "name": "stock_zh_a_hist_min_em",
+    "displayName": "A股分时数据-东财",
+    "description": "A股分时数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/concept/sh603777.html",
+    "fieldCount": 19
+  },
+  "stock_hsgt_hist_em": {
+    "name": "stock_hsgt_hist_em",
+    "displayName": "沪深港通历史数据",
+    "description": "东方财富-数据中心-沪深港通-港股通(沪>港)-历史数据",
+    "dataSource": "https://data.eastmoney.com/hsgt/index.html",
+    "fieldCount": 26
+  },
+  "stock_fund_flow_concept": {
+    "name": "stock_fund_flow_concept",
+    "displayName": "概念资金流",
+    "description": "概念资金流",
+    "dataSource": "https://data.10jqka.com.cn/funds/gnzjl/#refCountId=data_55f13c2c_254",
+    "fieldCount": 19
+  },
+  "stock_hk_hot_rank_latest_em": {
+    "name": "stock_hk_hot_rank_latest_em",
+    "displayName": "港股",
+    "description": "港股数据",
+    "dataSource": "https://guba.eastmoney.com/rank/stock?code=HK_00700",
+    "fieldCount": 2
+  },
+  "stock_cyq_em": {
+    "name": "stock_cyq_em",
+    "displayName": "筹码分布",
+    "description": "筹码分布",
+    "dataSource": "https://quote.eastmoney.com/concept/sz000001.html",
+    "fieldCount": 9
+  },
+  "stock_hk_daily": {
+    "name": "stock_hk_daily",
+    "displayName": "历史行情数据-新浪",
+    "description": "历史行情数据-新浪数据",
+    "dataSource": "http://stock.finance.sina.com.cn/hkstock/quotes/01336.html(个例)",
+    "fieldCount": 15
+  },
+  "stock_xgsglb_em": {
+    "name": "stock_xgsglb_em",
+    "displayName": "新股申购概览",
+    "description": "东方财富-数据中心-新股数据-新股申购与中签查询-申购概览",
+    "dataSource": "https://data.eastmoney.com/xg/xg/default_2.html",
+    "fieldCount": 46
+  },
+  "stock_rank_ljqs_ths": {
+    "name": "stock_rank_ljqs_ths",
+    "displayName": "量价齐升",
+    "description": "量价齐升数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/ljqs/",
+    "fieldCount": 8
+  },
+  "stock_rank_ljqd_ths": {
+    "name": "stock_rank_ljqd_ths",
+    "displayName": "量价齐跌",
+    "description": "量价齐跌数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/ljqd/",
+    "fieldCount": 8
+  },
+  "stock_sgt_settlement_exchange_rate_szse": {
+    "name": "stock_sgt_settlement_exchange_rate_szse",
+    "displayName": "结算汇率-深港通",
+    "description": "结算汇率-深港通数据",
+    "dataSource": "https://www.szse.cn/szhk/hkbussiness/exchangerate/index.html",
+    "fieldCount": 4
+  },
+  "stock_zt_pool_sub_new_em": {
+    "name": "stock_zt_pool_sub_new_em",
+    "displayName": "次新股池-东方财富",
+    "description": "东方财富的次新股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=cxgc",
+    "fieldCount": 15
+  },
+  "stock_hk_gxl_lg": {
+    "name": "stock_hk_gxl_lg",
+    "displayName": "恒生指数股息率",
+    "description": "恒生指数股息率数据",
+    "dataSource": "https://legulegu.com/stockdata/market/hk/dv/hsi",
+    "fieldCount": 2
+  },
+  "stock_sy_em": {
+    "name": "stock_sy_em",
+    "displayName": "个股商誉明细",
+    "description": "个股商誉明细数据",
+    "dataSource": "https://data.eastmoney.com/sy/list.html",
+    "fieldCount": 10
+  },
+  "stock_market_pe_lg": {
+    "name": "stock_market_pe_lg",
+    "displayName": "主板市盈率",
+    "description": "主板市盈率数据",
+    "dataSource": "https://legulegu.com/stockdata/shanghaiPE",
+    "fieldCount": 6
+  },
+  "stock_hk_hist": {
+    "name": "stock_hk_hist",
+    "displayName": "历史行情数据-东财",
+    "description": "历史行情数据-东财数据",
+    "dataSource": "https://quote.eastmoney.com/hk/08367.html",
+    "fieldCount": 33
+  },
+  "stock_sector_fund_flow_rank": {
+    "name": "stock_sector_fund_flow_rank",
+    "displayName": "板块资金流排名",
+    "description": "板块资金流排名",
+    "dataSource": "https://data.eastmoney.com/bkzj/hy.html",
+    "fieldCount": 13
+  },
+  "stock_add_stock": {
+    "name": "stock_add_stock",
+    "displayName": "股票增发",
+    "description": "股票增发相关数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vISSUE_AddStock/stockid/600004.phtml",
+    "fieldCount": 6
+  },
+  "stock_fund_flow_individual": {
+    "name": "stock_fund_flow_individual",
+    "displayName": "个股资金流",
+    "description": "个股资金流",
+    "dataSource": "https://data.10jqka.com.cn/funds/ggzjl/#refCountId=data_55f13c2c_254",
+    "fieldCount": 17
+  },
+  "stock_lhb_stock_detail_em": {
+    "name": "stock_lhb_stock_detail_em",
+    "displayName": "个股龙虎榜详情",
+    "description": "个股龙虎榜详情数据",
+    "dataSource": "https://data.eastmoney.com/stock/lhb/600077.html",
+    "fieldCount": 6
+  },
+  "stock_price_js": {
+    "name": "stock_price_js",
+    "displayName": "美港目标价",
+    "description": "美港目标价数据",
+    "dataSource": "https://www.ushknews.com/report.html",
+    "fieldCount": 4
+  },
+  "stock_ipo_summary_cninfo": {
+    "name": "stock_ipo_summary_cninfo",
+    "displayName": "上市相关-巨潮资讯",
+    "description": "上市相关-巨潮资讯数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/company",
+    "fieldCount": 15
+  },
+  "stock_sz_a_spot_em": {
+    "name": "stock_sz_a_spot_em",
+    "displayName": "深 A 股",
+    "description": "深 A 股数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#sz_a_board",
+    "fieldCount": 22
+  },
+  "stock_kc_a_spot_em": {
+    "name": "stock_kc_a_spot_em",
+    "displayName": "科创板",
+    "description": "科创板数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#kcb_board",
+    "fieldCount": 22
+  },
+  "stock_institute_hold": {
+    "name": "stock_institute_hold",
+    "displayName": "机构持股一览表",
+    "description": "机构持股一览表数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vComStockHold/kind/jgcg/index.phtml",
+    "fieldCount": 8
+  },
+  "stock_board_industry_cons_em": {
+    "name": "stock_board_industry_cons_em",
+    "displayName": "东方财富-成份股",
+    "description": "东方财富-成份股数据",
+    "dataSource": "https://data.eastmoney.com/bkzj/BK1027.html",
+    "fieldCount": 15
+  },
+  "stock_dzjy_yybph": {
+    "name": "stock_dzjy_yybph",
+    "displayName": "营业部排行",
+    "description": "营业部排行数据",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_yybph.html",
+    "fieldCount": 13
+  },
+  "stock_individual_spot_xq": {
+    "name": "stock_individual_spot_xq",
+    "displayName": "实时行情数据-雪球",
+    "description": "实时行情数据-雪球数据",
+    "dataSource": "https://xueqiu.com/S/SH513520",
+    "fieldCount": 2
+  },
+  "stock_gdfx_holding_teamwork_em": {
+    "name": "stock_gdfx_holding_teamwork_em",
+    "displayName": "股东协同-十大股东",
+    "description": "股东协同-十大股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 5
+  },
+  "stock_pg_em": {
+    "name": "stock_pg_em",
+    "displayName": "配股",
+    "description": "配股数据",
+    "dataSource": "https://data.eastmoney.com/xg/pg/",
+    "fieldCount": 13
+  },
+  "stock_hk_hot_rank_detail_em": {
+    "name": "stock_hk_hot_rank_detail_em",
+    "displayName": "港股",
+    "description": "港股数据",
+    "dataSource": "https://guba.eastmoney.com/rank/stock?code=HK_00700",
+    "fieldCount": 3
+  },
+  "stock_zh_a_gbjg_em": {
+    "name": "stock_zh_a_gbjg_em",
+    "displayName": "股本结构",
+    "description": "股本结构数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html#/gbjg",
+    "fieldCount": 9
+  },
+  "stock_zh_a_new_em": {
+    "name": "stock_zh_a_new_em",
+    "displayName": "新股",
+    "description": "新股数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#newshares",
+    "fieldCount": 16
+  },
+  "stock_gdfx_free_holding_detail_em": {
+    "name": "stock_gdfx_free_holding_detail_em",
+    "displayName": "股东持股明细-十大流通股东",
+    "description": "股东持股明细-十大流通股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 11
+  },
+  "stock_financial_abstract_ths": {
+    "name": "stock_financial_abstract_ths",
+    "displayName": "关键指标-同花顺",
+    "description": "关键指标-同花顺",
+    "dataSource": "https://basic.10jqka.com.cn/new/000063/finance.html",
+    "fieldCount": 25
+  },
+  "stock_zt_pool_dtgc_em": {
+    "name": "stock_zt_pool_dtgc_em",
+    "displayName": "跌停股池-东方财富",
+    "description": "东方财富的跌停股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=zbgc",
+    "fieldCount": 15
+  },
+  "stock_hsgt_institution_statistics_em": {
+    "name": "stock_hsgt_institution_statistics_em",
+    "displayName": "机构排行",
+    "description": "东方财富网-数据中心-沪深港通持股-机构排行",
+    "dataSource": "http://data.eastmoney.com/hsgtcg/InstitutionStatistics.aspx",
+    "fieldCount": 6
+  },
+  "stock_hold_change_cninfo": {
+    "name": "stock_hold_change_cninfo",
+    "displayName": "股本变动",
+    "description": "股本变动数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 10
+  },
+  "stock_margin_detail_sse": {
+    "name": "stock_margin_detail_sse",
+    "displayName": "融资融券明细",
+    "description": "融资融券明细数据",
+    "dataSource": "http://www.sse.com.cn/market/othersdata/margin/detail/",
+    "fieldCount": 9
+  },
+  "stock_gpzy_pledge_ratio_detail_em": {
+    "name": "stock_gpzy_pledge_ratio_detail_em",
+    "displayName": "重要股东股权质押明细",
+    "description": "重要股东股权质押明细数据",
+    "dataSource": "https://data.eastmoney.com/gpzy/pledgeDetail.aspx",
+    "fieldCount": 12
+  },
+  "stock_yzxdr_em": {
+    "name": "stock_yzxdr_em",
+    "displayName": "一致行动人",
+    "description": "一致行动人数据",
+    "dataSource": "http://data.eastmoney.com/yzxdr/",
+    "fieldCount": 10
+  },
+  "stock_cash_flow_sheet_by_report_delisted_em": {
+    "name": "stock_cash_flow_sheet_by_report_delisted_em",
+    "displayName": "现金流量表-按报告期",
+    "description": "现金流量表-按报告期",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=SZ000013#/cwfx/xjllb",
+    "fieldCount": 1
+  },
+  "stock_rank_xstp_ths": {
+    "name": "stock_rank_xstp_ths",
+    "displayName": "向上突破",
+    "description": "向上突破数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/xstp/",
+    "fieldCount": 8
+  },
+  "stock_hk_hist_min_em": {
+    "name": "stock_hk_hist_min_em",
+    "displayName": "分时数据-东财",
+    "description": "分时数据-东财数据",
+    "dataSource": "http://quote.eastmoney.com/hk/00948.html",
+    "fieldCount": 19
+  },
+  "stock_profit_forecast_ths": {
+    "name": "stock_profit_forecast_ths",
+    "displayName": "盈利预测-同花顺",
+    "description": "盈利预测-同花顺数据",
+    "dataSource": "http://basic.10jqka.com.cn/new/600519/worth.html",
+    "fieldCount": 27
+  },
+  "stock_em_hsgt_north_net_flow_in": {
+    "name": "stock_em_hsgt_north_net_flow_in",
+    "displayName": "北向资金流入",
+    "description": "东方财富-数据中心-沪深港通-北向资金流入",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_zh_a_tick_tx": {
+    "name": "stock_zh_a_tick_tx",
+    "displayName": "腾讯财经",
+    "description": "腾讯财经数据",
+    "dataSource": "http://gu.qq.com/sz300494/gp/detail(示例)",
+    "fieldCount": 6
+  },
+  "stock_allotment_cninfo": {
+    "name": "stock_allotment_cninfo",
+    "displayName": "配股实施方案-巨潮资讯",
+    "description": "巨潮资讯的配股实施方案数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/dataBrowse",
+    "fieldCount": 56
+  },
+  "stock_hk_hot_rank_em": {
+    "name": "stock_hk_hot_rank_em",
+    "displayName": "人气榜-港股",
+    "description": "人气榜-港股数据",
+    "dataSource": "https://guba.eastmoney.com/rank/",
+    "fieldCount": 4
+  },
+  "stock_board_concept_hist_min_em": {
+    "name": "stock_board_concept_hist_min_em",
+    "displayName": "东方财富-指数-分时",
+    "description": "东方财富-指数-分时数据",
+    "dataSource": "http://quote.eastmoney.com/bk/90.BK0715.html",
+    "fieldCount": 19
+  },
+  "stock_zcfz_bj_em": {
+    "name": "stock_zcfz_bj_em",
+    "displayName": "资产负债表-北交所",
+    "description": "资产负债表-北交所数据",
+    "dataSource": "https://data.eastmoney.com/bbsj/202003/zcfz.html",
+    "fieldCount": 15
+  },
+  "stock_zygc_em": {
+    "name": "stock_zygc_em",
+    "displayName": "主营构成-东方财富",
+    "description": "东方财富的主营构成数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/Index?type=web&code=SH688041#",
+    "fieldCount": 11
+  },
+  "stock_market_pb_lg": {
+    "name": "stock_market_pb_lg",
+    "displayName": "主板市净率",
+    "description": "主板市净率数据",
+    "dataSource": "https://legulegu.com/stockdata/shanghaiPB",
+    "fieldCount": 5
+  },
+  "stock_gdfx_free_holding_analyse_em": {
+    "name": "stock_gdfx_free_holding_analyse_em",
+    "displayName": "股东持股分析-十大流通股东",
+    "description": "股东持股分析-十大流通股东",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 14
+  },
+  "stock_cjrl_em": {
+    "name": "stock_cjrl_em",
+    "displayName": "财经日历",
+    "description": "东方财富-数据中心-特色数据-财经日历",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_zh_a_gdhs_detail_em": {
+    "name": "stock_zh_a_gdhs_detail_em",
+    "displayName": "股东户数详情",
+    "description": "股东户数详情数据",
+    "dataSource": "https://data.eastmoney.com/gdhs/detail/000002.html",
+    "fieldCount": 14
+  },
+  "stock_esg_msci_sina": {
+    "name": "stock_esg_msci_sina",
+    "displayName": "MSCI",
+    "description": "MSCI数据",
+    "dataSource": "https://finance.sina.com.cn/esg/grade.shtml",
+    "fieldCount": 7
+  },
+  "stock_zh_b_spot": {
+    "name": "stock_zh_b_spot",
+    "displayName": "实时行情数据-新浪",
+    "description": "实时行情数据-新浪数据",
+    "dataSource": "http://vip.stock.finance.sina.com.cn/mkt/#hs_b",
+    "fieldCount": 12
+  },
+  "stock_bid_ask_em": {
+    "name": "stock_bid_ask_em",
+    "displayName": "行情报价",
+    "description": "行情报价数据",
+    "dataSource": "https://quote.eastmoney.com/sz000001.html",
+    "fieldCount": 2
+  },
+  "stock_hot_rank_detail_em": {
+    "name": "stock_hot_rank_detail_em",
+    "displayName": "A股",
+    "description": "A股数据",
+    "dataSource": "http://guba.eastmoney.com/rank/stock?code=000665",
+    "fieldCount": 5
+  },
+  "stock_profit_sheet_by_yearly_em": {
+    "name": "stock_profit_sheet_by_yearly_em",
+    "displayName": "利润表-按年度",
+    "description": "利润表-按年度数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_profit_sheet_by_quarterly_em": {
+    "name": "stock_profit_sheet_by_quarterly_em",
+    "displayName": "利润表-按单季度",
+    "description": "利润表-按单季度",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_dividend_cninfo": {
+    "name": "stock_dividend_cninfo",
+    "displayName": "历史分红",
+    "description": "历史分红数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/company?companyid=600009",
+    "fieldCount": 11
+  },
+  "stock_ipo_info": {
+    "name": "stock_ipo_info",
+    "displayName": "新股申购信息",
+    "description": "新浪财经-新股申购信息",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vISSUE_NewStock/stockid/600004.phtml",
+    "fieldCount": 2
+  },
+  "stock_hold_management_detail_em": {
+    "name": "stock_hold_management_detail_em",
+    "displayName": "董监高及相关人员持股变动明细",
+    "description": "董监高及相关人员持股变动明细数据",
+    "dataSource": "https://data.eastmoney.com/executive/list.html",
+    "fieldCount": 15
+  },
+  "stock_register_bj": {
+    "name": "stock_register_bj",
+    "displayName": "北交所",
+    "description": "北交所数据",
+    "dataSource": "https://data.eastmoney.com/xg/ipo/",
+    "fieldCount": 12
+  },
+  "stock_sy_jz_em": {
+    "name": "stock_sy_jz_em",
+    "displayName": "个股商誉减值明细",
+    "description": "个股商誉减值明细数据",
+    "dataSource": "https://data.eastmoney.com/sy/jzlist.html",
+    "fieldCount": 10
+  },
+  "stock_comment_detail_scrd_desire_daily_em": {
+    "name": "stock_comment_detail_scrd_desire_daily_em",
+    "displayName": "日度市场参与意愿",
+    "description": "日度市场参与意愿数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/stock/600000.html",
+    "fieldCount": 3
+  },
+  "stock_info_sh_name_code": {
+    "name": "stock_info_sh_name_code",
+    "displayName": "股票列表-上证",
+    "description": "股票列表-上证数据",
+    "dataSource": "https://www.sse.com.cn/assortment/stock/list/share/",
+    "fieldCount": 4
+  },
+  "stock_individual_info_em": {
+    "name": "stock_individual_info_em",
+    "displayName": "个股信息查询-东财",
+    "description": "个股信息查询-东财数据",
+    "dataSource": "http://quote.eastmoney.com/concept/sh603777.html?from=classic",
+    "fieldCount": 2
+  },
+  "stock_history_dividend_detail": {
+    "name": "stock_history_dividend_detail",
+    "displayName": "分红配股",
+    "description": "分红配股数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/300670.phtml",
+    "fieldCount": 22
+  },
+  "stock_cash_flow_sheet_by_quarterly_em": {
+    "name": "stock_cash_flow_sheet_by_quarterly_em",
+    "displayName": "现金流量表-按单季度",
+    "description": "现金流量表-按单季度",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/Index?type=web&code=sh600519#lrb-0",
+    "fieldCount": 1
+  },
+  "stock_gpgk_em": {
+    "name": "stock_gpgk_em",
+    "displayName": "股本变动",
+    "description": "股本变动",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_inner_trade_xq": {
+    "name": "stock_inner_trade_xq",
+    "displayName": "内部交易",
+    "description": "内部交易数据",
+    "dataSource": "https://xueqiu.com/hq/insider",
+    "fieldCount": 8
+  },
+  "stock_zh_scale_comparison_em": {
+    "name": "stock_zh_scale_comparison_em",
+    "displayName": "公司规模",
+    "description": "公司规模数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=000895&color=b#/thbj/gsgm",
+    "fieldCount": 10
+  },
+  "stock_hold_management_person_em": {
+    "name": "stock_hold_management_person_em",
+    "displayName": "人员增减持股变动明细",
+    "description": "人员增减持股变动明细数据",
+    "dataSource": "https://data.eastmoney.com/executive/personinfo.html?name=%E5%90%B4%E8%BF%9C&code=001308",
+    "fieldCount": 15
+  },
+  "stock_gpzy_profile_em": {
+    "name": "stock_gpzy_profile_em",
+    "displayName": "个股资讯-东财",
+    "description": "东方财富-数据中心-特色数据-个股资讯",
+    "dataSource": "https://data.eastmoney.com/gpzy/marketProfile.aspx",
+    "fieldCount": 8
+  },
+  "stock_financial_abstract": {
+    "name": "stock_financial_abstract",
+    "displayName": "关键指标-新浪",
+    "description": "新浪财经的关键财务指标数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vFD_FinanceSummary/stockid/600004.phtml",
+    "fieldCount": 3
+  },
+  "stock_ggcg_em": {
+    "name": "stock_ggcg_em",
+    "displayName": "股东增减持",
+    "description": "股东增减持数据",
+    "dataSource": "http://data.eastmoney.com/executive/gdzjc.html",
+    "fieldCount": 14
+  },
+  "stock_hold_management_detail_cninfo": {
+    "name": "stock_hold_management_detail_cninfo",
+    "displayName": "高管持股变动明细",
+    "description": "高管持股变动明细数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 16
+  },
+  "stock_gdfx_free_holding_statistics_em": {
+    "name": "stock_gdfx_free_holding_statistics_em",
+    "displayName": "股东持股统计-十大流通股东",
+    "description": "股东持股统计-十大流通股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 13
+  },
+  "stock_zh_ab_comparison_em": {
+    "name": "stock_zh_ab_comparison_em",
+    "displayName": "AB 股比价",
+    "description": "AB 股比价数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#ab_comparison",
+    "fieldCount": 8
+  },
+  "stock_lhb_yytj_sina": {
+    "name": "stock_lhb_yytj_sina",
+    "displayName": "龙虎榜营业上榜统计-新浪",
+    "description": "新浪的龙虎榜营业上榜统计数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vLHBData/kind/yytj/index.phtml",
+    "fieldCount": 6
+  },
+  "stock_changes_em": {
+    "name": "stock_changes_em",
+    "displayName": "盘口异动",
+    "description": "盘口异动数据",
+    "dataSource": "http://quote.eastmoney.com/changes/",
+    "fieldCount": 4
+  },
+  "stock_main_fund_flow": {
+    "name": "stock_main_fund_flow",
+    "displayName": "主力净流入排名",
+    "description": "主力净流入排名",
+    "dataSource": "https://data.eastmoney.com/zjlx/list.html",
+    "fieldCount": 13
+  },
+  "stock_zh_vote_baidu": {
+    "name": "stock_zh_vote_baidu",
+    "displayName": "涨跌投票",
+    "description": "涨跌投票数据",
+    "dataSource": "https://gushitong.baidu.com/index/ab-000001",
+    "fieldCount": 5
+  },
+  "stock_gdfx_holding_statistics_em": {
+    "name": "stock_gdfx_holding_statistics_em",
+    "displayName": "股东持股统计-十大股东",
+    "description": "股东持股统计-十大股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 13
+  },
+  "stock_zh_a_spot_em": {
+    "name": "stock_zh_a_spot_em",
+    "displayName": "沪深京A股实时行情-东财",
+    "description": "沪深京A股实时行情-东财数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#hs_a_board",
+    "fieldCount": 22
+  },
+  "stock_hsgt_hold_stock_em": {
+    "name": "stock_hsgt_hold_stock_em",
+    "displayName": "个股排行",
+    "description": "东方财富网-数据中心-沪深港通持股-个股排行",
+    "dataSource": "https://data.eastmoney.com/hsgtcg/list.html",
+    "fieldCount": 15
+  },
+  "stock_market_fund_flow": {
+    "name": "stock_market_fund_flow",
+    "displayName": "大盘资金流",
+    "description": "大盘资金流",
+    "dataSource": "https://data.eastmoney.com/zjlx/dpzjlx.html",
+    "fieldCount": 15
+  },
+  "stock_lhb_jgzz_sina": {
+    "name": "stock_lhb_jgzz_sina",
+    "displayName": "龙虎榜-机构席位追踪",
+    "description": "龙虎榜-机构席位追踪数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vLHBData/kind/jgzz/index.phtml",
+    "fieldCount": 6
+  },
+  "stock_zh_b_minute": {
+    "name": "stock_zh_b_minute",
+    "displayName": "分时数据",
+    "description": "分时数据数据",
+    "dataSource": "http://finance.sina.com.cn/realstock/company/sh900901/nc.shtml",
+    "fieldCount": 6
+  },
+  "stock_dzjy_sctj": {
+    "name": "stock_dzjy_sctj",
+    "displayName": "大宗交易-市场统计",
+    "description": "东方财富-数据中心-特色数据-大宗交易-市场统计",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_sctj.html",
+    "fieldCount": 9
+  },
+  "stock_jgdy_detail_em": {
+    "name": "stock_jgdy_detail_em",
+    "displayName": "机构调研明细",
+    "description": "东方财富-数据中心-特色数据-机构调研-明细",
+    "dataSource": "http://data.eastmoney.com/jgdy/xx.html",
+    "fieldCount": 12
+  },
+  "stock_a_congestion_lg": {
+    "name": "stock_a_congestion_lg",
+    "displayName": "大盘拥挤度",
+    "description": "A股大盘市场拥挤度指标数据",
+    "dataSource": "https://legulegu.com/stockdata/ashares-congestion",
+    "fieldCount": 3
+  },
+  "stock_zh_a_daily": {
+    "name": "stock_zh_a_daily",
+    "displayName": "历史行情数据-新浪",
+    "description": "历史行情数据-新浪数据",
+    "dataSource": "https://finance.sina.com.cn/realstock/company/sh600006/nc.shtml(示例)",
+    "fieldCount": 9
+  },
+  "stock_gdfx_free_holding_teamwork_em": {
+    "name": "stock_gdfx_free_holding_teamwork_em",
+    "displayName": "股东协同-十大流通股东",
+    "description": "股东协同-十大流通股东数据",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 5
+  },
+  "stock_zh_kcb_spot": {
+    "name": "stock_zh_kcb_spot",
+    "displayName": "实时行情数据",
+    "description": "实时行情数据数据",
+    "dataSource": "http://vip.stock.finance.sina.com.cn/mkt/#kcb",
+    "fieldCount": 18
+  },
+  "stock_restricted_release_detail_em": {
+    "name": "stock_restricted_release_detail_em",
+    "displayName": "限售股解禁详情",
+    "description": "限售股解禁详情数据",
+    "dataSource": "https://data.eastmoney.com/dxf/detail.html",
+    "fieldCount": 12
+  },
+  "stock_lh_yyb_capital": {
+    "name": "stock_lh_yyb_capital",
+    "displayName": "龙虎榜-营业部排行-资金实力最强",
+    "description": "龙虎榜-营业部排行-资金实力最强数据",
+    "dataSource": "https://data.10jqka.com.cn/market/longhu/",
+    "fieldCount": 6
+  },
+  "stock_index_pe_lg": {
+    "name": "stock_index_pe_lg",
+    "displayName": "指数市盈率",
+    "description": "指数市盈率数据",
+    "dataSource": "https://legulegu.com/stockdata/sz50-ttm-lyr",
+    "fieldCount": 8
+  },
+  "stock_yjyg_em": {
+    "name": "stock_yjyg_em",
+    "displayName": "业绩报表-业绩预告",
+    "description": "东方财富-数据中心-年报季报-业绩预告",
+    "dataSource": "https://data.eastmoney.com/bbsj/202003/yjyg.html",
+    "fieldCount": 11
+  },
+  "stock_institute_recommend_detail": {
+    "name": "stock_institute_recommend_detail",
+    "displayName": "股票评级记录",
+    "description": "股票评级记录数据",
+    "dataSource": "http://stock.finance.sina.com.cn/stock/go.php/vIR_StockSearch/key/sz000001.phtml",
+    "fieldCount": 7
+  },
+  "stock_qbzf_em": {
+    "name": "stock_qbzf_em",
+    "displayName": "增发",
+    "description": "增发数据",
+    "dataSource": "https://data.eastmoney.com/other/gkzf.html",
+    "fieldCount": 11
+  },
+  "market_quotes": {
+    "name": "market_quotes",
+    "displayName": "实时行情数据",
+    "description": "涵盖A股、港股、美股等市场的实时行情数据，包括最新价、涨跌幅、成交量、成交额等关键指标",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_cg_guarantee_cninfo": {
+    "name": "stock_cg_guarantee_cninfo",
+    "displayName": "对外担保",
+    "description": "对外担保数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 7
+  },
+  "stock_hot_deal_xq": {
+    "name": "stock_hot_deal_xq",
+    "displayName": "交易排行榜",
+    "description": "交易排行榜数据",
+    "dataSource": "https://xueqiu.com/hq",
+    "fieldCount": 4
+  },
+  "stock_financial_data": {
+    "name": "stock_financial_data",
+    "displayName": "财务数据",
+    "description": "上市公司财务数据，包括营业收入、净利润、ROE、负债率、每股收益等财务指标",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_financial_analysis_indicator": {
+    "name": "stock_financial_analysis_indicator",
+    "displayName": "财务指标",
+    "description": "财务指标",
+    "dataSource": "https://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/600004/ctrl/2019/displaytype/4.phtml",
+    "fieldCount": 86
+  },
+  "stock_jgdy_tj_em": {
+    "name": "stock_jgdy_tj_em",
+    "displayName": "机构调研统计",
+    "description": "东方财富-数据中心-特色数据-机构调研统计",
+    "dataSource": "http://data.eastmoney.com/jgdy/tj.html",
+    "fieldCount": 10
+  },
+  "stock_ipo_declare": {
+    "name": "stock_ipo_declare",
+    "displayName": "首发申报信息",
+    "description": "首发申报信息数据",
+    "dataSource": "https://data.eastmoney.com/xg/xg/sbqy.html",
+    "fieldCount": 7
+  },
+  "stock_hsgt_sh_hk_spot_em": {
+    "name": "stock_hsgt_sh_hk_spot_em",
+    "displayName": "沪深港通-港股通(沪>港)实时行情",
+    "description": "东方财富-数据中心-沪深港通-港股通(沪>港)实时行情",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#hk_sh_stocks",
+    "fieldCount": 11
+  },
+  "stock_gddh_em": {
+    "name": "stock_gddh_em",
+    "displayName": "股东大会",
+    "description": "股东大会",
+    "dataSource": "https://data.eastmoney.com/gddh/",
+    "fieldCount": 11
+  },
+  "stock_gpzy_distribute_statistics_company_em": {
+    "name": "stock_gpzy_distribute_statistics_company_em",
+    "displayName": "质押机构分布统计-证券公司",
+    "description": "质押机构分布统计-证券公司数据",
+    "dataSource": "https://data.eastmoney.com/gpzy/distributeStatistics.aspx",
+    "fieldCount": 8
+  },
+  "stock_hold_num_cninfo": {
+    "name": "stock_hold_num_cninfo",
+    "displayName": "股东人数及持股集中度",
+    "description": "股东人数及持股集中度数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 9
+  },
+  "stock_zh_a_hist_pre_min_em": {
+    "name": "stock_zh_a_hist_pre_min_em",
+    "displayName": "盘前数据",
+    "description": "盘前数据数据",
+    "dataSource": "https://quote.eastmoney.com/concept/sh603777.html",
+    "fieldCount": 8
+  },
+  "stock_gdfx_free_holding_change_em": {
+    "name": "stock_gdfx_free_holding_change_em",
+    "displayName": "股东持股变动统计-十大流通股东",
+    "description": "股东持股变动统计-十大流通股东",
+    "dataSource": "https://data.eastmoney.com/gdfx/HoldingAnalyse.html",
+    "fieldCount": 9
+  },
+  "stock_zh_dupont_comparison_em": {
+    "name": "stock_zh_dupont_comparison_em",
+    "displayName": "杜邦分析比较",
+    "description": "杜邦分析比较数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=000895&color=b#/thbj/dbfxbj",
+    "fieldCount": 19
+  },
+  "stock_dzjy_mrmx": {
+    "name": "stock_dzjy_mrmx",
+    "displayName": "大宗交易-每日明细",
+    "description": "东方财富-数据中心-特色数据-大宗交易-每日明细",
+    "dataSource": "https://data.eastmoney.com/dzjy/dzjy_mrmx.html",
+    "fieldCount": 40
+  },
+  "stock_financial_benefit_ths": {
+    "name": "stock_financial_benefit_ths",
+    "displayName": "利润表",
+    "description": "利润表",
+    "dataSource": "https://basic.10jqka.com.cn/new/000063/finance.html",
+    "fieldCount": 1
+  },
+  "stock_zt_pool_previous_em": {
+    "name": "stock_zt_pool_previous_em",
+    "displayName": "昨日涨停股池-东方财富",
+    "description": "东方财富的昨日涨停股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=zrzt",
+    "fieldCount": 15
+  },
+  "stock_hsgt_fund_flow_summary_em": {
+    "name": "stock_hsgt_fund_flow_summary_em",
+    "displayName": "沪深港通资金流向",
+    "description": "沪深港通资金流向数据",
+    "dataSource": "https://data.eastmoney.com/hsgt/index.html#lssj",
+    "fieldCount": 13
+  },
+  "stock_fhps_detail_ths": {
+    "name": "stock_fhps_detail_ths",
+    "displayName": "分红情况-同花顺",
+    "description": "分红情况-同花顺",
+    "dataSource": "https://basic.10jqka.com.cn/new/603444/bonus.html",
+    "fieldCount": 11
+  },
+  "stock_lrb_em": {
+    "name": "stock_lrb_em",
+    "displayName": "利润表-东方财富",
+    "description": "东方财富的利润表数据",
+    "dataSource": "http://data.eastmoney.com/bbsj/202003/lrb.html",
+    "fieldCount": 15
+  },
+  "stock_board_industry_summary_ths": {
+    "name": "stock_board_industry_summary_ths",
+    "displayName": "同花顺-同花顺行业一览表",
+    "description": "同花顺-同花顺行业一览表数据",
+    "dataSource": "https://q.10jqka.com.cn/thshy/",
+    "fieldCount": 12
+  },
+  "stock_a_all_pb": {
+    "name": "stock_a_all_pb",
+    "displayName": "A股等权重与中位数市净率",
+    "description": "A股整体市场的等权重与中位数市净率数据",
+    "dataSource": "https://www.legulegu.com/stockdata/all-pb",
+    "fieldCount": 8
+  },
+  "stock_repurchase_em": {
+    "name": "stock_repurchase_em",
+    "displayName": "股票回购数据",
+    "description": "股票回购数据数据",
+    "dataSource": "https://data.eastmoney.com/gphg/hglist.html",
+    "fieldCount": 18
+  },
+  "stock_rank_xxtp_ths": {
+    "name": "stock_rank_xxtp_ths",
+    "displayName": "向下突破",
+    "description": "向下突破数据",
+    "dataSource": "https://data.10jqka.com.cn/rank/xxtp/",
+    "fieldCount": 8
+  },
+  "stock_hold_control_cninfo": {
+    "name": "stock_hold_control_cninfo",
+    "displayName": "实际控制人持股变动",
+    "description": "实际控制人持股变动数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 6
+  },
+  "stock_lhb_yyb_detail_em": {
+    "name": "stock_lhb_yyb_detail_em",
+    "displayName": "营业部详情数据-东财",
+    "description": "营业部详情数据-东财数据",
+    "dataSource": "https://data.eastmoney.com/stock/lhb/yyb/10188715.html",
+    "fieldCount": 17
+  },
+  "stock_hot_follow_xq": {
+    "name": "stock_hot_follow_xq",
+    "displayName": "关注排行榜",
+    "description": "关注排行榜数据",
+    "dataSource": "https://xueqiu.com/hq",
+    "fieldCount": 4
+  },
+  "stock_value_em": {
+    "name": "stock_value_em",
+    "displayName": "个股估值",
+    "description": "个股估值数据",
+    "dataSource": "https://data.eastmoney.com/gzfx/detail/300766.html",
+    "fieldCount": 13
+  },
+  "stock_new_gh_cninfo": {
+    "name": "stock_new_gh_cninfo",
+    "displayName": "新股过会",
+    "description": "新股过会数据",
+    "dataSource": "https://webapi.cninfo.com.cn/#/xinguList",
+    "fieldCount": 5
+  },
+  "stock_zt_pool_strong_em": {
+    "name": "stock_zt_pool_strong_em",
+    "displayName": "强势股池-东方财富",
+    "description": "东方财富的强势股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=qsgc",
+    "fieldCount": 15
+  },
+  "stock_history_dividend": {
+    "name": "stock_history_dividend",
+    "displayName": "历史分红",
+    "description": "历史分红",
+    "dataSource": "http://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/lsfh/index.phtml",
+    "fieldCount": 7
+  },
+  "stock_hot_rank_em": {
+    "name": "stock_hot_rank_em",
+    "displayName": "人气榜-A股",
+    "description": "人气榜-A股数据",
+    "dataSource": "http://guba.eastmoney.com/rank/",
+    "fieldCount": 5
+  },
+  "stock_jgcyd_em": {
+    "name": "stock_jgcyd_em",
+    "displayName": "机构持仓地图",
+    "description": "东方财富-数据中心-特色数据-机构持仓地图",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_lhb_hyyyb_em": {
+    "name": "stock_lhb_hyyyb_em",
+    "displayName": "每日活跃营业部",
+    "description": "每日活跃营业部数据",
+    "dataSource": "https://data.eastmoney.com/stock/hyyyb.html",
+    "fieldCount": 8
+  },
+  "stock_notice_report": {
+    "name": "stock_notice_report",
+    "displayName": "沪深京A股公告",
+    "description": "沪深京A股公告",
+    "dataSource": "https://data.eastmoney.com/notices/hsa/5.html",
+    "fieldCount": 5
+  },
+  "stock_zh_ah_name": {
+    "name": "stock_zh_ah_name",
+    "displayName": "A+H股票字典",
+    "description": "A+H股票字典数据",
+    "dataSource": "https://stockapp.finance.qq.com/mstats/#mod=list&id=hk_ah&module=HK&type=AH",
+    "fieldCount": 1
+  },
+  "stock_concept_cons_futu": {
+    "name": "stock_concept_cons_futu",
+    "displayName": "富途牛牛-美股概念-成分股",
+    "description": "富途牛牛-美股概念-成分股数据",
+    "dataSource": "https://www.futunn.com/quote/sparks-us",
+    "fieldCount": 6
+  },
+  "stock_hot_keyword_em": {
+    "name": "stock_hot_keyword_em",
+    "displayName": "热门关键词",
+    "description": "热门关键词数据",
+    "dataSource": "http://guba.eastmoney.com/rank/stock?code=000665",
+    "fieldCount": 4
+  },
+  "stock_board_change_em": {
+    "name": "stock_board_change_em",
+    "displayName": "板块异动详情",
+    "description": "板块异动详情数据",
+    "dataSource": "https://quote.eastmoney.com/changes/",
+    "fieldCount": 6
+  },
+  "stock_info_sh_delist": {
+    "name": "stock_info_sh_delist",
+    "displayName": "暂停-终止上市-上证",
+    "description": "暂停-终止上市-上证数据",
+    "dataSource": "https://www.sse.com.cn/assortment/stock/list/delisting/",
+    "fieldCount": 4
+  },
+  "stock_hk_scale_comparison_em": {
+    "name": "stock_hk_scale_comparison_em",
+    "displayName": "规模对比",
+    "description": "规模对比数据",
+    "dataSource": "https://emweb.securities.eastmoney.com/PC_HKF10/pages/home/index.html?code=03900&type=web&color=w#/IndustryComparison",
+    "fieldCount": 10
+  },
+  "stock_daily": {
+    "name": "stock_daily",
+    "displayName": "日线行情",
+    "description": "股票的日线历史行情数据，包括开盘价、最高价、最低价、收盘价、成交量等完整K线数据",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_buffett_index_lg": {
+    "name": "stock_buffett_index_lg",
+    "displayName": "巴菲特指标",
+    "description": "巴菲特指标数据",
+    "dataSource": "https://legulegu.com/stockdata/marketcap-gdp",
+    "fieldCount": 6
+  },
+  "stock_hot_rank_detail_realtime_em": {
+    "name": "stock_hot_rank_detail_realtime_em",
+    "displayName": "A股",
+    "description": "A股数据",
+    "dataSource": "http://guba.eastmoney.com/rank/stock?code=000665",
+    "fieldCount": 2
+  },
+  "stock_register_cyb": {
+    "name": "stock_register_cyb",
+    "displayName": "创业板",
+    "description": "创业板数据",
+    "dataSource": "https://data.eastmoney.com/xg/ipo/",
+    "fieldCount": 12
+  },
+  "stock_xgsr_ths": {
+    "name": "stock_xgsr_ths",
+    "displayName": "新股上市首日",
+    "description": "新股上市首日数据",
+    "dataSource": "https://data.10jqka.com.cn/ipo/xgsr/",
+    "fieldCount": 12
+  },
+  "stock_balance_sheet_by_report_delisted_em": {
+    "name": "stock_balance_sheet_by_report_delisted_em",
+    "displayName": "资产负债表-按报告期",
+    "description": "资产负债表-按报告期",
+    "dataSource": "https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=SZ000013#/cwfx/zcfzb",
+    "fieldCount": 1
+  },
+  "stock_yjfp_em": {
+    "name": "stock_yjfp_em",
+    "displayName": "业绩报表-业绩快报",
+    "description": "东方财富-数据中心-年报季报-业绩快报",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_sgt_settlement_exchange_rate_sse": {
+    "name": "stock_sgt_settlement_exchange_rate_sse",
+    "displayName": "结算汇率-沪港通",
+    "description": "结算汇率-沪港通数据",
+    "dataSource": "http://www.sse.com.cn/services/hkexsc/disclo/ratios",
+    "fieldCount": 4
+  },
+  "stock_szse_summary": {
+    "name": "stock_szse_summary",
+    "displayName": "证券类别统计",
+    "description": "证券类别统计数据",
+    "dataSource": "http://www.szse.cn/market/overview/index.html",
+    "fieldCount": 5
+  },
+  "stock_individual_fund_flow_rank": {
+    "name": "stock_individual_fund_flow_rank",
+    "displayName": "个股资金流排名",
+    "description": "个股资金流排名",
+    "dataSource": "http://data.eastmoney.com/zjlx/detail.html",
+    "fieldCount": 55
+  },
+  "stock_bj_a_spot_em": {
+    "name": "stock_bj_a_spot_em",
+    "displayName": "京 A 股",
+    "description": "京 A 股数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#bj_a_board",
+    "fieldCount": 22
+  },
+  "stock_margin_detail_szse": {
+    "name": "stock_margin_detail_szse",
+    "displayName": "融资融券明细",
+    "description": "融资融券明细数据",
+    "dataSource": "https://www.szse.cn/disclosure/margin/margin/index.html",
+    "fieldCount": 8
+  },
+  "news_trade_notify_suspend_baidu": {
+    "name": "news_trade_notify_suspend_baidu",
+    "displayName": "停复牌-百度",
+    "description": "百度财经的停复牌数据",
+    "dataSource": "https://gushitong.baidu.com/calendar",
+    "fieldCount": 6
+  },
+  "stock_em_hsgt_south_net_flow_in": {
+    "name": "stock_em_hsgt_south_net_flow_in",
+    "displayName": "南向资金流入",
+    "description": "东方财富-数据中心-沪深港通-南向资金流入",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  },
+  "stock_comment_detail_zlkp_jgcyd_em": {
+    "name": "stock_comment_detail_zlkp_jgcyd_em",
+    "displayName": "机构参与度",
+    "description": "机构参与度数据",
+    "dataSource": "https://data.eastmoney.com/stockcomment/stock/600000.html",
+    "fieldCount": 2
+  },
+  "stock_xjll_em": {
+    "name": "stock_xjll_em",
+    "displayName": "现金流量表",
+    "description": "现金流量表数据",
+    "dataSource": "http://data.eastmoney.com/bbsj/202003/xjll.html",
+    "fieldCount": 12
+  },
+  "stock_szse_sector_summary": {
+    "name": "stock_szse_sector_summary",
+    "displayName": "股票行业成交",
+    "description": "股票行业成交数据",
+    "dataSource": "http://docs.static.szse.cn/www/market/periodical/month/W020220511355248518608.html",
+    "fieldCount": 7
+  },
+  "stock_lhb_detail_em": {
+    "name": "stock_lhb_detail_em",
+    "displayName": "龙虎榜详情",
+    "description": "龙虎榜详情数据",
+    "dataSource": "https://data.eastmoney.com/stock/tradedetail.html",
+    "fieldCount": 20
+  },
+  "stock_sy_hy_em": {
+    "name": "stock_sy_hy_em",
+    "displayName": "行业商誉",
+    "description": "行业商誉数据",
+    "dataSource": "https://data.eastmoney.com/sy/hylist.html",
+    "fieldCount": 5
+  },
+  "stock_staq_net_stop": {
+    "name": "stock_staq_net_stop",
+    "displayName": "两网及退市",
+    "description": "两网及退市数据",
+    "dataSource": "https://quote.eastmoney.com/center/gridlist.html#staq_net_board",
+    "fieldCount": 2
+  },
+  "stock_intraday_sina": {
+    "name": "stock_intraday_sina",
+    "displayName": "日内分时数据-新浪",
+    "description": "日内分时数据-新浪数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/quotes_service/view/cn_bill.php?symbol=sz000001",
+    "fieldCount": 7
+  },
+  "stock_financial_report_sina": {
+    "name": "stock_financial_report_sina",
+    "displayName": "财务报表-新浪",
+    "description": "财务报表-新浪",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/corp/go.php/vFD_FinanceSummary/stockid/600600/displaytype/4.phtml?source=fzb&qq-pf-to=pcqq.group",
+    "fieldCount": 5
+  },
+  "stock_lhb_traderstatistic_em": {
+    "name": "stock_lhb_traderstatistic_em",
+    "displayName": "营业部统计",
+    "description": "营业部统计数据",
+    "dataSource": "https://data.eastmoney.com/stock/traderstatistic.html",
+    "fieldCount": 7
+  },
+  "stock_hk_hot_rank_detail_realtime_em": {
+    "name": "stock_hk_hot_rank_detail_realtime_em",
+    "displayName": "港股",
+    "description": "港股数据",
+    "dataSource": "https://guba.eastmoney.com/rank/stock?code=HK_00700",
+    "fieldCount": 2
+  },
+  "stock_fund_flow_big_deal": {
+    "name": "stock_fund_flow_big_deal",
+    "displayName": "大单追踪",
+    "description": "大单追踪",
+    "dataSource": "https://data.10jqka.com.cn/funds/ddzz",
+    "fieldCount": 9
+  },
+  "stock_industry_clf_hist_sw": {
+    "name": "stock_industry_clf_hist_sw",
+    "displayName": "申万个股行业分类变动历史",
+    "description": "申万个股行业分类变动历史数据",
+    "dataSource": "http://www.swhyresearch.com/institute_sw/allIndex/downloadCenter/industryType",
+    "fieldCount": 4
+  },
+  "stock_individual_fund_flow": {
+    "name": "stock_individual_fund_flow",
+    "displayName": "个股资金流",
+    "description": "个股资金流",
+    "dataSource": "https://data.eastmoney.com/zjlx/detail.html",
+    "fieldCount": 13
+  },
+  "stock_zt_pool_em": {
+    "name": "stock_zt_pool_em",
+    "displayName": "涨停股池-东方财富",
+    "description": "东方财富的涨停股池数据",
+    "dataSource": "https://quote.eastmoney.com/ztb/detail#type=ztgc",
+    "fieldCount": 15
+  },
+  "stock_tfp_em": {
+    "name": "stock_tfp_em",
+    "displayName": "股票停复牌信息",
+    "description": "东方财富数据中心特色数据的股票停复牌信息",
+    "dataSource": "https://data.eastmoney.com/tfpxx/",
+    "fieldCount": 8
+  },
+  "stock_new_a_spot_em": {
+    "name": "stock_new_a_spot_em",
+    "displayName": "新股",
+    "description": "新股数据",
+    "dataSource": "http://quote.eastmoney.com/center/gridlist.html#newshares",
+    "fieldCount": 23
+  },
+  "stock_lhb_ggtj_sina": {
+    "name": "stock_lhb_ggtj_sina",
+    "displayName": "龙虎榜-个股上榜统计",
+    "description": "龙虎榜-个股上榜统计数据",
+    "dataSource": "https://vip.stock.finance.sina.com.cn/q/go.php/vLHBData/kind/ggtj/index.phtml",
+    "fieldCount": 7
+  },
+  "stock_institute_hold_detail": {
+    "name": "stock_institute_hold_detail",
+    "displayName": "机构持股详情",
+    "description": "机构持股详情数据",
+    "dataSource": "http://vip.stock.finance.sina.com.cn/q/go.php/vComStockHold/kind/jgcg/index.phtml",
+    "fieldCount": 12
+  },
+  "stock_industry_pe_ratio_cninfo": {
+    "name": "stock_industry_pe_ratio_cninfo",
+    "displayName": "行业市盈率",
+    "description": "行业市盈率数据",
+    "dataSource": "http://webapi.cninfo.com.cn/#/thematicStatistics",
+    "fieldCount": 11
+  },
+  "stock_ebs_lg": {
+    "name": "stock_ebs_lg",
+    "displayName": "股债利差",
+    "description": "股债利差数据",
+    "dataSource": "https://legulegu.com/stockdata/equity-bond-spread",
+    "fieldCount": 4
+  },
+  "stock_weekly": {
+    "name": "stock_weekly",
+    "displayName": "周线行情",
+    "description": "股票的周线历史行情数据，适用于中长期投资分析",
+    "dataSource": "暂无",
+    "fieldCount": 0
+  }
+};

@@ -3,9 +3,11 @@
 负责从akshare获取期权数据并存储到MongoDB
 """
 import logging
+import io
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import pandas as pd
+import numpy as np
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import UpdateOne
 import akshare as ak
@@ -2315,8 +2317,163 @@ class OptionDataService:
         return result.deleted_count
 
 
+    async def import_data_from_file(self, collection_name: str, content: bytes, filename: str) -> Dict[str, Any]:
+        """从文件导入任意期权集合数据（通用实现，按集合名直接入库）"""
+        try:
+            # 支持 CSV 和 Excel
+            if filename.endswith(".csv"):
+                df = pd.read_csv(io.BytesIO(content))
+            else:
+                df = pd.read_excel(io.BytesIO(content))
+
+            if df.empty:
+                return {"imported_count": 0, "message": "文件为空"}
+
+            # 基础清洗：处理 inf / NaN
+            df = df.replace([np.inf, -np.inf], None)
+            df = df.where(pd.notna(df), None)
+
+            # 元数据字段
+            df["updated_at"] = datetime.now().isoformat()
+            df["_source"] = "file_import"
+            df["_file_name"] = filename
+
+            records = df.to_dict("records")
+            if not records:
+                return {"imported_count": 0, "message": "没有有效数据"}
+
+            collection = self.db.get_collection(collection_name)
+
+            operations: List[UpdateOne] = []
+            for record in records:
+                # 使用除元数据字段外的整行作为去重键
+                filter_doc = {
+                    k: v
+                    for k, v in record.items()
+                    if k not in ("updated_at", "_source", "_file_name") and v is not None
+                }
+
+                # 如果整行几乎为空，则直接插入一条新记录
+                if not filter_doc:
+                    operations.append(UpdateOne({}, {"$set": record}, upsert=True))
+                else:
+                    operations.append(
+                        UpdateOne(filter_doc, {"$set": record}, upsert=True)
+                    )
+
+            imported_count = 0
+            if operations:
+                result = await collection.bulk_write(operations, ordered=False)
+                imported_count = (result.upserted_count or 0) + (result.modified_count or 0)
+
+            return {"imported_count": imported_count, "message": f"成功导入 {imported_count} 条数据"}
+        except Exception as e:
+            logger.error(f"导入期权文件失败: {e}", exc_info=True)
+            raise
 
 
+    async def sync_data_from_remote(self, collection_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        """从远程 MongoDB 同步任意期权集合数据（通用实现）"""
+        from motor.motor_asyncio import AsyncIOMotorClient
 
+        try:
+            host = config.get("host")
+            port = int(config.get("port", 27017))
+            username = config.get("username")
+            password = config.get("password")
+            auth_source = config.get("authSource", "admin")
+            remote_db_name = config.get("database", "tradingagents")
+            remote_col_name = config.get("collection", collection_name)
+            batch_size = int(config.get("batch_size", 1000))
 
+            if not host:
+                raise ValueError("远程主机地址不能为空")
+
+            # 构造客户端
+            if "mongodb://" in host:
+                client = AsyncIOMotorClient(host)
+            else:
+                if username and password:
+                    uri = f"mongodb://{username}:{password}@{host}:{port}/{auth_source}"
+                else:
+                    uri = f"mongodb://{host}:{port}"
+                client = AsyncIOMotorClient(uri)
+
+            # 选择数据库
+            try:
+                if "mongodb://" in host and "/" in host.split("://")[1]:
+                    remote_db = client.get_default_database()
+                else:
+                    remote_db = client[remote_db_name]
+            except Exception:
+                remote_db = client[remote_db_name]
+
+            remote_col = remote_db[remote_col_name]
+            local_col = self.db.get_collection(collection_name)
+
+            cursor = remote_col.find({})
+
+            batch_docs: List[Dict[str, Any]] = []
+            total_synced = 0
+            remote_total = 0
+
+            async for doc in cursor:
+                remote_total += 1
+                remote_id = str(doc.get("_id")) if "_id" in doc else None
+                if "_id" in doc:
+                    del doc["_id"]
+
+                doc["remote_id"] = remote_id
+                doc["updated_at"] = datetime.now().isoformat()
+                doc["_source"] = "remote_sync"
+
+                batch_docs.append(doc)
+
+                if len(batch_docs) >= batch_size:
+                    ops: List[UpdateOne] = []
+                    for d in batch_docs:
+                        if d.get("remote_id"):
+                            filter_query = {"remote_id": d["remote_id"]}
+                        else:
+                            filter_query = {
+                                k: v
+                                for k, v in d.items()
+                                if k not in ("updated_at", "_source") and v is not None
+                            }
+                        ops.append(UpdateOne(filter_query, {"$set": d}, upsert=True))
+
+                    if ops:
+                        result = await local_col.bulk_write(ops, ordered=False)
+                        total_synced += (result.upserted_count or 0) + (result.modified_count or 0)
+
+                    batch_docs = []
+
+            # 处理最后一批
+            if batch_docs:
+                ops = []
+                for d in batch_docs:
+                    if d.get("remote_id"):
+                        filter_query = {"remote_id": d["remote_id"]}
+                    else:
+                        filter_query = {
+                            k: v
+                            for k, v in d.items()
+                            if k not in ("updated_at", "_source") and v is not None
+                        }
+                    ops.append(UpdateOne(filter_query, {"$set": d}, upsert=True))
+
+                if ops:
+                    result = await local_col.bulk_write(ops, ordered=False)
+                    total_synced += (result.upserted_count or 0) + (result.modified_count or 0)
+
+            client.close()
+
+            return {
+                "synced_count": total_synced,
+                "remote_total": remote_total,
+                "message": f"成功同步 {total_synced} 条数据",
+            }
+        except Exception as e:
+            logger.error(f"远程同步期权数据失败: {e}", exc_info=True)
+            raise
 

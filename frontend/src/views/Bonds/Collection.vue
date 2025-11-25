@@ -10,8 +10,20 @@
           <p class="page-description">{{ collectionInfo?.description || '' }}</p>
         </div>
         <div class="header-actions">
+          <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
           <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
-          <el-button :icon="Download" type="primary" @click="showRefreshDialog" :loading="refreshing">更新数据</el-button>
+          <el-dropdown @command="handleUpdateCommand">
+            <el-button :icon="Download" type="primary" :loading="refreshing || importing || remoteSyncing">
+              更新数据<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="api">API更新</el-dropdown-item>
+                <el-dropdown-item command="file">文件导入</el-dropdown-item>
+                <el-dropdown-item command="sync">远程同步</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
         </div>
       </div>
@@ -19,7 +31,7 @@
 
     <div class="content">
       <!-- 统计数据卡片：优化版 -->
-      <el-card shadow="hover" class="stats-card" v-if="stats">
+      <el-card shadow="hover" class="stats-card" v-if="false && stats">
         <!-- ... (stats content remains same) ... -->
         <template #header>
           <div class="card-header">
@@ -206,10 +218,10 @@
       </el-card>
     </div>
 
-    <!-- 更新数据对话框 -->
+    <!-- API更新对话框 -->
     <el-dialog
-      v-model="refreshDialogVisible"
-      title="更新数据"
+      v-model="apiUpdateDialogVisible"
+      title="API更新"
       width="500px"
       :close-on-click-modal="false"
     >
@@ -286,114 +298,6 @@
           />
         </el-form-item>
 
-        <el-form-item v-if="collectionName === 'bond_info_cm' || collectionName === 'bond_basic_info'" label="文件导入">
-          <div style="width: 100%">
-            <el-upload
-              ref="uploadRef"
-              :auto-upload="false"
-              multiple
-              :on-change="handleImportFileChange"
-              :on-remove="handleImportFileRemove"
-              accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              drag
-            >
-              <div class="el-upload__text">
-                拖拽文件到此处或<em>点击选择文件</em>
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">
-                  <span v-if="collectionName === 'bond_info_cm'">支持 CSV 或 Excel 文件，列结构需与债券信息查询结果一致</span>
-                  <span v-else-if="collectionName === 'bond_basic_info'">支持 CSV 或 Excel 文件，列结构需包含债券代码、债券简称等字段</span>
-                </div>
-              </template>
-            </el-upload>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleImportFile"
-              :loading="importing"
-              :disabled="!importFiles.length || importing"
-            >
-              导入文件
-            </el-button>
-          </div>
-        </el-form-item>
-
-        <el-form-item v-if="collectionName === 'bond_info_cm' || collectionName === 'bond_basic_info'" label="远程同步">
-          <div style="width: 100%">
-            <el-row :gutter="8">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncHost"
-                  placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
-                />
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-                  <el-option label="MongoDB" value="mongodb" />
-                </el-select>
-              </el-col>
-              <el-col :span="12" style="margin-top: 8px;">
-                <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-                  <el-option label="1000" :value="1000" />
-                  <el-option label="2000" :value="2000" />
-                  <el-option label="5000" :value="5000" />
-                  <el-option label="10000" :value="10000" />
-                </el-select>
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncCollection"
-                  :placeholder="collectionName === 'bond_info_cm' ? '远程集合名称，默认 bond_info_cm' : '远程集合名称，默认 bond_basic_info'"
-                />
-              </el-col>
-              <el-col :span="12">
-                <el-input
-                  v-model="remoteSyncUsername"
-                  placeholder="远程用户名（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncAuthSource"
-                  placeholder="认证库（authSource），通常为创建该用户时所在的数据库，例如 admin 或 tradingagents"
-                />
-              </el-col>
-            </el-row>
-            <el-row :gutter="8" style="margin-top: 8px;">
-              <el-col :span="24">
-                <el-input
-                  v-model="remoteSyncPassword"
-                  type="password"
-                  show-password
-                  placeholder="远程密码（可选）"
-                />
-              </el-col>
-            </el-row>
-            <el-button
-              style="margin-top: 8px;"
-              size="small"
-              type="primary"
-              @click="handleRemoteSync"
-              :loading="remoteSyncing"
-              :disabled="!remoteSyncHost || remoteSyncing"
-            >
-              远程同步
-            </el-button>
-            <div
-              v-if="remoteSyncStats"
-              style="margin-top: 4px; font-size: 12px; color: #606266;"
-            >
-              最近一次同步：远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新
-              {{ remoteSyncStats.synced }} 条
-            </div>
-          </div>
-        </el-form-item>
         
         <el-form-item v-if="needsDateRange" label="结束日期">
           <el-date-picker
@@ -729,7 +633,7 @@
       </el-form>
       
       <template #footer>
-        <el-button @click="cancelRefresh" :disabled="refreshing && progressPercentage < 10">
+        <el-button @click="apiUpdateDialogVisible = false" :disabled="refreshing && progressPercentage < 10">
           {{ refreshing ? '取消' : '关闭' }}
         </el-button>
         <el-button 
@@ -742,13 +646,165 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 文件导入对话框 -->
+    <el-dialog
+      v-model="uploadDialogVisible"
+      title="文件导入"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-upload
+        ref="uploadRef"
+        :auto-upload="false"
+        multiple
+        :on-change="handleImportFileChange"
+        :on-remove="handleImportFileRemove"
+        accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        drag
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">
+          拖拽文件到此处或<em>点击选择文件</em>
+        </div>
+        <template #tip>
+          <div class="el-upload__tip">
+            <span v-if="collectionName === 'bond_info_cm'">支持 CSV 或 Excel 文件，列结构需与债券信息查询结果一致</span>
+            <span v-else-if="collectionName === 'bond_basic_info'">支持 CSV 或 Excel 文件，列结构需包含债券代码、债券简称等字段</span>
+            <span v-else>支持 CSV 或 Excel 文件</span>
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleImportFile"
+          :loading="importing"
+          :disabled="!importFiles.length || importing"
+        >
+          导入
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 远程同步对话框 -->
+    <el-dialog
+      v-model="syncDialogVisible"
+      title="远程同步"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="120px">
+        <el-form-item label="远程主机">
+          <el-input
+            v-model="remoteSyncHost"
+            placeholder="IP地址或URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
+          />
+        </el-form-item>
+        <el-form-item label="数据库类型">
+          <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
+            <el-option label="MongoDB" value="mongodb" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="批次大小">
+          <el-select v-model="remoteSyncBatchSize" style="width: 100%">
+            <el-option label="1000" :value="1000" />
+            <el-option label="2000" :value="2000" />
+            <el-option label="5000" :value="5000" />
+            <el-option label="10000" :value="10000" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="远程集合名">
+          <el-input
+            v-model="remoteSyncCollection"
+            :placeholder="`默认使用当前集合名: ${collectionName}`"
+          />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input
+            v-model="remoteSyncUsername"
+            placeholder="可选"
+          />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="remoteSyncPassword"
+            type="password"
+            placeholder="可选"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="认证数据库">
+          <el-input
+            v-model="remoteSyncAuthSource"
+            placeholder="通常为 admin"
+          />
+        </el-form-item>
+      </el-form>
+
+      <el-alert
+        v-if="remoteSyncStats"
+        :title="`同步完成: ${remoteSyncStats.synced}/${remoteSyncStats.remote_total} 条`"
+        type="success"
+        style="margin-top: 16px"
+        show-icon
+      />
+
+      <template #footer>
+        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="handleRemoteSync"
+          :loading="remoteSyncing"
+        >
+          开始同步
+        </el-button>
+      </template>
+    </el-dialog>
+    <!-- 数据概览对话框 -->
+    <el-dialog
+      v-model="overviewDialogVisible"
+      title="数据概览"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 10px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="集合名称" label-align="right">
+            {{ collectionInfo?.name || collectionName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="显示名称" label-align="right">
+            {{ collectionInfo?.display_name || collectionName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据总数" label-align="right">
+            {{ formatNumber(stats?.total_count) }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="字段数量" label-align="right">
+            {{ fields.length }} 个
+          </el-descriptions-item>
+          <el-descriptions-item label="最后更新" label-align="right" :span="2">
+            {{ stats?.latest_date || stats?.earliest_date || '暂无数据' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="数据来源" label-align="right" :span="2">
+            <span>{{ collectionInfo?.source || '暂无' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" label-align="right" :span="2">
+            {{ collectionInfo?.description || `数据集合：${collectionName}` }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="overviewDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Box, Refresh, Search, Document, Calendar, Download, Delete, QuestionFilled } from '@element-plus/icons-vue'
+import { Box, Refresh, Search, Document, Calendar, Download, Delete, QuestionFilled, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -763,6 +819,12 @@ const route = useRoute()
 const router = useRouter()
 
 const collectionName = computed(() => route.params.collectionName as string)
+
+const overviewDialogVisible = ref(false)
+
+const showOverviewDialog = () => {
+  overviewDialogVisible.value = true
+}
 
 // 计算数据时间跨度
 const dataDuration = computed(() => {
@@ -848,7 +910,9 @@ const bondTypePieOption = ref<any>(null)
 const gradePieOption = ref<any>(null)
 
 // 更新数据相关
-const refreshDialogVisible = ref(false)
+const apiUpdateDialogVisible = ref(false)
+const uploadDialogVisible = ref(false)
+const syncDialogVisible = ref(false)
 const refreshing = ref(false)
 const refreshStartDate = ref('')
 const refreshEndDate = ref('')
@@ -994,7 +1058,7 @@ const handleImportFile = async () => {
       uploadRef.value.clearFiles()
     }
     importFiles.value = []
-    refreshDialogVisible.value = false
+    uploadDialogVisible.value = false
   } catch (e: any) {
     let msg = '导入失败'
     if (e?.response?.data?.detail) {
@@ -1192,6 +1256,16 @@ const loadData = async () => {
     loading.value = false
   }
 }
+const formatNumber = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) {
+    return '0'
+  }
+  const n = Number(value)
+  if (Number.isNaN(n)) {
+    return String(value)
+  }
+  return n.toLocaleString()
+}
 
 // 格式化值
 const formatValue = (value: any): string => {
@@ -1290,8 +1364,8 @@ const loadIssuanceStats = async () => {
   }
 }
 
-// 显示更新对话框
-const showRefreshDialog = () => {
+// 显示API更新对话框
+const showApiUpdateDialog = () => {
   // 设置默认日期范围（最近30天）
   const today = new Date()
   const thirtyDaysAgo = new Date()
@@ -1300,7 +1374,18 @@ const showRefreshDialog = () => {
   refreshEndDate.value = today.toISOString().split('T')[0]
   refreshStartDate.value = thirtyDaysAgo.toISOString().split('T')[0]
   
-  refreshDialogVisible.value = true
+  apiUpdateDialogVisible.value = true
+}
+
+// 处理更新数据下拉菜单命令
+const handleUpdateCommand = (command: string) => {
+  if (command === 'api') {
+    showApiUpdateDialog()
+  } else if (command === 'file') {
+    uploadDialogVisible.value = true
+  } else if (command === 'sync') {
+    syncDialogVisible.value = true
+  }
 }
 
 // 更新数据
@@ -1408,7 +1493,7 @@ const pollTaskStatus = async () => {
           
           // 延迟关闭对话框
           setTimeout(() => {
-            refreshDialogVisible.value = false
+            apiUpdateDialogVisible.value = false
             refreshing.value = false
             progressPercentage.value = 0
             progressStatus.value = ''
@@ -1444,7 +1529,7 @@ const cancelRefresh = () => {
     clearInterval(progressTimer)
     progressTimer = null
   }
-  refreshDialogVisible.value = false
+  apiUpdateDialogVisible.value = false
   refreshing.value = false
   progressPercentage.value = 0
   progressStatus.value = ''
@@ -1560,7 +1645,7 @@ const refreshAllYears = async () => {
     
     // 关闭对话框
     setTimeout(() => {
-      refreshDialogVisible.value = false
+      apiUpdateDialogVisible.value = false
       batchRefreshing.value = false
       batchProgress.value = { completed: 0, total: 0, failed: 0 }
       batchTasks.value = []

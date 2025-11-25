@@ -810,6 +810,14 @@ class FundDataService:
                         await self.save_fund_money_fund_daily_data(df)
                     elif collection_name == 'fund_money_fund_info_em':
                         logger.warning("货币型基金历史行情需要特殊处理")
+                    elif collection_name == 'fund_financial_fund_daily_em':
+                        await self.save_fund_financial_fund_daily_data(df)
+                    elif collection_name == 'fund_financial_fund_info_em':
+                        logger.warning("理财型基金历史行情需要特殊处理")
+                    elif collection_name == 'fund_etf_fund_daily_em':
+                        await self.save_fund_etf_fund_daily_data(df)
+                    elif collection_name == 'fund_etf_fund_info_em':
+                        logger.warning("场内交易基金历史行情需要特殊处理")
                     elif collection_name == 'fund_hk_hist_em':
                         await self.save_fund_hk_hist_em_data(df)
                     elif collection_name == 'fund_cf_em':
@@ -937,6 +945,14 @@ class FundDataService:
                     await self.save_fund_money_fund_daily_data(df)
                 elif collection_name == 'fund_money_fund_info_em':
                     logger.warning("货币型基金历史行情需要特殊处理")
+                elif collection_name == 'fund_financial_fund_daily_em':
+                    await self.save_fund_financial_fund_daily_data(df)
+                elif collection_name == 'fund_financial_fund_info_em':
+                    logger.warning("理财型基金历史行情需要特殊处理")
+                elif collection_name == 'fund_etf_fund_daily_em':
+                    await self.save_fund_etf_fund_daily_data(df)
+                elif collection_name == 'fund_etf_fund_info_em':
+                    logger.warning("场内交易基金历史行情需要特殊处理")
                 elif collection_name == 'fund_hk_hist_em':
                     await self.save_fund_hk_hist_em_data(df)
                 elif collection_name == 'fund_cf_em':
@@ -3372,9 +3388,11 @@ class FundDataService:
     ) -> int:
         """合并单位净值走势和累计净值走势，保存到数据库
         
+        只保留5个字段：日期、基金代码、单位净值、日增长率、累计净值
+        
         Args:
-            df_unit: 单位净值走势DataFrame
-            df_acc: 累计净值走势DataFrame
+            df_unit: 单位净值走势DataFrame（包含：净值日期、单位净值、日增长率）
+            df_acc: 累计净值走势DataFrame（包含：净值日期、累计净值）
             fund_code: 基金代码
             progress_callback: 进度回调函数
             
@@ -3389,22 +3407,39 @@ class FundDataService:
             df_unit = df_unit.copy()
             df_acc = df_acc.copy()
             
+            # 调试日志：显示原始数据结构
+            logger.info(f"单位净值走势字段: {df_unit.columns.tolist()}, 数据量: {len(df_unit)}")
+            logger.info(f"累计净值走势字段: {df_acc.columns.tolist()}, 数据量: {len(df_acc)}")
+            
             # 确保两个DataFrame都有日期字段
             if "净值日期" not in df_unit.columns or "净值日期" not in df_acc.columns:
                 logger.error(f"数据缺少净值日期字段: df_unit columns={df_unit.columns.tolist()}, df_acc columns={df_acc.columns.tolist()}")
                 return 0
             
-            # 重命名列以便区分
-            df_unit = df_unit.rename(columns={"单位净值": "unit_net_value", "日增长率": "daily_growth_rate"})
-            df_acc = df_acc.rename(columns={"累计净值": "cumulative_net_value"})
+            # 检查必需字段
+            if "单位净值" not in df_unit.columns:
+                logger.error(f"单位净值走势缺少'单位净值'字段")
+                return 0
+            if "日增长率" not in df_unit.columns:
+                logger.error(f"单位净值走势缺少'日增长率'字段")
+                return 0
+            if "累计净值" not in df_acc.columns:
+                logger.error(f"累计净值走势缺少'累计净值'字段")
+                return 0
             
-            # 按日期合并
+            # 只选择需要的字段进行合并
+            df_unit_selected = df_unit[["净值日期", "单位净值", "日增长率"]].copy()
+            df_acc_selected = df_acc[["净值日期", "累计净值"]].copy()
+            
+            # 按日期（列）合并两个DataFrame
             merged_df = pd.merge(
-                df_unit[["净值日期", "unit_net_value", "daily_growth_rate"]],
-                df_acc[["净值日期", "cumulative_net_value"]],
+                df_unit_selected,
+                df_acc_selected,
                 on="净值日期",
-                how="inner"
+                how="inner"  # 只保留两个DataFrame都有的日期
             )
+            
+            logger.info(f"合并后数据量: {len(merged_df)}, 字段: {merged_df.columns.tolist()}")
             
             if merged_df.empty:
                 logger.warning(f"合并后数据为空（{fund_code}）")
@@ -3421,18 +3456,19 @@ class FundDataService:
                 if not date_value or date_value == "nan":
                     continue
                 
+                # 只保留5个字段：日期、基金代码、单位净值、日增长率、累计净值
                 record = {
-                    "fund_code": fund_code,
-                    "date": date_value,
-                    "unit_net_value": float(row["unit_net_value"]) if pd.notna(row.get("unit_net_value")) else None,
-                    "daily_growth_rate": float(row["daily_growth_rate"]) if pd.notna(row.get("daily_growth_rate")) else None,
-                    "cumulative_net_value": float(row["cumulative_net_value"]) if pd.notna(row.get("cumulative_net_value")) else None,
+                    "基金代码": fund_code,
+                    "日期": date_value,
+                    "单位净值": float(row["单位净值"]) if pd.notna(row.get("单位净值")) else None,
+                    "日增长率": float(row["日增长率"]) if pd.notna(row.get("日增长率")) else None,
+                    "累计净值": float(row["累计净值"]) if pd.notna(row.get("累计净值")) else None,
                 }
                 
-                # 唯一键：fund_code + date
+                # 唯一键：基金代码 + 日期
                 ops.append(
                     UpdateOne(
-                        {"fund_code": fund_code, "date": date_value},
+                        {"基金代码": fund_code, "日期": date_value},
                         {"$set": record},
                         upsert=True,
                     )
@@ -3577,21 +3613,19 @@ class FundDataService:
             # 清理和规范化列名
             df.columns = df.columns.str.strip()
 
-            # 字段映射
+            # 字段映射：AKShare中文字段名 -> 数据库中文字段名
             field_map = {
-                "基金代码": "fund_code",
-                "基金简称": "fund_name",
-                "当前交易日-万份收益": "current_daily_profit_per_10k",
-                "当前交易日-7日年化%": "current_7day_annual_yield",
-                "当前交易日-单位净值": "current_unit_net_value",
-                "前一交易日-万份收益": "prev_daily_profit_per_10k",
-                "前一交易日-7日年化%": "prev_7day_annual_yield",
-                "前一交易日-单位净值": "prev_unit_net_value",
-                "日涨幅": "daily_change",
-                "成立日期": "establishment_date",
-                "基金经理": "fund_manager",
-                "手续费": "fee",
-                "可购全部": "purchasable",
+                "当前交易日-万份收益": "每万份收益",
+                "当前交易日-7日年化%": "7日年化收益率",
+                "当前交易日-单位净值": "单位净值",
+                "前一交易日-万份收益": "前一日万份收益",
+                "前一交易日-7日年化%": "前一日7日年化",
+                "前一交易日-单位净值": "前一日净值",
+                "日涨幅": "日增长",
+                "成立日期": "成立日期",
+                "基金经理": "基金经理",
+                "手续费": "手续费",
+                "可购全部": "申购状态",
             }
 
             ops = []
@@ -3602,40 +3636,39 @@ class FundDataService:
                 if not fund_code or fund_code == "nan":
                     continue
 
-                # 构建记录
+                # 构建记录 - 使用中文字段名
                 record = {
-                    "fund_code": fund_code,
-                    "date": current_date,
+                    "基金代码": fund_code,
+                    "基金简称": str(row.get("基金简称", "")).strip() if pd.notna(row.get("基金简称")) else "",
+                    "日期": current_date,
                 }
 
                 # 映射其他字段
-                for cn_field, en_field in field_map.items():
-                    if cn_field == "基金代码":  # 已处理
-                        continue
-                    
-                    value = row.get(cn_field)
+                for akshare_field, db_field in field_map.items():
+                    value = row.get(akshare_field)
                     if pd.notna(value):
                         value_str = str(value).strip()
                         # 跳过 "---" 等无效值
                         if value_str and value_str != "---" and value_str != "nan":
-                            # 处理百分比字段
-                            if "%" in cn_field or cn_field == "日涨幅":
-                                # 保留原始字符串格式
-                                record[en_field] = value_str
-                            else:
-                                # 尝试转换数值
+                            # 处理百分比和数值字段
+                            if "%" in akshare_field or "收益" in akshare_field or "净值" in akshare_field:
+                                # 尝试转换为浮点数
                                 try:
                                     if isinstance(value, (int, float)):
-                                        record[en_field] = float(value)
+                                        record[db_field] = float(value)
                                     else:
-                                        record[en_field] = value_str
+                                        # 移除百分号并转换
+                                        clean_value = value_str.replace("%", "").strip()
+                                        record[db_field] = float(clean_value) if clean_value else None
                                 except:
-                                    record[en_field] = value_str
+                                    record[db_field] = value_str
+                            else:
+                                record[db_field] = value_str
 
-                # 唯一键：fund_code + date
+                # 唯一键：基金代码 + 日期
                 ops.append(
                     UpdateOne(
-                        {"fund_code": fund_code, "date": current_date},
+                        {"基金代码": fund_code, "日期": current_date},
                         {"$set": record},
                         upsert=True,
                     )
@@ -3747,9 +3780,11 @@ class FundDataService:
         self, df: pd.DataFrame, fund_code: str, progress_callback=None
     ) -> int:
         """保存货币型基金历史行情数据
+        
+        只保留6个字段：基金代码、日期、每万份收益、7日年化收益率、申购状态、赎回状态
 
         Args:
-            df: 包含历史行情数据的 DataFrame
+            df: 包含历史行情数据的 DataFrame（从AKShare获取）
             fund_code: 基金代码
             progress_callback: 进度回调函数
 
@@ -3764,59 +3799,68 @@ class FundDataService:
             df = df.copy()
             df.columns = df.columns.str.strip()
 
-            # 字段映射
-            field_map = {
-                "净值日期": "date",
-                "每万份收益": "daily_profit_per_10k",
-                "7日年化收益率": "seven_day_annual_yield",
-                "申购状态": "purchase_status",
-                "赎回状态": "redemption_status",
-            }
+            # 调试日志：显示原始数据结构
+            logger.info(f"货币型基金历史行情字段: {df.columns.tolist()}, 数据量: {len(df)}")
+
+            # 检查必需字段
+            if "净值日期" not in df.columns:
+                logger.error(f"货币型基金历史行情缺少'净值日期'字段")
+                return 0
 
             ops = []
             total = len(df)
+            batch_size = 1000
+            total_saved = 0
 
             for idx, row in df.iterrows():
                 date_value = str(row.get("净值日期", "")).strip()
                 if not date_value or date_value == "nan":
                     continue
 
+                # 只保留6个字段：基金代码、日期、每万份收益、7日年化收益率、申购状态、赎回状态
                 record = {
-                    "fund_code": fund_code,
-                    "date": date_value,
+                    "基金代码": fund_code,
+                    "日期": date_value,
+                    "每万份收益": float(row["每万份收益"]) if pd.notna(row.get("每万份收益")) else None,
+                    "7日年化收益率": float(row["7日年化收益率"]) if pd.notna(row.get("7日年化收益率")) else None,
+                    "申购状态": str(row["申购状态"]).strip() if pd.notna(row.get("申购状态")) else None,
+                    "赎回状态": str(row["赎回状态"]).strip() if pd.notna(row.get("赎回状态")) else None,
                 }
 
-                # 映射其他字段
-                for cn_field, en_field in field_map.items():
-                    if cn_field == "净值日期":
-                        continue
-                    value = row.get(cn_field)
-                    if pd.notna(value):
-                        if isinstance(value, (int, float)):
-                            record[en_field] = float(value)
-                        else:
-                            record[en_field] = str(value).strip()
-
+                # 唯一键：基金代码 + 日期
                 ops.append(
                     UpdateOne(
-                        {"fund_code": fund_code, "date": date_value},
+                        {"基金代码": fund_code, "日期": date_value},
                         {"$set": record},
                         upsert=True,
                     )
                 )
 
+                # 批量保存：每1000条保存一次
+                if len(ops) >= batch_size:
+                    result = await self.col_fund_money_fund_info_em.bulk_write(ops, ordered=False)
+                    batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                    total_saved += batch_saved
+                    logger.info(f"已保存 {len(ops)} 条数据，累计保存 {total_saved} 条（{fund_code}）")
+                    ops = []
+
+                # 进度回调
                 if progress_callback and (idx + 1) % 100 == 0:
                     await progress_callback(idx + 1, total)
 
-            if not ops:
+            # 保存剩余数据
+            if ops:
+                result = await self.col_fund_money_fund_info_em.bulk_write(ops, ordered=False)
+                batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                total_saved += batch_saved
+                logger.info(f"已保存剩余 {len(ops)} 条数据（{fund_code}）")
+
+            if total_saved == 0:
                 logger.warning("没有有效数据可保存")
                 return 0
 
-            result = await self.col_fund_money_fund_info_em.bulk_write(ops, ordered=False)
-            saved_count = (result.upserted_count or 0) + (result.modified_count or 0)
-
-            logger.info(f"成功保存 {saved_count} 条货币型基金历史行情数据（{fund_code}）")
-            return saved_count
+            logger.info(f"成功保存 {total_saved} 条货币型基金历史行情数据（{fund_code}）")
+            return total_saved
 
         except Exception as e:
             logger.error(f"保存货币型基金历史行情数据失败: {e}", exc_info=True)
@@ -4063,9 +4107,11 @@ class FundDataService:
         self, df: pd.DataFrame, fund_code: str, progress_callback=None
     ) -> int:
         """保存理财型基金历史行情数据
+        
+        只保留8个字段：基金代码、日期、单位净值、累计净值、日增长率、申购状态、赎回状态、分红送配
 
         Args:
-            df: 包含历史行情数据的 DataFrame
+            df: 包含历史行情数据的 DataFrame（从AKShare获取）
             fund_code: 基金代码
             progress_callback: 进度回调函数
 
@@ -4080,61 +4126,70 @@ class FundDataService:
             df = df.copy()
             df.columns = df.columns.str.strip()
 
-            # 字段映射
-            field_map = {
-                "净值日期": "date",
-                "单位净值": "unit_net_value",
-                "累计净值": "accumulative_net_value",
-                "日增长率": "daily_growth_rate",
-                "申购状态": "purchase_status",
-                "赎回状态": "redemption_status",
-                "分红送配": "dividend_distribution",
-            }
+            # 调试日志：显示原始数据结构
+            logger.info(f"理财型基金历史行情字段: {df.columns.tolist()}, 数据量: {len(df)}")
+
+            # 检查必需字段
+            if "净值日期" not in df.columns:
+                logger.error(f"理财型基金历史行情缺少'净值日期'字段")
+                return 0
 
             ops = []
             total = len(df)
+            batch_size = 1000
+            total_saved = 0
 
             for idx, row in df.iterrows():
                 date_value = str(row.get("净值日期", "")).strip()
                 if not date_value or date_value == "nan":
                     continue
 
+                # 只保留8个字段：基金代码、日期、单位净值、累计净值、日增长率、申购状态、赎回状态、分红送配
                 record = {
-                    "fund_code": fund_code,
-                    "date": date_value,
+                    "基金代码": fund_code,
+                    "日期": date_value,
+                    "单位净值": float(row["单位净值"]) if pd.notna(row.get("单位净值")) else None,
+                    "累计净值": float(row["累计净值"]) if pd.notna(row.get("累计净值")) else None,
+                    "日增长率": str(row["日增长率"]).strip() if pd.notna(row.get("日增长率")) else None,
+                    "申购状态": str(row["申购状态"]).strip() if pd.notna(row.get("申购状态")) else None,
+                    "赎回状态": str(row["赎回状态"]).strip() if pd.notna(row.get("赎回状态")) else None,
+                    "分红送配": str(row["分红送配"]).strip() if pd.notna(row.get("分红送配")) else None,
                 }
 
-                # 映射其他字段
-                for cn_field, en_field in field_map.items():
-                    if cn_field == "净值日期":
-                        continue
-                    value = row.get(cn_field)
-                    if pd.notna(value):
-                        if isinstance(value, (int, float)):
-                            record[en_field] = float(value)
-                        else:
-                            record[en_field] = str(value).strip()
-
+                # 唯一键：基金代码 + 日期
                 ops.append(
                     UpdateOne(
-                        {"fund_code": fund_code, "date": date_value},
+                        {"基金代码": fund_code, "日期": date_value},
                         {"$set": record},
                         upsert=True,
                     )
                 )
 
+                # 批量保存：每1000条保存一次
+                if len(ops) >= batch_size:
+                    result = await self.col_fund_financial_fund_info_em.bulk_write(ops, ordered=False)
+                    batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                    total_saved += batch_saved
+                    logger.info(f"已保存 {len(ops)} 条数据，累计保存 {total_saved} 条（{fund_code}）")
+                    ops = []
+
+                # 进度回调
                 if progress_callback and (idx + 1) % 100 == 0:
                     await progress_callback(idx + 1, total)
 
-            if not ops:
+            # 保存剩余数据
+            if ops:
+                result = await self.col_fund_financial_fund_info_em.bulk_write(ops, ordered=False)
+                batch_saved = (result.upserted_count or 0) + (result.modified_count or 0)
+                total_saved += batch_saved
+                logger.info(f"已保存剩余 {len(ops)} 条数据（{fund_code}）")
+
+            if total_saved == 0:
                 logger.warning("没有有效数据可保存")
                 return 0
 
-            result = await self.col_fund_financial_fund_info_em.bulk_write(ops, ordered=False)
-            saved_count = (result.upserted_count or 0) + (result.modified_count or 0)
-
-            logger.info(f"成功保存 {saved_count} 条理财型基金历史行情数据（{fund_code}）")
-            return saved_count
+            logger.info(f"成功保存 {total_saved} 条理财型基金历史行情数据（{fund_code}）")
+            return total_saved
 
         except Exception as e:
             logger.error(f"保存理财型基金历史行情数据失败: {e}", exc_info=True)
@@ -4525,9 +4580,11 @@ class FundDataService:
         self, df: pd.DataFrame, progress_callback=None
     ) -> int:
         """保存场内交易基金实时数据
+        
+        只保留10个字段，使用中文字段名：基金代码、基金简称、类型、日期、单位净值、累计净值、增长值、增长率、市价、折价率
 
         Args:
-            df: 包含场内交易基金实时数据的 DataFrame
+            df: 包含场内交易基金实时数据的 DataFrame（从AKShare获取）
             progress_callback: 进度回调函数
 
         Returns:
@@ -4549,6 +4606,7 @@ class FundDataService:
 
             total = len(df)
             logger.info(f"📊 开始处理 {total} 条场内交易基金实时数据...")
+            logger.info(f"📋 原始字段: {df.columns.tolist()[:20]}...")  # 只显示前20个字段
             
             # 分批处理，每批500条
             batch_size = 500
@@ -4568,70 +4626,64 @@ class FundDataService:
                     if not fund_code or fund_code == "nan":
                         continue
 
+                    # 使用中文字段名保存，只保留10个固定字段
                     record = {
-                        "fund_code": fund_code,
-                        "date": current_date,
-                        "source": "akshare",
-                        "endpoint": "fund_etf_fund_daily_em",
-                        "updated_at": datetime.now().isoformat()
+                        "基金代码": fund_code,
+                        "日期": current_date,
+                        "基金简称": None,
+                        "类型": None,
+                        "单位净值": None,
+                        "累计净值": None,
+                        "增长值": None,
+                        "增长率": None,
+                        "市价": None,
+                        "折价率": None,
                     }
 
-                    # 静态字段映射
-                    static_fields = {
-                        "基金简称": "fund_name",
-                        "类型": "fund_type",
-                        "增长值": "growth_value",
-                        "增长率": "growth_rate",
-                        "市价": "market_price",
-                        "折价率": "discount_rate",
-                    }
-
-                    for cn_field, en_field in static_fields.items():
-                        value = row.get(cn_field)
+                    # 静态字段：直接映射
+                    static_fields = ["基金简称", "类型", "增长值", "增长率", "市价", "折价率"]
+                    for field in static_fields:
+                        value = row.get(field)
                         if pd.notna(value):
                             value_str = str(value).strip()
                             if value_str and value_str != "---" and value_str != "nan":
                                 try:
                                     # 尝试转换为数值类型
                                     if isinstance(value, (int, float)):
-                                        record[en_field] = float(value)
+                                        record[field] = float(value)
                                     else:
-                                        record[en_field] = value_str
+                                        record[field] = value_str
                                 except:
-                                    record[en_field] = value_str
+                                    record[field] = value_str
 
-                    # 处理动态日期字段 - 改进版本
-                    # 查找当前交易日和前一个交易日的数据
-                    current_date_fields = {}
-                    prev_date_fields = {}
+                    # 动态日期字段：去掉日期部分，只保留"单位净值"和"累计净值"
+                    # 从所有列中查找包含"-单位净值"和"-累计净值"的列，取最后一个（最新日期）
+                    unit_net_value_cols = [col for col in df.columns if "-单位净值" in str(col)]
+                    accumulative_net_value_cols = [col for col in df.columns if "-累计净值" in str(col)]
                     
-                    for col in df.columns:
-                        col_str = str(col).strip()
-                        value = row.get(col)
-                        
+                    # 取最后一列作为当前净值
+                    if unit_net_value_cols:
+                        last_unit_col = unit_net_value_cols[-1]
+                        value = row.get(last_unit_col)
                         if pd.notna(value) and str(value).strip() not in ["", "---", "nan"]:
                             try:
-                                if "-单位净值" in col_str:
-                                    date_part = col_str.split("-")[0]
-                                    float_val = float(value)
-                                    current_date_fields[f"{date_part}_unit_net_value"] = float_val
-                                    # 假设最后一个是当前交易日
-                                    record["current_unit_net_value"] = float_val
-                                elif "-累计净值" in col_str:
-                                    date_part = col_str.split("-")[0]
-                                    float_val = float(value)
-                                    current_date_fields[f"{date_part}_accumulative_net_value"] = float_val
-                                    record["current_accumulative_net_value"] = float_val
+                                record["单位净值"] = float(value)
                             except (ValueError, TypeError):
                                 pass
                     
-                    # 存储所有动态日期字段
-                    if current_date_fields:
-                        record["date_fields"] = current_date_fields
+                    if accumulative_net_value_cols:
+                        last_acc_col = accumulative_net_value_cols[-1]
+                        value = row.get(last_acc_col)
+                        if pd.notna(value) and str(value).strip() not in ["", "---", "nan"]:
+                            try:
+                                record["累计净值"] = float(value)
+                            except (ValueError, TypeError):
+                                pass
 
+                    # 唯一键：基金代码 + 日期
                     ops.append(
                         UpdateOne(
-                            {"fund_code": fund_code, "date": current_date},
+                            {"基金代码": fund_code, "日期": current_date},
                             {"$set": record},
                             upsert=True,
                         )
@@ -5069,8 +5121,10 @@ class FundDataService:
     async def save_fund_etf_fund_info_data(self, df: pd.DataFrame, fund_code: str = None, progress_callback=None) -> int:
         """保存场内交易基金历史行情数据
         
+        只保留7个字段，使用中文字段名：基金代码、日期、单位净值、累计净值、日增长率、申购状态、赎回状态
+        
         Args:
-            df: 包含历史行情数据的DataFrame
+            df: 包含历史行情数据的DataFrame（从AKShare获取）
             fund_code: 基金代码
             progress_callback: 进度回调函数
             
@@ -5085,12 +5139,20 @@ class FundDataService:
             import numpy as np
             df = df.replace([np.inf, -np.inf], None)
             df = df.where(pd.notna(df), None)
+            df = df.copy()
+            df.columns = df.columns.str.strip()
             
             total_count = len(df)
             logger.info(f"📊 开始处理 {total_count} 条场内交易基金历史行情数据...")
+            logger.info(f"📋 原始字段: {df.columns.tolist()}")
             
-            # 分批处理，每批500条
-            batch_size = 500
+            # 检查必需字段
+            if "净值日期" not in df.columns:
+                logger.error("场内交易基金历史行情缺少'净值日期'字段")
+                return 0
+            
+            # 分批处理，每批1000条
+            batch_size = 1000
             total_saved = 0
             total_batches = (total_count + batch_size - 1) // batch_size
             
@@ -5103,47 +5165,32 @@ class FundDataService:
                 
                 ops = []
                 for idx, row in batch_df.iterrows():
-                    doc = row.to_dict()
+                    # 获取日期字段
+                    date_value = str(row.get("净值日期", "")).strip()
+                    if not date_value or date_value == "nan":
+                        continue
                     
-                    # 清理NaN/Infinity值
-                    import math
-                    import datetime as dt
-                    for key, value in list(doc.items()):
-                        if isinstance(value, (int, float)) and not isinstance(value, bool):
-                            try:
-                                if math.isnan(value) or math.isinf(value):
-                                    doc[key] = None
-                            except (TypeError, ValueError):
-                                pass
-                        elif isinstance(value, dt.date) and not isinstance(value, dt.datetime):
-                            doc[key] = value.strftime('%Y-%m-%d')
-                        elif isinstance(value, dt.datetime):
-                            doc[key] = value.strftime('%Y-%m-%d')
+                    # 获取基金代码
+                    code = fund_code if fund_code else str(row.get("基金代码", "")).strip()
+                    if not code or code == "nan":
+                        continue
                     
-                    # 添加元数据
-                    if fund_code:
-                        doc['fund_code'] = fund_code
-                    elif 'fund_code' not in doc:
-                        doc['fund_code'] = doc.get('code', '')
-                    
-                    # 确定日期字段
-                    date_field = str(doc.get('净值日期', ''))
-                    doc['date'] = date_field
-                    
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_etf_fund_info_em'
-                    doc['updated_at'] = datetime.now().isoformat()
-                    
-                    # 构建唯一标识（fund_code + date）
-                    filter_query = {
-                        'fund_code': doc['fund_code'],
-                        'date': date_field
+                    # 只保留7个字段：基金代码、日期、单位净值、累计净值、日增长率、申购状态、赎回状态
+                    record = {
+                        "基金代码": code,
+                        "日期": date_value,
+                        "单位净值": float(row["单位净值"]) if pd.notna(row.get("单位净值")) else None,
+                        "累计净值": float(row["累计净值"]) if pd.notna(row.get("累计净值")) else None,
+                        "日增长率": str(row["日增长率"]).strip() if pd.notna(row.get("日增长率")) else None,
+                        "申购状态": str(row["申购状态"]).strip() if pd.notna(row.get("申购状态")) else None,
+                        "赎回状态": str(row["赎回状态"]).strip() if pd.notna(row.get("赎回状态")) else None,
                     }
                     
+                    # 唯一键：基金代码 + 日期
                     ops.append(
                         UpdateOne(
-                            filter_query,
-                            {'$set': doc},
+                            {"基金代码": code, "日期": date_value},
+                            {"$set": record},
                             upsert=True
                         )
                     )
@@ -5904,8 +5951,8 @@ class FundDataService:
             total_count = len(df)
             logger.info(f"📊 开始处理 {total_count} 条基金拆分数据...")
             
-            # 分批处理，每批500条
-            batch_size = 500
+            # 分批处理，每批1000条
+            batch_size = 1000
             total_saved = 0
             total_batches = (total_count + batch_size - 1) // batch_size
             
@@ -7322,7 +7369,7 @@ class FundDataService:
             total_count = len(df)
             logger.info(f"📊 开始处理 {total_count} 条净值估算数据...")
             
-            batch_size = 500
+            batch_size = 1000  # 每批处理1000条记录
             total_saved = 0
             total_batches = (total_count + batch_size - 1) // batch_size
             
@@ -7350,16 +7397,17 @@ class FundDataService:
                             doc[key] = value.strftime('%Y-%m-%d')
                     
                     fund_code = str(doc.get('基金代码', ''))
-                    trade_date = str(doc.get('交易日', ''))
+                    estimation_date = str(doc.get('日期', ''))  # 使用新增的日期字段
                     doc['code'] = fund_code
-                    doc['trade_date'] = trade_date
+                    doc['date'] = estimation_date
                     doc['source'] = 'akshare'
                     doc['endpoint'] = 'fund_value_estimation_em'
                     doc['updated_at'] = datetime.now().isoformat()
                     
+                    # 以日期+基金代码作为唯一标识
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'trade_date': trade_date},
+                            {'code': fund_code, 'date': estimation_date},
                             {'$set': doc},
                             upsert=True
                         )
@@ -7402,9 +7450,9 @@ class FundDataService:
         try:
             total_count = await self.col_fund_value_estimation_em.count_documents({})
             
-            # 获取交易日范围
+            # 获取日期范围（使用新的日期字段）
             pipeline_date = [
-                {'$group': {'_id': None, 'earliest': {'$min': '$交易日'}, 'latest': {'$max': '$交易日'}}}
+                {'$group': {'_id': None, 'earliest': {'$min': '$date'}, 'latest': {'$max': '$date'}}}
             ]
             
             earliest_date = None
@@ -7413,17 +7461,18 @@ class FundDataService:
                 earliest_date = doc.get('earliest')
                 latest_date = doc.get('latest')
             
-            # 获取估算增长率TOP10
+            # 获取估算增长率TOP10（使用新的字段名：去除日期前缀）
+            # 简化查询：直接返回数据，不在数据库层面排序
             pipeline_top_growth = [
-                {'$match': {'交易日-估算数据-估算增长率': {'$ne': None}}},
-                {'$sort': {'交易日-估算数据-估算增长率': -1}},
-                {'$limit': 10},
+                {'$match': {'估算数据-估算增长率': {'$ne': None, '$ne': '', '$exists': True}}},
+                {'$limit': 100},  # 先获取100条
                 {'$project': {
                     'code': '$基金代码',
                     'name': '$基金名称',
-                    'estimated_value': '$交易日-估算数据-估算值',
-                    'estimated_growth': '$交易日-估算数据-估算增长率',
-                    'published_nav': '$交易日-公布数据-单位净值',
+                    'date': '$日期',
+                    'estimated_value': '$估算数据-估算值',
+                    'estimated_growth': '$估算数据-估算增长率',
+                    'published_nav': '$公布数据-单位净值',
                     'deviation': '$估算偏差'
                 }}
             ]
@@ -7433,6 +7482,7 @@ class FundDataService:
                 top_estimated_growth.append({
                     'code': doc.get('code'),
                     'name': doc.get('name'),
+                    'date': doc.get('date'),
                     'estimated_value': doc.get('estimated_value'),
                     'estimated_growth': doc.get('estimated_growth'),
                     'published_nav': doc.get('published_nav'),
@@ -7440,17 +7490,17 @@ class FundDataService:
                 })
             
             # 获取估算偏差最小TOP10（绝对值）
+            # 简化查询：直接返回数据，不在数据库层面排序
             pipeline_min_deviation = [
-                {'$match': {'估算偏差': {'$ne': None}}},
-                {'$addFields': {'abs_deviation': {'$abs': '$估算偏差'}}},
-                {'$sort': {'abs_deviation': 1}},
-                {'$limit': 10},
+                {'$match': {'估算偏差': {'$ne': None, '$ne': '', '$exists': True}}},
+                {'$limit': 100},  # 先获取100条
                 {'$project': {
                     'code': '$基金代码',
                     'name': '$基金名称',
-                    'estimated_value': '$交易日-估算数据-估算值',
-                    'estimated_growth': '$交易日-估算数据-估算增长率',
-                    'published_nav': '$交易日-公布数据-单位净值',
+                    'date': '$日期',
+                    'estimated_value': '$估算数据-估算值',
+                    'estimated_growth': '$估算数据-估算增长率',
+                    'published_nav': '$公布数据-单位净值',
                     'deviation': '$估算偏差'
                 }}
             ]
@@ -7460,6 +7510,7 @@ class FundDataService:
                 min_deviation_funds.append({
                     'code': doc.get('code'),
                     'name': doc.get('name'),
+                    'date': doc.get('date'),
                     'estimated_value': doc.get('estimated_value'),
                     'estimated_growth': doc.get('estimated_growth'),
                     'published_nav': doc.get('published_nav'),
@@ -7694,15 +7745,18 @@ class FundDataService:
                     
                     fund_code = str(doc.get('基金代码', ''))
                     holding_period = str(doc.get('持有时长', ''))
+                    date = str(doc.get('日期', ''))
                     doc['code'] = fund_code
                     doc['holding_period'] = holding_period
+                    doc['date'] = date
                     doc['source'] = 'akshare'
                     doc['endpoint'] = 'fund_individual_profit_probability_xq'
                     doc['updated_at'] = datetime.now().isoformat()
                     
+                    # 使用日期、基金代码和持有时长作为唯一标识
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'holding_period': holding_period},
+                            {'code': fund_code, 'holding_period': holding_period, 'date': date},
                             {'$set': doc},
                             upsert=True
                         )
@@ -7817,7 +7871,24 @@ class FundDataService:
             raise
     
     async def save_fund_individual_detail_hold_xq_data(self, df: pd.DataFrame, progress_callback=None) -> int:
-        """保存基金持仓资产比例到MongoDB"""
+        """保存基金持仓资产比例到MongoDB
+        
+        数据结构：将DataFrame的数据转换为一个文档，仓位信息字段是字典格式（全部使用中文字段）
+        {
+            "基金代码": "000001",
+            "日期": "2024-03-30",
+            "持仓信息": {
+                "股票": 85.5,
+                "债券": 10.2,
+                "现金": 4.3
+            },
+            "数据源": "akshare",
+            "接口名称": "fund_individual_detail_hold_xq",
+            "更新时间": "2024-03-30T12:00:00"
+        }
+        
+        唯一标识：基金代码 + 日期
+        """
         if df is None or df.empty:
             logger.warning("没有基金持仓资产比例需要保存")
             return 0
@@ -7827,70 +7898,54 @@ class FundDataService:
             df = df.replace([np.inf, -np.inf], None)
             df = df.where(pd.notna(df), None)
             
-            total_count = len(df)
-            logger.info(f"📊 开始处理 {total_count} 条基金持仓资产比例...")
+            # 获取基金代码和日期（假设DataFrame中所有行的基金代码和日期相同）
+            fund_code = str(df['基金代码'].iloc[0]) if '基金代码' in df.columns else ''
+            date_str = str(df['日期'].iloc[0]) if '日期' in df.columns else ''
             
-            batch_size = 500
-            total_saved = 0
-            total_batches = (total_count + batch_size - 1) // batch_size
+            # 将DataFrame转换为字典：资产类型为key，仓位占比为value
+            holdings = {}
+            if '资产类型' in df.columns and '仓位占比' in df.columns:
+                for _, row in df.iterrows():
+                    asset_type = str(row.get('资产类型', ''))
+                    position = row.get('仓位占比')
+                    if asset_type and position is not None:
+                        # 转换为浮点数
+                        try:
+                            holdings[asset_type] = float(position) if not pd.isna(position) else None
+                        except (ValueError, TypeError):
+                            holdings[asset_type] = None
             
-            for batch_idx in range(total_batches):
-                start_idx = batch_idx * batch_size
-                end_idx = min((batch_idx + 1) * batch_size, total_count)
-                batch_df = df.iloc[start_idx:end_idx]
-                
-                ops = []
-                for idx, row in batch_df.iterrows():
-                    doc = row.to_dict()
-                    
-                    import math
-                    import datetime as dt
-                    for key, value in list(doc.items()):
-                        if isinstance(value, (int, float)) and not isinstance(value, bool):
-                            try:
-                                if math.isnan(value) or math.isinf(value):
-                                    doc[key] = None
-                            except (TypeError, ValueError):
-                                pass
-                        elif isinstance(value, dt.date) and not isinstance(value, dt.datetime):
-                            doc[key] = value.strftime('%Y-%m-%d')
-                        elif isinstance(value, dt.datetime):
-                            doc[key] = value.strftime('%Y-%m-%d')
-                    
-                    fund_code = str(doc.get('基金代码', ''))
-                    date_str = str(doc.get('日期', ''))
-                    asset_type = str(doc.get('资产类型', ''))
-                    doc['code'] = fund_code
-                    doc['date'] = date_str
-                    doc['asset_type'] = asset_type
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_individual_detail_hold_xq'
-                    doc['updated_at'] = datetime.now().isoformat()
-                    
-                    ops.append(
-                        UpdateOne(
-                            {'code': fund_code, 'date': date_str, 'asset_type': asset_type},
-                            {'$set': doc},
-                            upsert=True
-                        )
-                    )
-                
-                if ops:
-                    result = await self.col_fund_individual_detail_hold_xq.bulk_write(ops, ordered=False)
-                    batch_saved = (result.upserted_count or 0) + (result.matched_count or 0)
-                    total_saved += batch_saved
-                    
-                    if progress_callback:
-                        progress = int((end_idx / total_count) * 100)
-                        progress_callback(
-                            current=end_idx,
-                            total=total_count,
-                            percentage=progress,
-                            message=f"已保存 {end_idx}/{total_count} 条数据 ({progress}%)"
-                        )
+            logger.info(f"📊 处理基金 {fund_code} 在 {date_str} 的持仓数据: {len(holdings)} 种资产类型")
             
-            logger.info(f"🎉 全部数据写入完成: 总计保存 {total_saved}/{total_count} 条基金持仓资产比例")
-            return total_saved
+            # 构建文档（全部使用中文字段名）
+            doc = {
+                '基金代码': fund_code,
+                '日期': date_str,
+                '持仓信息': holdings,  # 仓位信息字典，以资产类型为key，仓位占比为value
+                '数据源': 'akshare',
+                '接口名称': 'fund_individual_detail_hold_xq',
+                '更新时间': datetime.now().isoformat()
+            }
+            
+            # 使用 基金代码 + 日期 作为唯一标识
+            result = await self.col_fund_individual_detail_hold_xq.update_one(
+                {'基金代码': fund_code, '日期': date_str},
+                {'$set': doc},
+                upsert=True
+            )
+            
+            saved = 1 if result.upserted_id or result.modified_count > 0 else 0
+            
+            if progress_callback:
+                progress_callback(
+                    current=1,
+                    total=1,
+                    percentage=100,
+                    message=f"已保存基金 {fund_code} 在 {date_str} 的持仓数据"
+                )
+            
+            logger.info(f"🎉 成功保存基金 {fund_code} 在 {date_str} 的持仓数据")
+            return saved
                 
         except Exception as e:
             logger.error(f"保存基金持仓资产比例失败: {e}", exc_info=True)
@@ -7912,89 +7967,31 @@ class FundDataService:
         try:
             total_count = await self.col_fund_individual_detail_hold_xq.count_documents({})
             
-            # 获取唯一基金数
-            unique_funds = await self.col_fund_individual_detail_hold_xq.distinct('code')
+            # 获取唯一基金数（使用中文字段名）
+            unique_funds = await self.col_fund_individual_detail_hold_xq.distinct('基金代码')
             
-            # 获取唯一日期数
-            unique_dates = await self.col_fund_individual_detail_hold_xq.distinct('date')
+            # 获取唯一日期数（使用中文字段名）
+            unique_dates = await self.col_fund_individual_detail_hold_xq.distinct('日期')
             
-            # 获取资产类型分布
-            pipeline_asset_types = [
-                {'$group': {'_id': '$资产类型', 'count': {'$sum': 1}, 'avg_position': {'$avg': '$仓位占比'}}},
-                {'$sort': {'count': -1}}
-            ]
-            
-            asset_type_distribution = []
-            async for doc in self.col_fund_individual_detail_hold_xq.aggregate(pipeline_asset_types):
-                asset_type_distribution.append({
-                    'asset_type': doc['_id'],
-                    'count': doc['count'],
-                    'avg_position': round(doc.get('avg_position', 0), 2) if doc.get('avg_position') else None
-                })
+            # 注意：新的数据结构中，资产类型存储在持仓信息字典的key中，不再是单独字段
+            # 统计功能需要重新设计，这里先返回基础统计信息
             
             # 获取最新日期
             pipeline_latest_date = [
-                {'$sort': {'date': -1}},
+                {'$sort': {'日期': -1}},
                 {'$limit': 1},
-                {'$project': {'date': 1}}
+                {'$project': {'日期': 1}}
             ]
             
             latest_date = None
             async for doc in self.col_fund_individual_detail_hold_xq.aggregate(pipeline_latest_date):
-                latest_date = doc.get('date')
-            
-            # 获取股票仓位最高的基金TOP10（最新日期）
-            pipeline_top_stock = [
-                {'$match': {'资产类型': '股票'}},
-                {'$sort': {'date': -1, '仓位占比': -1}},
-                {'$limit': 10},
-                {'$project': {
-                    'code': '$code',
-                    'date': '$date',
-                    'asset_type': '$资产类型',
-                    'position': '$仓位占比'
-                }}
-            ]
-            
-            top_stock_position = []
-            async for doc in self.col_fund_individual_detail_hold_xq.aggregate(pipeline_top_stock):
-                top_stock_position.append({
-                    'code': doc.get('code'),
-                    'date': doc.get('date'),
-                    'asset_type': doc.get('asset_type'),
-                    'position': doc.get('position')
-                })
-            
-            # 获取债券仓位最高的基金TOP10（最新日期）
-            pipeline_top_bond = [
-                {'$match': {'资产类型': '债券'}},
-                {'$sort': {'date': -1, '仓位占比': -1}},
-                {'$limit': 10},
-                {'$project': {
-                    'code': '$code',
-                    'date': '$date',
-                    'asset_type': '$资产类型',
-                    'position': '$仓位占比'
-                }}
-            ]
-            
-            top_bond_position = []
-            async for doc in self.col_fund_individual_detail_hold_xq.aggregate(pipeline_top_bond):
-                top_bond_position.append({
-                    'code': doc.get('code'),
-                    'date': doc.get('date'),
-                    'asset_type': doc.get('asset_type'),
-                    'position': doc.get('position')
-                })
+                latest_date = doc.get('日期')
             
             return {
                 'total_count': total_count,
                 'unique_funds': len(unique_funds),
                 'unique_dates': len(unique_dates),
-                'latest_date': latest_date,
-                'asset_type_distribution': asset_type_distribution,
-                'top_stock_position': top_stock_position,
-                'top_bond_position': top_bond_position
+                'latest_date': latest_date
             }
         except Exception as e:
             logger.error(f"获取基金持仓资产比例统计失败: {e}", exc_info=True)
@@ -8451,7 +8448,23 @@ class FundDataService:
             raise
     
     async def save_fund_portfolio_hold_em_data(self, df: pd.DataFrame, progress_callback=None) -> int:
-        """保存基金持仓到MongoDB"""
+        """保存基金持仓到MongoDB
+        
+        数据结构（全部使用中文字段）：
+        {
+            "基金代码": "000001",
+            "股票代码": "600519",
+            "股票名称": "贵州茅台",
+            "季度": "2024-09-30",
+            "持仓占比": 8.5,
+            "持仓市值": 12500000.0,
+            "数据源": "akshare",
+            "接口名称": "fund_portfolio_hold_em",
+            "更新时间": "2024-11-24T23:38:00"
+        }
+        
+        唯一标识：基金代码 + 股票代码 + 季度
+        """
         if df is None or df.empty:
             logger.warning("没有基金持仓需要保存")
             return 0
@@ -8491,19 +8504,20 @@ class FundDataService:
                         elif isinstance(value, dt.datetime):
                             doc[key] = value.strftime('%Y-%m-%d')
                     
+                    # 获取关键字段（全部使用中文字段名）
                     fund_code = str(doc.get('基金代码', ''))
                     stock_code = str(doc.get('股票代码', ''))
                     quarter = str(doc.get('季度', ''))
-                    doc['code'] = fund_code
-                    doc['stock_code'] = stock_code
-                    doc['quarter'] = quarter
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_portfolio_hold_em'
-                    doc['updated_at'] = datetime.now().isoformat()
                     
+                    # 添加元数据字段（中文）
+                    doc['数据源'] = 'akshare'
+                    doc['接口名称'] = 'fund_portfolio_hold_em'
+                    doc['更新时间'] = datetime.now().isoformat()
+                    
+                    # 使用基金代码 + 股票代码 + 季度作为唯一标识
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'stock_code': stock_code, 'quarter': quarter},
+                            {'基金代码': fund_code, '股票代码': stock_code, '季度': quarter},
                             {'$set': doc},
                             upsert=True
                         )
@@ -8546,11 +8560,11 @@ class FundDataService:
         try:
             total_count = await self.col_fund_portfolio_hold_em.count_documents({})
             
-            # 获取唯一基金数
-            unique_funds = await self.col_fund_portfolio_hold_em.distinct('code')
+            # 获取唯一基金数（使用中文字段名）
+            unique_funds = await self.col_fund_portfolio_hold_em.distinct('基金代码')
             
-            # 获取唯一股票数
-            unique_stocks = await self.col_fund_portfolio_hold_em.distinct('stock_code')
+            # 获取唯一股票数（使用中文字段名）
+            unique_stocks = await self.col_fund_portfolio_hold_em.distinct('股票代码')
             
             # 获取季度分布
             pipeline_quarters = [
@@ -8651,19 +8665,22 @@ class FundDataService:
                         elif isinstance(value, dt.datetime):
                             doc[key] = value.strftime('%Y-%m-%d')
                     
+                    # 使用中文字段名
                     fund_code = str(doc.get('基金代码', ''))
                     bond_code = str(doc.get('债券代码', ''))
                     quarter = str(doc.get('季度', ''))
-                    doc['code'] = fund_code
-                    doc['bond_code'] = bond_code
-                    doc['quarter'] = quarter
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_portfolio_bond_hold_em'
-                    doc['updated_at'] = datetime.now().isoformat()
+                    
+                    # 添加元数据字段（使用中文）
+                    doc['数据源'] = 'akshare'
+                    doc['接口名称'] = 'fund_portfolio_bond_hold_em'
+                    doc['更新时间'] = datetime.now().isoformat()
+                    
+                    # 删除序号字段（不需要保存）
+                    doc.pop('序号', None)
                     
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'bond_code': bond_code, 'quarter': quarter},
+                            {'基金代码': fund_code, '债券代码': bond_code, '季度': quarter},
                             {'$set': doc},
                             upsert=True
                         )
@@ -8706,8 +8723,9 @@ class FundDataService:
         try:
             total_count = await self.col_fund_portfolio_bond_hold_em.count_documents({})
             
-            unique_funds = await self.col_fund_portfolio_bond_hold_em.distinct('code')
-            unique_bonds = await self.col_fund_portfolio_bond_hold_em.distinct('bond_code')
+            # 使用中文字段名进行统计
+            unique_funds = await self.col_fund_portfolio_bond_hold_em.distinct('基金代码')
+            unique_bonds = await self.col_fund_portfolio_bond_hold_em.distinct('债券代码')
             
             pipeline_quarters = [
                 {'$group': {'_id': '$季度', 'count': {'$sum': 1}}},
@@ -8808,16 +8826,18 @@ class FundDataService:
                     fund_code = str(doc.get('基金代码', ''))
                     industry = str(doc.get('行业类别', ''))
                     end_date = str(doc.get('截止时间', ''))
-                    doc['code'] = fund_code
-                    doc['industry'] = industry
-                    doc['end_date'] = end_date
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_portfolio_industry_allocation_em'
-                    doc['updated_at'] = datetime.now().isoformat()
+                    
+                    # 添加元数据字段（使用中文）
+                    doc['数据源'] = 'akshare'
+                    doc['接口名称'] = 'fund_portfolio_industry_allocation_em'
+                    doc['更新时间'] = datetime.now().isoformat()
+                    
+                    # 删除序号字段（如果存在）
+                    doc.pop('序号', None)
                     
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'industry': industry, 'end_date': end_date},
+                            {'基金代码': fund_code, '行业类别': industry, '截止时间': end_date},
                             {'$set': doc},
                             upsert=True
                         )
@@ -8948,17 +8968,18 @@ class FundDataService:
                     stock_code = str(doc.get('股票代码', ''))
                     indicator_type = str(doc.get('指标类型', ''))
                     quarter = str(doc.get('季度', ''))
-                    doc['code'] = fund_code
-                    doc['stock_code'] = stock_code
-                    doc['indicator_type'] = indicator_type
-                    doc['quarter'] = quarter
-                    doc['source'] = 'akshare'
-                    doc['endpoint'] = 'fund_portfolio_change_em'
-                    doc['updated_at'] = datetime.now().isoformat()
+                    
+                    # 添加元数据字段（使用中文）
+                    doc['数据源'] = 'akshare'
+                    doc['接口名称'] = 'fund_portfolio_change_em'
+                    doc['更新时间'] = datetime.now().isoformat()
+                    
+                    # 删除序号字段（不需要保存）
+                    doc.pop('序号', None)
                     
                     ops.append(
                         UpdateOne(
-                            {'code': fund_code, 'stock_code': stock_code, 'indicator_type': indicator_type, 'quarter': quarter},
+                            {'基金代码': fund_code, '股票代码': stock_code, '指标类型': indicator_type, '季度': quarter},
                             {'$set': doc},
                             upsert=True
                         )
