@@ -89,6 +89,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: '',
+        name: 'BondsDefault',
         redirect: { name: 'BondsHome' }
       }
     ]
@@ -143,6 +144,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: '',
+        name: 'FundsDefault',
         redirect: { name: 'FundsHome' }
       }
     ]
@@ -198,6 +200,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: '',
+        name: 'FuturesDefault',
         redirect: { name: 'FuturesHome' }
       }
     ]
@@ -253,6 +256,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: '',
+        name: 'OptionsDefault',
         redirect: { name: 'OptionsHome' }
       }
     ]
@@ -268,7 +272,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'collections', name: 'CurrenciesCollections', component: () => import('@/views/Currencies/Collections.vue'), meta: { title: '外汇数据集合', requiresAuth: true } },
       { path: 'collections/:collectionName', name: 'CurrenciesCollectionDetail', component: () => import('@/views/Currencies/Collection.vue'), meta: { title: '外汇数据集合详情', requiresAuth: true, hideInMenu: true } },
       { path: 'analysis', name: 'CurrenciesAnalysis', component: () => import('@/views/Currencies/CurrenciesAnalysis.vue'), meta: { title: '外汇分析', requiresAuth: true } },
-      { path: '', redirect: { name: 'CurrenciesHome' } }
+      { path: '', name: 'CurrenciesDefault', redirect: { name: 'CurrenciesHome' } }
     ]
   },
   {
@@ -281,7 +285,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'overview', name: 'CryptosHome', component: () => import('@/views/Cryptos/index.vue'), meta: { title: '数字货币概览', requiresAuth: true } },
       { path: 'collections', name: 'CryptosCollections', component: () => import('@/views/Cryptos/Collections.vue'), meta: { title: '数字货币数据集合', requiresAuth: true } },
       { path: 'analysis', name: 'CryptosAnalysis', component: () => import('@/views/Cryptos/CryptosAnalysis.vue'), meta: { title: '数字货币分析', requiresAuth: true } },
-      { path: '', redirect: { name: 'CryptosHome' } }
+      { path: '', name: 'CryptosDefault', redirect: { name: 'CryptosHome' } }
     ]
   },
   {
