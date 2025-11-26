@@ -1,34 +1,18 @@
 <template>
-  <div class="collection-view">
+  <div class="collection-page">
     <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">
-            <el-icon class="title-icon"><Box /></el-icon>
-            {{ collectionInfo?.display_name || collectionName }}
-          </h1>
-          <p class="page-description">{{ collectionInfo?.description || '' }}</p>
-        </div>
-        <div class="header-actions">
-          <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
-          <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
-          <el-dropdown @command="handleUpdateCommand">
-            <el-button :icon="Download" type="primary" :loading="refreshing">
-              更新数据<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="api">API更新</el-dropdown-item>
-                <el-dropdown-item command="file">文件导入</el-dropdown-item>
-                <el-dropdown-item command="sync">远程同步</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
-        </div>
-      </div>
-    </div>
+    <CollectionPageHeader
+      :collection-name="collectionName"
+      :display-name="collectionInfo?.display_name"
+      :description="collectionInfo?.description"
+      :loading="loading"
+      :updating="refreshing"
+      :clearing="clearing"
+      @show-overview="overviewDialogVisible = true"
+      @refresh="loadData"
+      @update-command="handleUpdateCommand"
+      @clear-data="handleClearData"
+    />
 
     <div class="content">
       <!-- 实时行情图表 (仅futures_zh_spot显示) -->
@@ -43,86 +27,21 @@
         />
       </el-card>
 
-      <!-- 数据列表 -->
-      <el-card shadow="hover" class="data-card">
-        <template #header>
-          <div class="card-header">
-            <div style="display: flex; align-items: center;">
-              <span>数据列表</span>
-              <el-popover
-                placement="right"
-                title="字段说明"
-                :width="600"
-                trigger="hover"
-                v-if="fields && fields.length > 0"
-              >
-                <template #reference>
-                  <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
-                </template>
-                <el-table :data="fields" stripe border size="small" style="width: 100%">
-                  <el-table-column prop="name" label="字段名" width="200" />
-                  <el-table-column prop="type" label="类型" width="120" />
-                  <el-table-column prop="example" label="示例" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <span v-if="row.example" class="example-text">{{ row.example }}</span>
-                      <span v-else class="text-muted">-</span>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </el-popover>
-            </div>
-            <div class="header-actions">
-              <el-input
-                v-model="filterValue"
-                placeholder="搜索..."
-                style="width: 200px; margin-right: 8px;"
-                clearable
-                @clear="handleFilter"
-                @keyup.enter="handleFilter"
-              >
-                <template #prefix>
-                  <el-icon><Search /></el-icon>
-                </template>
-              </el-input>
-            </div>
-          </div>
-        </template>
-
-        <el-table
-          :data="tableData"
-          stripe
-          border
-          v-loading="loading"
-          style="width: 100%"
-          height="500"
-        >
-          <el-table-column
-            v-for="field in displayColumns"
-            :key="field"
-            :prop="field"
-            :label="field"
-            :min-width="120"
-            show-overflow-tooltip
-          >
-            <template #default="{ row }">
-              <span v-if="row[field] !== null && row[field] !== undefined">{{ row[field] }}</span>
-              <span v-else class="text-muted">-</span>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[20, 50, 100, 200]"
-            :total="total"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSizeChange"
-            @current-change="handlePageChange"
-          />
-        </div>
-      </el-card>
+      <!-- 数据表格 -->
+      <CollectionDataTable
+        :data="tableData"
+        :fields="fields"
+        :total="total"
+        :loading="loading"
+        v-model:page="currentPage"
+        v-model:page-size="pageSize"
+        v-model:filter-value="filterValue"
+        v-model:filter-field="filterField"
+        @search="handleFilter"
+        @refresh="loadData"
+        @page-change="loadData"
+        @size-change="loadData"
+      />
     </div>
 
     <!-- 更新数据对话框 -->
@@ -243,168 +162,51 @@
     </el-dialog>
 
     <!-- 文件导入对话框 -->
-    <el-dialog
-      v-model="uploadDialogVisible"
-      title="文件导入"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-upload
-        ref="uploadRef"
-        :auto-upload="false"
-        multiple
-        :on-change="handleImportFileChange"
-        :on-remove="handleImportFileRemove"
-        accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        drag
-      >
-        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-        <div class="el-upload__text">
-          拖拽文件到此处或<em>点击选择文件</em>
-        </div>
-        <template #tip>
-          <div class="el-upload__tip">
-            支持 CSV 或 Excel 文件，文件结构需与集合字段一致
-          </div>
-        </template>
-      </el-upload>
-      <template #footer>
-        <el-button @click="uploadDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="handleImportFile"
-          :loading="importing"
-          :disabled="!importFiles.length || importing"
-        >
-          导入
-        </el-button>
-      </template>
-    </el-dialog>
+    <FileImportDialog
+      ref="fileImportRef"
+      v-model:visible="uploadDialogVisible"
+      :importing="importing"
+      @import="handleImportFile"
+    />
 
     <!-- 远程同步对话框 -->
-    <el-dialog
-      v-model="syncDialogVisible"
-      title="远程同步"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form label-width="120px">
-        <el-form-item label="远程主机">
-          <el-input
-            v-model="remoteSyncHost"
-            placeholder="IP地址或URI，例如 192.168.1.10 或 mongodb://user:pwd@host:27017/db"
-          />
-        </el-form-item>
-        <el-form-item label="数据库类型">
-          <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-            <el-option label="MongoDB" value="mongodb" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="批次大小">
-          <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-            <el-option label="1000" :value="1000" />
-            <el-option label="2000" :value="2000" />
-            <el-option label="5000" :value="5000" />
-            <el-option label="10000" :value="10000" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="远程集合名">
-          <el-input
-            v-model="remoteSyncCollection"
-            :placeholder="`默认使用当前集合名: ${collectionName}`"
-          />
-        </el-form-item>
-        <el-form-item label="用户名">
-          <el-input
-            v-model="remoteSyncUsername"
-            placeholder="可选"
-          />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input
-            v-model="remoteSyncPassword"
-            type="password"
-            placeholder="可选"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item label="认证数据库">
-          <el-input
-            v-model="remoteSyncAuthSource"
-            placeholder="通常为 admin"
-          />
-        </el-form-item>
-      </el-form>
-
-      <el-alert
-        v-if="remoteSyncStats"
-        :title="`同步完成: ${remoteSyncStats.synced_count}/${remoteSyncStats.total_count} 条`"
-        type="success"
-        style="margin-top: 16px"
-        show-icon
-      />
-
-      <template #footer>
-        <el-button @click="syncDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="handleRemoteSync"
-          :loading="remoteSyncing"
-        >
-          开始同步
-        </el-button>
-      </template>
-    </el-dialog>
+    <RemoteSyncDialog
+      v-model:visible="syncDialogVisible"
+      :collection-name="collectionName"
+      :syncing="remoteSyncing"
+      :sync-result="remoteSyncStats"
+      @sync="handleRemoteSync"
+    />
 
     <!-- 数据概览对话框 -->
-    <el-dialog
-      v-model="overviewDialogVisible"
-      title="数据概览"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <div style="padding: 10px;">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="集合名称" label-align="right">
-            {{ currentCollectionInfo.name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="显示名称" label-align="right">
-            {{ currentCollectionInfo.displayName }}
-          </el-descriptions-item>
-          <el-descriptions-item label="数据总数" label-align="right">
-            {{ formatNumber(stats?.total_count || 0) }} 条
-          </el-descriptions-item>
-          <el-descriptions-item label="字段数量" label-align="right">
-            {{ currentCollectionInfo.fieldCount }} 个
-          </el-descriptions-item>
-          <el-descriptions-item label="最后更新" label-align="right" :span="2">
-            {{ stats?.latest_date || stats?.latest_time || '暂无数据' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="数据来源" label-align="right" :span="2">
-            <el-link :href="currentCollectionInfo.dataSource" target="_blank" type="primary" v-if="currentCollectionInfo.dataSource !== '暂无'">
-              {{ currentCollectionInfo.dataSource }}
-            </el-link>
-            <span v-else>{{ currentCollectionInfo.dataSource }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="描述" label-align="right" :span="2">
-            {{ collectionInfo?.description || `数据集合：${collectionName}` }}
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-      <template #footer>
-        <el-button @click="overviewDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <CollectionOverviewDialog
+      v-model:visible="overviewDialogVisible"
+      :collection-name="collectionName"
+      :display-name="collectionInfo?.display_name"
+      :description="collectionInfo?.description"
+      :total-count="stats?.total_count"
+      :field-count="fields.length"
+      :latest-update="stats?.latest_date || stats?.latest_time"
+      :data-source="collectionInfo?.data_source"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Box, Refresh, Download, Delete, Search, QuestionFilled, ArrowDown, UploadFilled } from '@element-plus/icons-vue'
+// import { UploadFilled } from '@element-plus/icons-vue'  // 已由共享组件处理
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { futuresApi } from '@/api/futures'
 import VChart from 'vue-echarts'
+import {
+  CollectionDataTable,
+  CollectionPageHeader,
+  CollectionOverviewDialog,
+  FileImportDialog,
+  RemoteSyncDialog,
+  type RemoteSyncConfig,
+} from '@/components/collection'
 
 const route = useRoute()
 const collectionName = ref(route.params.collectionName as string)
@@ -452,8 +254,7 @@ const taskMessage = ref('')
 let taskPollTimer: any = null
 
 // 文件导入相关
-const uploadRef = ref()
-const importFiles = ref<any[]>([])
+const fileImportRef = ref()
 const importing = ref(false)
 
 // 远程同步相关
@@ -607,28 +408,18 @@ const handleUpdateCommand = (command: string) => {
   }
 }
 
-// 文件导入处理
-const handleImportFileChange = (file: any) => {
-  importFiles.value = [file]
-}
-
-const handleImportFileRemove = () => {
-  importFiles.value = []
-}
-
-const handleImportFile = async () => {
-  if (!importFiles.value.length) return
+// 文件导入处理（使用共享组件）
+const handleImportFile = async (files: File[]) => {
+  if (!files.length) return
   
   importing.value = true
-  const file = importFiles.value[0].raw
   
   try {
-    const res = await futuresApi.uploadData(collectionName.value, file)
+    const res = await futuresApi.uploadData(collectionName.value, files[0])
     
     if (res.success) {
       ElMessage.success(res.message || '导入成功')
-      if (uploadRef.value) uploadRef.value.clearFiles()
-      importFiles.value = []
+      fileImportRef.value?.clearFiles()
       uploadDialogVisible.value = false
       await loadStats()
       await loadData()
@@ -643,27 +434,20 @@ const handleImportFile = async () => {
   }
 }
 
-// 远程同步处理
-const handleRemoteSync = async () => {
-  if (!remoteSyncHost.value) {
-    ElMessage.warning('请输入远程主机地址')
-    return
-  }
-
+// 远程同步处理（使用共享组件）
+const handleRemoteSync = async (config: RemoteSyncConfig) => {
   remoteSyncing.value = true
   remoteSyncStats.value = null
 
   try {
-    const config = {
-      host: remoteSyncHost.value,
-      username: remoteSyncUsername.value,
-      password: remoteSyncPassword.value,
-      authSource: remoteSyncAuthSource.value,
-      collection: remoteSyncCollection.value || collectionName.value,
-      batch_size: remoteSyncBatchSize.value
-    }
-
-    const res = await futuresApi.syncData(collectionName.value, config)
+    const res = await futuresApi.syncData(collectionName.value, {
+      host: config.host,
+      username: config.username,
+      password: config.password,
+      authSource: config.authSource,
+      collection: config.collection || collectionName.value,
+      batch_size: config.batchSize
+    })
 
     if (res.success) {
       remoteSyncStats.value = res.data

@@ -158,7 +158,7 @@ const searchOptions = async () => {
         ElMessage.info('未找到匹配的期权合约')
       }
     } else {
-      ElMessage.error(res.error || '搜索失败')
+      ElMessage.error(res.message || '搜索失败')
     }
   } catch (error: any) {
     console.error('搜索期权失败:', error)

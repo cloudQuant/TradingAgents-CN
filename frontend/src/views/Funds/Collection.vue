@@ -1,33 +1,18 @@
 <template>
-  <div class="collection-view">
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="page-title">
-            <el-icon class="title-icon"><Box /></el-icon>
-            {{ collectionInfo?.display_name || collectionName }}
-          </h1>
-          <p class="page-description">{{ collectionInfo?.description || '' }}</p>
-        </div>
-        <div class="header-actions">
-          <el-button :icon="Box" @click="showOverviewDialog">数据概览</el-button>
-          <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
-          <el-dropdown @command="handleUpdateCommand" trigger="click">
-            <el-button type="primary" :loading="refreshing || importing || remoteSyncing">
-              更新数据 <el-icon class="el-icon--right"><arrow-down /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="api" :icon="Download">API更新</el-dropdown-item>
-                <el-dropdown-item command="file" :icon="Upload">文件导入</el-dropdown-item>
-                <el-dropdown-item command="remote" :icon="Connection">远程同步</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-button :icon="Delete" type="danger" @click="handleClearData" :loading="clearing">清空数据</el-button>
-        </div>
-      </div>
-    </div>
+  <div class="collection-page">
+    <!-- 页面头部 -->
+    <CollectionPageHeader
+      :collection-name="collectionName"
+      :display-name="collectionInfo?.display_name"
+      :description="collectionInfo?.description"
+      :loading="loading"
+      :updating="refreshing || importing || remoteSyncing"
+      :clearing="clearing"
+      @show-overview="overviewDialogVisible = true"
+      @refresh="loadData"
+      @update-command="handleUpdateCommand"
+      @clear-data="handleClearData"
+    />
 
     <div class="content">
       <!-- 可视化分析 Tabs -->
@@ -333,148 +318,74 @@
       </el-tabs>
 
       <!-- 数据列表 -->
-      <el-card shadow="hover" class="data-card">
-        <template #header>
-          <div class="card-header">
-            <div style="display: flex; align-items: center;">
-              <span>数据</span>
-              <el-popover
-                placement="right"
-                title="字段说明"
-                :width="600"
-                trigger="hover"
-                v-if="fields && fields.length > 0"
-              >
-                <template #reference>
-                  <el-icon style="margin-left: 8px; cursor: pointer; color: #909399;"><QuestionFilled /></el-icon>
-                </template>
-                <el-table :data="fields" stripe border size="small">
-                  <el-table-column prop="name" label="字段名" width="200" />
-                  <el-table-column prop="type" label="类型" width="120" />
-                  <el-table-column prop="example" label="示例" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <span v-if="row.example" class="example-text">{{ row.example }}</span>
-                      <span v-else class="text-muted">-</span>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </el-popover>
+      <CollectionDataTable
+        :data="items"
+        :fields="fields"
+        :total="total"
+        :loading="loading"
+        :page="page"
+        :page-size="pageSize"
+        :sortable="true"
+        :fetch-all-data="fetchAllDataForExport"
+        :collection-name="collectionName"
+        v-model:filter-value="filterValue"
+        v-model:filter-field="filterField"
+        @search="loadData"
+        @page-change="loadData"
+        @size-change="loadData"
+        @sort-change="handleSortChange"
+      >
+        <!-- 额外筛选器 -->
+        <template #extra-filters>
+          <el-select
+            v-if="collectionName === 'fund_info_index_em'"
+            v-model="filterCompany"
+            placeholder="基金公司"
+            style="width: 150px; margin-right: 8px;"
+            clearable
+            filterable
+            @change="handleFilterChange('company', $event)"
+          >
+            <el-option label="全部基金公司" value="全部" />
+            <el-option v-for="company in companyOptions" :key="company" :label="company" :value="company" />
+          </el-select>
+        </template>
+
+        <!-- 指数型基金筛选栏 (表格前内容) -->
+        <template #before-table v-if="collectionName === 'fund_info_index_em'">
+          <div class="filter-section">
+            <div class="filter-row">
+              <span class="filter-label">跟踪标的：</span>
+              <div class="filter-options">
+                <span 
+                  v-for="opt in targetOptions" 
+                  :key="opt" 
+                  class="filter-option" 
+                  :class="{ active: filterTarget === opt }"
+                  @click="handleFilterChange('target', opt)"
+                >
+                  {{ opt }}
+                </span>
+              </div>
             </div>
-            <div class="header-actions">
-              <el-select
-                v-if="collectionName === 'fund_info_index_em'"
-                v-model="filterCompany"
-                placeholder="基金公司"
-                style="width: 150px; margin-right: 8px;"
-                clearable
-                filterable
-                @change="handleFilterChange('company', $event)"
-              >
-                <el-option label="全部基金公司" value="全部" />
-                <el-option v-for="company in companyOptions" :key="company" :label="company" :value="company" />
-              </el-select>
-              <el-input
-                v-model="filterValue"
-                placeholder="搜索..."
-                style="width: 200px; margin-right: 8px;"
-                clearable
-                @clear="loadData"
-                @keyup.enter="loadData"
-              >
-                <template #prefix>
-                  <el-icon><Search /></el-icon>
-                </template>
-              </el-input>
-              <el-select
-                v-model="filterField"
-                placeholder="搜索字段"
-                style="width: 150px; margin-right: 8px;"
-                clearable
-              >
-                <el-option
-                  v-for="field in fields"
-                  :key="field.name"
-                  :label="field.name"
-                  :value="field.name"
-                />
-              </el-select>
-              <el-button size="small" :icon="Search" @click="loadData">搜索</el-button>
+            <div class="filter-row" style="margin-top: 10px;">
+              <span class="filter-label">跟踪方式：</span>
+              <div class="filter-options">
+                <span 
+                  v-for="opt in methodOptions" 
+                  :key="opt" 
+                  class="filter-option" 
+                  :class="{ active: filterMethod === opt }"
+                  @click="handleFilterChange('method', opt)"
+                >
+                  {{ opt }}
+                </span>
+              </div>
             </div>
+            <el-divider style="margin: 15px 0;" />
           </div>
         </template>
-        
-        <!-- 指数型基金筛选栏 (整合到数据卡片内部) -->
-        <div class="filter-section" v-if="collectionName === 'fund_info_index_em'">
-          <div class="filter-row">
-            <span class="filter-label">跟踪标的：</span>
-            <div class="filter-options">
-              <span 
-                v-for="opt in targetOptions" 
-                :key="opt" 
-                class="filter-option" 
-                :class="{ active: filterTarget === opt }"
-                @click="handleFilterChange('target', opt)"
-              >
-                {{ opt }}
-              </span>
-            </div>
-          </div>
-          <div class="filter-row" style="margin-top: 10px;">
-            <span class="filter-label">跟踪方式：</span>
-            <div class="filter-options">
-               <span 
-                v-for="opt in methodOptions" 
-                :key="opt" 
-                class="filter-option" 
-                :class="{ active: filterMethod === opt }"
-                @click="handleFilterChange('method', opt)"
-              >
-                {{ opt }}
-              </span>
-            </div>
-          </div>
-          <el-divider style="margin: 15px 0;" />
-        </div>
-
-        <el-table
-          :data="items"
-          v-loading="loading"
-          stripe
-          border
-          :max-height="600"
-          @sort-change="handleSortChange"
-        >
-          <el-table-column
-            v-for="field in fields"
-            :key="field.name"
-            :prop="field.name"
-            :label="field.name"
-            :min-width="getColumnWidth(field.name)"
-            show-overflow-tooltip
-            sortable="custom"
-          >
-            <template #default="{ row }">
-              <span v-if="row[field.name] !== null && row[field.name] !== undefined">
-                {{ row[field.name] }}
-              </span>
-              <span v-else class="text-muted">-</span>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <!-- 分页 -->
-        <div class="pagination-wrapper">
-          <el-pagination
-            v-model:current-page="page"
-            v-model:page-size="pageSize"
-            :page-sizes="[20, 50, 100, 200]"
-            :total="total"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="loadData"
-            @current-change="loadData"
-          />
-        </div>
-      </el-card>
+      </CollectionDataTable>
     </div>
 
     <!-- API更新对话框（动态配置版） -->
@@ -659,196 +570,48 @@
     </el-dialog>
 
     <!-- 文件导入对话框 -->
-    <el-dialog
-      v-model="fileImportDialogVisible"
-      title="文件导入"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form label-width="100px">
-        <el-form-item label="集合名称">
-          <el-input :value="collectionInfo?.display_name || collectionName" disabled />
-        </el-form-item>
-        
-        <el-divider content-position="left">选择文件</el-divider>
-        <div style="width: 100%">
-          <el-upload
-            ref="uploadRef"
-            :auto-upload="false"
-            multiple
-            :on-change="handleImportFileChange"
-            :on-remove="handleImportFileRemove"
-            accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            drag
-          >
-            <div class="el-upload__text">
-              拖拽文件到此处或<em>点击选择文件</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 CSV 或 Excel 文件
-              </div>
-            </template>
-          </el-upload>
-        </div>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="fileImportDialogVisible = false">关闭</el-button>
-        <el-button 
-          type="primary" 
-          @click="handleImportFile"
-          :loading="importing"
-          :disabled="!importFiles.length || importing"
-        >
-          {{ importing ? '导入中...' : '开始导入' }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <FileImportDialog
+      ref="fileImportRef"
+      v-model:visible="fileImportDialogVisible"
+      :importing="importing"
+      @import="handleImportFile"
+    />
 
     <!-- 远程同步对话框 -->
-    <el-dialog
-      v-model="remoteSyncDialogVisible"
-      title="远程同步"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form label-width="120px">
-        <el-form-item label="集合名称">
-          <el-input :value="collectionInfo?.display_name || collectionName" disabled />
-        </el-form-item>
-        
-        <el-divider content-position="left">远程MongoDB配置</el-divider>
-        <el-form-item label="远程地址">
-          <el-input
-            v-model="remoteSyncHost"
-            placeholder="远程 MongoDB IP 或 URI，例如 192.168.1.10"
-          />
-        </el-form-item>
-        
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="数据库类型">
-              <el-select v-model="remoteSyncDbType" disabled style="width: 100%">
-                <el-option label="MongoDB" value="mongodb" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="批次大小">
-              <el-select v-model="remoteSyncBatchSize" style="width: 100%">
-                <el-option label="1000" :value="1000" />
-                <el-option label="2000" :value="2000" />
-                <el-option label="5000" :value="5000" />
-                <el-option label="10000" :value="10000" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="集合名称">
-              <el-input
-                v-model="remoteSyncCollection"
-                :placeholder="`默认 ${collectionName}`"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="用户名">
-              <el-input
-                v-model="remoteSyncUsername"
-                placeholder="可选"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        
-        <el-form-item label="认证库">
-          <el-input
-            v-model="remoteSyncAuthSource"
-            placeholder="authSource，通常为 admin"
-          />
-        </el-form-item>
-        
-        <el-form-item label="密码">
-          <el-input
-            v-model="remoteSyncPassword"
-            type="password"
-            show-password
-            placeholder="可选"
-          />
-        </el-form-item>
-        
-        <div
-          v-if="remoteSyncStats"
-          style="margin-top: 12px; padding: 12px; background: #f5f7fa; border-radius: 4px; font-size: 13px; color: #606266;"
-        >
-          <div>最近一次同步：</div>
-          <div style="margin-top: 4px;">远程共 {{ remoteSyncStats.remote_total }} 条，已写入/更新 {{ remoteSyncStats.synced_count }} 条</div>
-        </div>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="remoteSyncDialogVisible = false">关闭</el-button>
-        <el-button 
-          type="primary" 
-          @click="handleRemoteSync"
-          :loading="remoteSyncing"
-          :disabled="!remoteSyncHost || remoteSyncing"
-        >
-          {{ remoteSyncing ? '同步中...' : '开始同步' }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <RemoteSyncDialog
+      v-model:visible="remoteSyncDialogVisible"
+      :collection-name="collectionName"
+      :syncing="remoteSyncing"
+      :sync-result="remoteSyncStats"
+      @sync="handleRemoteSync"
+    />
 
     <!-- 数据概览对话框 -->
-    <el-dialog
-      v-model="overviewDialogVisible"
-      title="数据概览"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <div style="padding: 10px;">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="集合名称" label-align="right">
-            {{ currentCollectionInfo.name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="显示名称" label-align="right">
-            {{ currentCollectionInfo.displayName }}
-          </el-descriptions-item>
-          <el-descriptions-item label="数据总数" label-align="right">
-            {{ formatNumber(stats?.total_count || 0) }} 条
-          </el-descriptions-item>
-          <el-descriptions-item label="字段数量" label-align="right">
-            {{ currentCollectionInfo.fieldCount }} 个
-          </el-descriptions-item>
-          <el-descriptions-item label="最后更新" label-align="right" :span="2">
-            {{ stats?.latest_date || stats?.latest_time || '暂无数据' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="数据来源" label-align="right" :span="2">
-            <el-link :href="currentCollectionInfo.dataSource" target="_blank" type="primary" v-if="currentCollectionInfo.dataSource !== '暂无'">
-              {{ currentCollectionInfo.dataSource }}
-            </el-link>
-            <span v-else>{{ currentCollectionInfo.dataSource }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="描述" label-align="right" :span="2">
-            {{ collectionInfo?.description || `数据集合：${collectionName}` }}
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-      <template #footer>
-        <el-button @click="overviewDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <CollectionOverviewDialog
+      v-model:visible="overviewDialogVisible"
+      :collection-name="collectionName"
+      :display-name="collectionInfo?.display_name"
+      :description="collectionInfo?.description"
+      :total-count="stats?.total_count"
+      :field-count="fields.length"
+      :latest-update="stats?.latest_date || stats?.latest_time"
+      :data-source="currentCollectionInfo.dataSource"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Box, Refresh, Search, Download, Delete, QuestionFilled, ArrowDown, Upload, Connection } from '@element-plus/icons-vue'
+// import { Search, QuestionFilled } from '@element-plus/icons-vue'
+import {
+  CollectionPageHeader,
+  CollectionDataTable,
+  CollectionOverviewDialog,
+  FileImportDialog,
+  RemoteSyncDialog,
+  type RemoteSyncConfig,
+} from '@/components/collection'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fundsApi } from '@/api/funds'
 import { use } from 'echarts/core'
@@ -856,7 +619,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
-import dayjs from 'dayjs'
+// import dayjs from 'dayjs'
 
 use([CanvasRenderer, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -918,16 +681,6 @@ const sortDir = ref<'asc' | 'desc'>('desc')
 // 统计数据
 const stats = ref<any>(null)
 const collectionInfo = ref<any>(null)
-
-// 计算时间跨度
-const dataDuration = computed(() => {
-  if (!stats.value?.earliest_date || !stats.value?.latest_date) return '-'
-  const start = dayjs(stats.value.earliest_date)
-  const end = dayjs(stats.value.latest_date)
-  const days = end.diff(start, 'day')
-  if (days < 365) return `${days}天`
-  return `${(days / 365).toFixed(1)}年`
-})
 
 // 是否有图表数据
 const hasCharts = computed(() => {
@@ -1722,28 +1475,10 @@ const indexSymbol = ref('全部')
 // 新浪基金类型选择
 const selectedFundType = ref('全部')
 const indexIndicator = ref('全部')
-const indexSymbolOptions = [
-  { label: '全部', value: '全部' },
-  { label: '沪深指数', value: '沪深指数' },
-  { label: '行业主题', value: '行业主题' },
-  { label: '大盘指数', value: '大盘指数' },
-  { label: '中盘指数', value: '中盘指数' },
-  { label: '小盘指数', value: '小盘指数' },
-  { label: '股票指数', value: '股票指数' },
-  { label: '债券指数', value: '债券指数' }
-]
-const indexIndicatorOptions = [
-  { label: '全部', value: '全部' },
-  { label: '被动指数型', value: '被动指数型' },
-  { label: '增强指数型', value: '增强指数型' }
-]
-
 // ETF/LOF分时行情参数 - 单个更新
 const singleSymbol = ref('')
 const singlePeriod = ref('5')
 const singleAdjust = ref('hfq')
-const singleStartDate = ref('')
-const singleEndDate = ref('')
 
 // ETF/LOF分时行情参数 - 批量更新
 const batchPeriod = ref('5')
@@ -1751,18 +1486,10 @@ const batchAdjust = ref('hfq')
 const batchConcurrency = ref(5)
 
 // 文件导入相关
-const uploadRef = ref()
-const importFiles = ref<any[]>([])
+const fileImportRef = ref()
 const importing = ref(false)
 
 // 远程同步相关
-const remoteSyncHost = ref('')
-const remoteSyncDbType = ref('mongodb')
-const remoteSyncCollection = ref('')
-const remoteSyncUsername = ref('')
-const remoteSyncPassword = ref('')
-const remoteSyncAuthSource = ref('admin')
-const remoteSyncBatchSize = ref(1000)
 const remoteSyncing = ref(false)
 const remoteSyncStats = ref<any>(null)
 
@@ -2196,11 +1923,6 @@ const collectionStaticInfo: Record<string, any> = {
   }
 }
 
-// 显示数据概览对话框
-const showOverviewDialog = () => {
-  overviewDialogVisible.value = true
-}
-
 // 获取当前集合的固定信息
 const currentCollectionInfo = computed(() => {
   return collectionStaticInfo[collectionName.value] || {
@@ -2210,11 +1932,6 @@ const currentCollectionInfo = computed(() => {
     dataSource: '暂无'
   }
 })
-
-// 格式化数字
-const formatNumber = (num: number): string => {
-  return num.toLocaleString('zh-CN')
-}
 
 // 加载数据
 const loadData = async () => {
@@ -2279,13 +1996,40 @@ const handleSortChange = ({ prop, order }: any) => {
   loadData()
 }
 
-// 获取列宽
-const getColumnWidth = (fieldName: string): number => {
-  if (fieldName.includes('代码') || fieldName.includes('code')) return 120
-  if (fieldName.includes('类型') || fieldName.includes('type')) return 100
-  if (fieldName.includes('简称') || fieldName.includes('name')) return 200
-  if (fieldName.includes('全称')) return 300
-  return 150
+// 获取全部数据用于导出（分页获取）
+const fetchAllDataForExport = async (): Promise<any[]> => {
+  const allData: any[] = []
+  const batchSize = 500 // 后端限制最大 500
+  let currentPage = 1
+  let hasMore = true
+  
+  while (hasMore) {
+    const res = await fundsApi.getCollectionData(collectionName.value, {
+      page: currentPage,
+      page_size: batchSize,
+      sort_by: sortBy.value || undefined,
+      sort_dir: sortDir.value,
+      filter_field: filterField.value || undefined,
+      filter_value: filterValue.value || undefined,
+    })
+    
+    if (!res.success) {
+      throw new Error(res.message || '获取数据失败')
+    }
+    
+    const items = res.data?.items || []
+    allData.push(...items)
+    
+    // 检查是否还有更多数据
+    const totalItems = res.data?.total || 0
+    hasMore = allData.length < totalItems && items.length === batchSize
+    currentPage++
+    
+    // 安全限制，防止无限循环
+    if (currentPage > 1000) break
+  }
+  
+  return allData
 }
 
 // 处理下拉菜单命令
@@ -2307,15 +2051,8 @@ const handleUpdateCommand = (command: string) => {
   }
 }
 
-// 处理更新数据（保留兼容性）
-const handleRefreshData = () => {
-  apiRefreshDialogVisible.value = true
-  progressPercentage.value = 0
-  progressStatus.value = ''
-  progressMessage.value = ''
-}
-
-// 更新数据
+// 更新数据（旧版，保留供参考）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const refreshData = async (mode: string = 'batch') => {
   // 支持的自动更新集合列表
   const supportedCollections = [
@@ -2747,29 +2484,19 @@ const cancelRefresh = () => {
   progressMessage.value = ''
 }
 
-// 文件处理
-const handleImportFileChange = (file: any, fileList: any[]) => {
-  if (!file) return
-  importFiles.value = fileList.slice(-1) // 仅允许单文件
-}
-
-const handleImportFileRemove = () => {
-  importFiles.value = []
-}
-
-const handleImportFile = async () => {
-  if (!importFiles.value.length) return
+// 文件导入处理（使用共享组件）
+const handleImportFile = async (files: File[]) => {
+  if (!files.length) return
   
   importing.value = true
-  const file = importFiles.value[0].raw
   
   try {
-    const res = await fundsApi.uploadData(collectionName.value, file)
+    const res = await fundsApi.uploadData(collectionName.value, files[0])
     
     if (res.success) {
-      ElMessage.success(res.data.message || '导入成功')
-      if (uploadRef.value) uploadRef.value.clearFiles()
-      importFiles.value = []
+      ElMessage.success(res.data?.message || '导入成功')
+      fileImportRef.value?.clearFiles()
+      fileImportDialogVisible.value = false
       loadData()
     } else {
       ElMessage.error(res.message || '导入失败')
@@ -2781,27 +2508,20 @@ const handleImportFile = async () => {
   }
 }
 
-// 远程同步处理
-const handleRemoteSync = async () => {
-  if (!remoteSyncHost.value) {
-    ElMessage.warning('请输入远程主机地址')
-    return
-  }
-
+// 远程同步处理（使用共享组件）
+const handleRemoteSync = async (config: RemoteSyncConfig) => {
   remoteSyncing.value = true
   remoteSyncStats.value = null
 
   try {
-    const config = {
-      host: remoteSyncHost.value,
-      username: remoteSyncUsername.value,
-      password: remoteSyncPassword.value,
-      authSource: remoteSyncAuthSource.value,
-      collection: remoteSyncCollection.value || collectionName.value,
-      batch_size: remoteSyncBatchSize.value
-    }
-
-    const res = await fundsApi.syncData(collectionName.value, config)
+    const res = await fundsApi.syncData(collectionName.value, {
+      host: config.host,
+      username: config.username,
+      password: config.password,
+      authSource: config.authSource,
+      collection: config.collection || collectionName.value,
+      batch_size: config.batchSize
+    })
 
     if (res.success) {
       remoteSyncStats.value = res.data
