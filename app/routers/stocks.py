@@ -7,10 +7,16 @@
 from typing import Optional, Dict, Any, List, Tuple
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, UploadFile, File, Body
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
+from pydantic import BaseModel
 import logging
 import re
 import uuid
 import asyncio
+import tempfile
+import os
+from datetime import datetime
 
 from app.routers.auth_db import get_current_user
 from app.core.database import get_mongo_db
@@ -3599,3 +3605,75 @@ async def clear_stock_a_all_pb(
     from app.services.stock.stock_a_all_pb_service import StockAAllPbService
     service = StockAAllPbService(db)
     return await service.clear_data()
+
+
+# ============ 集合导出功能 ============
+
+class StockCollectionExportRequest(BaseModel):
+    """导出股票集合请求"""
+    file_format: str = "xlsx"  # csv, xlsx, json
+    filter_field: Optional[str] = None
+    filter_value: Optional[str] = None
+    sort_by: Optional[str] = None
+    sort_dir: str = "desc"
+
+
+@router.post("/collections/{collection_name}/export")
+async def export_stock_collection_data(
+    collection_name: str,
+    request: StockCollectionExportRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """导出指定股票集合的全部数据到文件"""
+    from app.services.collection_export_service import CollectionExportService
+
+    db = get_mongo_db()
+    service = CollectionExportService(db)
+
+    try:
+        # 构建过滤条件
+        filters: Dict[str, Any] = {}
+        if request.filter_field and request.filter_value:
+            field = request.filter_field.strip()
+            value = request.filter_value.strip()
+            if field and value:
+                if field in ["code", "name", "symbol"]:
+                    filters[field] = {"$regex": value, "$options": "i"}
+                else:
+                    filters[field] = value
+
+        export_format = request.file_format.lower()
+        if export_format == "excel":
+            export_format = "xlsx"
+
+        file_bytes = await service.export_to_file(
+            collection_name=collection_name,
+            file_format=export_format,
+            filters=filters,
+        )
+
+        suffix_map = {"csv": "csv", "xlsx": "xlsx", "json": "json"}
+        suffix = suffix_map.get(export_format, "xlsx")
+        filename = f"{collection_name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{suffix}"
+
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=f".{suffix}", prefix="stock-export-"
+        ) as tmp_file:
+            tmp_file.write(file_bytes)
+            tmp_path = tmp_file.name
+
+        def _cleanup(path: str) -> None:
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
+
+        return FileResponse(
+            path=tmp_path,
+            filename=filename,
+            media_type="application/octet-stream",
+            background=BackgroundTask(_cleanup, tmp_path),
+        )
+    except Exception as e:
+        logger.error(f"导出股票集合 {collection_name} 数据失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")

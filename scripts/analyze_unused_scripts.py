@@ -228,6 +228,82 @@ def _save_project_files_cache(cache_path: Path, project_root: Path, files: List[
         log(f"写入文件缓存失败: {exc}", logging.WARNING)
 
 
+def _scan_project_files(
+    project_dir: Path,
+    scripts_dir: Path,
+    check_runtime: TimeChecker = None,
+) -> List[Path]:
+    """扫描项目文件列表（不含 scripts 目录）"""
+    search_extensions = {'.py', '.md', '.txt', '.yml', '.yaml', '.json', '.sh', '.ps1', '.bat', '.rst', '.toml'}
+    exclude_dirs = {
+        '__pycache__', '.git', 'node_modules', '.venv', 'venv', 'env',
+        '.pytest_cache', '.mypy_cache', 'dist', 'build', '.idea', '.vscode',
+    }
+    docs_dir = project_dir / 'docs'
+    files_to_search: List[Path] = []
+
+    for root, dirs, files in os.walk(project_dir):
+        if check_runtime:
+            check_runtime()
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        root_path = Path(root)
+
+        # 跳过 scripts 目录自身
+        try:
+            root_path.relative_to(scripts_dir)
+            continue
+        except ValueError:
+            pass
+
+        for file in files:
+            file_path = root_path / file
+            suffix = file_path.suffix.lower()
+
+            # 排除 docs 目录中的 Markdown 文档
+            if suffix == '.md':
+                try:
+                    file_path.relative_to(docs_dir)
+                    continue
+                except ValueError:
+                    pass
+
+            if suffix in search_extensions:
+                if check_runtime:
+                    check_runtime()
+                files_to_search.append(file_path)
+
+    return files_to_search
+
+
+def _search_single_script_references(
+    script: Path,
+    identifiers: Set[str],
+    project_files: List[Path],
+    project_root: Path,
+    check_runtime: TimeChecker = None,
+) -> Dict[str, List[Tuple[Path, str]]]:
+    """在项目文件中搜索单个脚本的引用"""
+    refs: Dict[str, List[Tuple[Path, str]]] = defaultdict(list)
+    total_files = len(project_files)
+    
+    for idx, file_path in enumerate(project_files):
+        if check_runtime:
+            check_runtime()
+        
+        # 每处理100个文件输出一次进度
+        if (idx + 1) % 500 == 0 or idx == total_files - 1:
+            pct = ((idx + 1) / total_files * 100) if total_files else 100
+            print(f"\r    搜索进度: {idx + 1}/{total_files} ({pct:.1f}%)", end='', flush=True)
+        
+        found = search_references_in_file(file_path, identifiers, check_runtime)
+        for identifier, locations in found.items():
+            for loc in locations:
+                refs[identifier].append((file_path, loc))
+    
+    print()  # 换行
+    return refs
+
+
 def get_script_identifiers(script_path: Path, scripts_dir: Path) -> Set[str]:
     """
     获取脚本的各种可能被引用的标识符
@@ -431,11 +507,17 @@ def search_references_in_project(
     return script_references
 
 
-def _make_time_checker(start_time: float, max_seconds: int) -> Callable[[], None]:
+def _make_time_checker(start_time: float, max_seconds: Optional[int]) -> Callable[[], None]:
+    if max_seconds is None or max_seconds <= 0:
+        def no_op() -> None:
+            return None
+        return no_op
+
     def check():
         elapsed = time.monotonic() - start_time
         if elapsed > max_seconds:
             raise AnalysisTimeoutError(f"运行已超过 {max_seconds} 秒，终止分析")
+
     return check
 
 
@@ -449,7 +531,6 @@ def analyze_unused_scripts(
     """主分析函数"""
     
     start_time = time.monotonic()
-    time_checker = _make_time_checker(start_time, max_runtime_seconds)
 
     if project_root is None:
         # 获取项目根目录
@@ -461,12 +542,18 @@ def analyze_unused_scripts(
     mode = (mode or ALL_MODE).lower()
     if mode not in {ALL_MODE, SINGLE_MODE}:
         raise ValueError(f"未知检测模式: {mode}，可选值: {ALL_MODE}/{SINGLE_MODE}")
+    if mode == ALL_MODE:
+        # 批量模式允许长时间运行，禁用超时检查
+        time_checker = _make_time_checker(start_time, None)
+        log("批量模式: 已禁用 60 秒超时限制，直到分析完成才结束")
+    else:
+        time_checker = _make_time_checker(start_time, max_runtime_seconds)
+
     state_path = scripts_dir / DEFAULT_STATE_FILENAME
     unused_state_path = scripts_dir / DEFAULT_UNUSED_STATE_FILENAME
-    if mode == SINGLE_MODE:
-        _ensure_state_file(state_path)
-    if mode == ALL_MODE:
-        _ensure_unused_state_file(unused_state_path)
+    # 确保两个状态文件都存在
+    _ensure_state_file(state_path)
+    _ensure_unused_state_file(unused_state_path)
 
     # 组装日志文件路径
     if log_file:
@@ -488,6 +575,13 @@ def analyze_unused_scripts(
     log("[1/4] 扫描 scripts 目录中的脚本文件...")
     all_scripts = get_all_scripts(scripts_dir, time_checker)
     time_checker()
+    
+    # 加载已记录的脚本状态
+    used_script_records = _load_used_scripts_state(state_path)
+    unused_script_records = _load_unused_scripts_state(unused_state_path)
+    already_analyzed = used_script_records | unused_script_records
+    log(f"已记录为【已使用】的脚本: {len(used_script_records)} 个")
+    log(f"已记录为【未使用】的脚本: {len(unused_script_records)} 个")
 
     
     # 按类型统计
@@ -498,21 +592,29 @@ def analyze_unused_scripts(
     for ext, count in sorted(ext_count.items()):
         log(f"  - {ext}: {count} 个")
     
+    # 过滤掉已经分析过的脚本
+    scripts_to_analyze = []
+    for script in all_scripts:
+        rel = str(script.relative_to(scripts_dir)).replace('\\', '/')
+        if rel not in already_analyzed:
+            scripts_to_analyze.append(script)
+    
+    log(f"需要分析的脚本: {len(scripts_to_analyze)} 个（跳过已记录的 {len(already_analyzed)} 个）")
+    
     selected_script_path: Optional[Path] = None
 
-    # SINGLE 模式且未指定脚本时，从记录中选择
+    # SINGLE 模式且未指定脚本时，从未分析的脚本中选择
     if mode == SINGLE_MODE and not script_filter:
-        used_script_records = _load_used_scripts_state(state_path)
-        remaining_scripts = []
-        for script in all_scripts:
-            time_checker()
-            rel = str(script.relative_to(scripts_dir)).replace('\\', '/')
-            if rel not in used_script_records:
-                remaining_scripts.append(script)
-        if not remaining_scripts:
-            log("所有脚本都已在记录中，随机选择一个进行检测")
-            remaining_scripts = list(all_scripts)
-        selected_script_path = random.choice(remaining_scripts)
+        if not scripts_to_analyze:
+            log("所有脚本都已分析完成！")
+            return {
+                'total': len(all_scripts),
+                'used': len(used_script_records),
+                'unused': len(unused_script_records),
+                'unused_scripts': list(unused_script_records),
+                'used_scripts': list(used_script_records),
+            }
+        selected_script_path = random.choice(scripts_to_analyze)
         script_filter = str(selected_script_path.relative_to(scripts_dir)).replace('\\', '/')
         log(f"随机选择脚本进行检测: {script_filter}")
 
@@ -531,59 +633,75 @@ def analyze_unused_scripts(
         if len(matched_scripts) > 1:
             choices = ', '.join(str(s.relative_to(scripts_dir)) for s in matched_scripts)
             raise ValueError(f"找到多个匹配脚本 ({choices})，请使用相对路径精确指定")
-        all_scripts = matched_scripts
-        selected_script_path = all_scripts[0]
+        scripts_to_analyze = matched_scripts
+        selected_script_path = scripts_to_analyze[0]
         log(f"匹配脚本: {selected_script_path.relative_to(scripts_dir)}")
 
-    # 2. 为每个脚本生成标识符
-    log("[2/4] 生成脚本标识符...")
-    script_identifiers = {}
-    for script in all_scripts:
-        time_checker()
-        identifiers = get_script_identifiers(script, scripts_dir)
-        script_identifiers[script] = identifiers
-        log(f"  {script.name} -> {identifiers}")
-    
-    # 3. 在项目中搜索引用
-    log("[3/4] 在项目中搜索引用（这可能需要一些时间）...")
+    # 准备文件缓存
     file_cache_path = scripts_dir / DEFAULT_FILE_CACHE
-    references = search_references_in_project(
-        project_root,
-        scripts_dir,
-        script_identifiers,
-        time_checker,
-        file_cache_path=file_cache_path,
-    )
-    time_checker()
     
-    # 4. 分析结果
-    log("[4/4] 分析结果...")
-    if mode == ALL_MODE:
-        log(f"[ALL] 共 {len(all_scripts)} 个脚本，开始逐个汇总并写入状态...")
-    unused_records: Optional[Set[str]] = None
-    if mode == ALL_MODE:
-        unused_records = _load_unused_scripts_state(unused_state_path)
-
+    # 加载项目文件列表（只加载一次）
+    log("[2/4] 加载项目文件列表...")
+    cached_files = _load_project_files_cache(file_cache_path, project_root)
+    if not cached_files:
+        log("未命中文件缓存，开始扫描项目文件...")
+        cached_files = _scan_project_files(project_root, scripts_dir, time_checker)
+        _save_project_files_cache(file_cache_path, project_root, cached_files)
+    log(f"项目文件总数: {len(cached_files)} 个")
+    
+    # 3. 逐个分析脚本
+    total_scripts = len(scripts_to_analyze)
+    log(f"[3/4] 开始逐个分析脚本 (共 {total_scripts} 个)...")
+    
     used_scripts = []
     unused_scripts = []
     
-    for script, refs in references.items():
-        rel_path = get_relative_path(script)
-        script_used = any(refs.values())
-        if any(refs.values()):
-            used_scripts.append((script, refs))
-            if mode == ALL_MODE:
-                log(f"[ALL][已引用] {rel_path}")
+    for script_idx, script in enumerate(scripts_to_analyze, 1):
+        time_checker()
+        rel_path = str(script.relative_to(scripts_dir)).replace('\\', '/')
+        
+        # 显示总体进度
+        progress_pct = (script_idx / total_scripts * 100) if total_scripts else 100
+        log(f"")
+        log(f"{'='*60}")
+        log(f"[脚本进度] {script_idx}/{total_scripts} ({progress_pct:.1f}%) - 正在分析: {rel_path}")
+        log(f"{'='*60}")
+        print(f"\n>>> [{script_idx}/{total_scripts}] 分析脚本: {rel_path}")
+        
+        # 生成标识符
+        identifiers = get_script_identifiers(script, scripts_dir)
+        log(f"  标识符: {identifiers}")
+        
+        # 在项目文件中搜索引用
+        script_refs = _search_single_script_references(
+            script, identifiers, cached_files, project_root, time_checker
+        )
+        
+        # 判断是否被使用
+        is_used = any(script_refs.values())
+        
+        if is_used:
+            used_scripts.append((script, script_refs))
+            # 立即保存到 used 记录
+            used_script_records.add(rel_path)
+            _save_used_scripts_state(state_path, used_script_records)
+            ref_count = sum(len(locs) for locs in script_refs.values())
+            log(f"  [已使用] ({ref_count} 处引用) -> 已记录到 {state_path.name}")
+            print(f"    [+] 已使用 ({ref_count} 处引用)")
         else:
             unused_scripts.append(script)
-            if mode == ALL_MODE and unused_records is not None:
-                if rel_path not in unused_records:
-                    unused_records.add(rel_path)
-                    _save_unused_scripts_state(unused_state_path, unused_records)
-                    log(f"[ALL][未引用] {rel_path} -> 已写入 {unused_state_path}")
-                else:
-                    log(f"[ALL][未引用] {rel_path} 已存在于 {unused_state_path}")
-
+            # 立即保存到 unused 记录
+            unused_script_records.add(rel_path)
+            _save_unused_scripts_state(unused_state_path, unused_script_records)
+            log(f"  [未使用] -> 已记录到 {unused_state_path.name}")
+            print(f"    [-] 未使用")
+    
+    time_checker()
+    
+    # 4. 汇总结果
+    log(f"")
+    log("[4/4] 分析完成，汇总结果...")
+    
     # 按子目录分组
     def get_relative_path(script: Path) -> str:
         try:
@@ -686,33 +804,16 @@ def analyze_unused_scripts(
     log("分析报告仅写入日志（不再生成 scripts/unused_scripts_report.txt）")
     log(f"日志已保存到: {log_path}")
 
-    # 在批量模式下，记录未被使用的脚本
-    if mode == ALL_MODE:
-        unused_records = _load_unused_scripts_state(unused_state_path)
-        new_entries = 0
-        for script in unused_scripts:
-            rel = str(script.relative_to(scripts_dir)).replace('\\', '/')
-            if rel not in unused_records:
-                unused_records.add(rel)
-                new_entries += 1
-        if new_entries:
-            _save_unused_scripts_state(unused_state_path, unused_records)
-            log(f"已记录 {new_entries} 个未被引用的脚本到 {unused_state_path}")
-        else:
-            log("未发现新的未使用脚本记录")
-
-    # 在单脚本模式下，记录已被使用的脚本
-    if mode == SINGLE_MODE and selected_script_path is not None:
-        selected_rel = str(selected_script_path.relative_to(scripts_dir)).replace('\\', '/')
-        script_used = any(selected_script_path == script for script, _ in used_scripts)
-        if script_used:
-            used_script_records = _load_used_scripts_state(state_path)
-            if selected_rel not in used_script_records:
-                used_script_records.add(selected_rel)
-                _save_used_scripts_state(state_path, used_script_records)
-                log(f"已记录脚本为已使用: {selected_rel}")
-        else:
-            log(f"脚本未发现引用，可重复检测: {selected_rel}")
+    # 输出最终统计
+    log(f"")
+    log(f"{'='*60}")
+    log(f"本次分析完成！")
+    log(f"  - 本次分析脚本数: {len(scripts_to_analyze)}")
+    log(f"  - 本次发现已使用: {len(used_scripts)}")
+    log(f"  - 本次发现未使用: {len(unused_scripts)}")
+    log(f"  - 累计已使用记录: {len(used_script_records)}")
+    log(f"  - 累计未使用记录: {len(unused_script_records)}")
+    log(f"{'='*60}")
 
     return {
         'total': len(all_scripts),

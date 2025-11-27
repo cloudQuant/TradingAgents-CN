@@ -27,6 +27,8 @@
         :fields="fields"
         :total="total"
         :loading="loading"
+        :collection-name="collectionName"
+        :export-all-data="exportAllData"
         v-model:page="currentPage"
         v-model:page-size="pageSize"
         v-model:filter-value="filterValue"
@@ -334,6 +336,38 @@ const handleRemoteSync = async (config: RemoteSyncConfig) => {
 // 返回列表
 const goBack = () => {
   router.push('/options/collections')
+}
+
+// 后端全量导出
+const exportAllData = async ({ fileName, format }: { fileName: string; format: 'csv' | 'xlsx' | 'json' }) => {
+  try {
+    const blob = await optionsApi.exportCollectionData(collectionName.value, {
+      file_format: format,
+      filter_field: filterField.value || undefined,
+      filter_value: filterValue.value || undefined,
+    })
+    downloadBlob(blob, buildExportFileName(fileName, format))
+  } catch (error: any) {
+    console.error('导出全部数据失败:', error)
+    ElMessage.error(error?.message || '导出失败')
+    throw error
+  }
+}
+
+const buildExportFileName = (baseName: string, format: 'csv' | 'xlsx' | 'json'): string => {
+  const normalized = baseName.replace(/\.(csv|xlsx|json)$/i, '')
+  return `${normalized}.${format === 'xlsx' ? 'xlsx' : format}`
+}
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 onMounted(async () => {

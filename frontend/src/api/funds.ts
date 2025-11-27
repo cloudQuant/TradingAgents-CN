@@ -1,4 +1,4 @@
-import { ApiClient, type ApiResponse } from './request'
+import { ApiClient, request, type ApiResponse } from './request'
 
 export const fundsApi = {
   // 获取基金概览
@@ -72,6 +72,33 @@ export const fundsApi = {
   // 获取刷新任务状态
   async getRefreshTaskStatus(collectionName: string, taskId: string): Promise<ApiResponse<any>> {
     return await ApiClient.get(`/api/funds/collections/${collectionName}/refresh/status/${taskId}`)
+  },
+
+  // 导出集合全部数据
+  async exportCollectionData(
+    collectionName: string,
+    payload: {
+      file_format: 'csv' | 'xlsx' | 'json'
+      filter_field?: string
+      filter_value?: string
+      sort_by?: string
+      sort_dir?: 'asc' | 'desc'
+      tracking_target?: string
+      tracking_method?: string
+      fund_company?: string
+    }
+  ): Promise<Blob> {
+    // 大数据集导出可能需要较长时间，设置 5 分钟超时
+    // 使用 request 直接调用以获取 blob 响应
+    const response = await request.post(
+      `/api/funds/collections/${collectionName}/export`,
+      payload,
+      {
+        responseType: 'blob',
+        timeout: 300000
+      }
+    )
+    return response as unknown as Blob
   },
 
   // 清空集合数据

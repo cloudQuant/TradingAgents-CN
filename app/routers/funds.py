@@ -1,12 +1,26 @@
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, status, Body, UploadFile, File
-from pydantic import BaseModel
+import asyncio
 import hashlib
 import logging
+import os
+import tempfile
 import uuid
-import asyncio
-from fastapi.responses import JSONResponse
+from typing import Optional, Dict, Any, List
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    BackgroundTasks,
+    HTTPException,
+    status,
+    Body,
+    UploadFile,
+    File,
+)
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.background import BackgroundTask
+from pydantic import BaseModel
 
 from app.routers.auth_db import get_current_user
 from app.core.database import get_mongo_db
@@ -14,6 +28,19 @@ from app.utils.task_manager import get_task_manager
 from app.services.fund_refresh_service import FundRefreshService
 from app.services.fund_data_service import FundDataService
 from app.config.fund_update_config import get_collection_update_config
+
+
+class FundCollectionExportRequest(BaseModel):
+    """导出基金集合请求"""
+
+    file_format: str = "xlsx"  # csv, xlsx, json
+    filter_field: Optional[str] = None
+    filter_value: Optional[str] = None
+    sort_by: Optional[str] = None
+    sort_dir: str = "desc"
+    tracking_target: Optional[str] = None
+    tracking_method: Optional[str] = None
+    fund_company: Optional[str] = None
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 logger = logging.getLogger("webapi")
@@ -1689,6 +1716,88 @@ async def get_fund_collection_data(
         return {"success": False, "error": str(e)}
 
 
+@router.post("/collections/{collection_name}/export")
+async def export_fund_collection_data(
+    collection_name: str,
+    request: FundCollectionExportRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """导出指定基金集合的全部数据到文件"""
+
+    db = get_mongo_db()
+    service = FundDataService(db)
+
+    try:
+        # 复用列表接口中的过滤构建逻辑
+        filters: Dict[str, Any] = {}
+        if request.filter_field and request.filter_value:
+            field = request.filter_field.strip()
+            value = request.filter_value.strip()
+            if field and value:
+                if field in ["code", "name"]:
+                    filters[field] = {"$regex": value, "$options": "i"}
+                else:
+                    filters[field] = value
+
+        if collection_name == "fund_info_index_em":
+            if request.tracking_target and request.tracking_target != "全部":
+                filters["跟踪标的"] = request.tracking_target
+            if request.tracking_method and request.tracking_method != "全部":
+                filters["跟踪方式"] = request.tracking_method
+
+            if request.fund_company and request.fund_company != "全部":
+                basic_info_col = db.get_collection("fund_basic_info")
+                company_docs = await basic_info_col.find(
+                    {"基金公司": request.fund_company}, {"code": 1, "基金代码": 1}
+                ).to_list(None)
+
+                codes: List[str] = []
+                for doc in company_docs:
+                    if "code" in doc:
+                        codes.append(doc["code"])
+                    elif "基金代码" in doc:
+                        codes.append(doc["基金代码"])
+
+                if codes:
+                    filters["code"] = {"$in": codes}
+                else:
+                    filters["code"] = "__NO_MATCH__"
+
+        export_format = request.file_format.lower()
+        if export_format == "excel":
+            export_format = "xlsx"
+
+        file_bytes = await service.export_data_to_file(
+            collection_name=collection_name,
+            file_format=export_format,
+            filters=filters,
+        )
+
+        suffix_map = {"csv": "csv", "xlsx": "xlsx", "json": "json"}
+        suffix = suffix_map.get(export_format, "xlsx")
+        filename = f"{collection_name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{suffix}"
+
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=f".{suffix}", prefix="fund-export-"
+        ) as tmp_file:
+            tmp_file.write(file_bytes)
+            tmp_path = tmp_file.name
+
+        def _cleanup(path: str) -> None:
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
+
+        return FileResponse(
+            path=tmp_path,
+            filename=filename,
+            media_type="application/octet-stream",
+            background=BackgroundTask(_cleanup, tmp_path),
+        )
+    except Exception as e:
+        logger.error(f"导出基金集合 {collection_name} 数据失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
 @router.get("/collections/{collection_name}/stats")
 async def get_fund_collection_stats(
     collection_name: str,

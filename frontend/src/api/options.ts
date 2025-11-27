@@ -1,4 +1,4 @@
-import { ApiClient, type ApiResponse } from './request'
+import { ApiClient, request, type ApiResponse } from './request'
 
 export const optionsApi = {
   // 获取期权概览
@@ -64,5 +64,27 @@ export const optionsApi = {
   // 远程同步数据
   async syncData(collectionName: string, config: any): Promise<ApiResponse<any>> {
     return await ApiClient.post(`/api/options/collections/${collectionName}/sync`, config)
+  },
+
+  // 导出集合全部数据
+  async exportCollectionData(
+    collectionName: string,
+    payload: {
+      file_format: 'csv' | 'xlsx' | 'json'
+      filter_field?: string
+      filter_value?: string
+      sort_by?: string
+      sort_dir?: 'asc' | 'desc'
+    }
+  ): Promise<Blob> {
+    const response = await request.post(
+      `/api/options/collections/${collectionName}/export`,
+      payload,
+      {
+        responseType: 'blob',
+        timeout: 300000
+      }
+    )
+    return response as unknown as Blob
   }
 }

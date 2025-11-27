@@ -131,6 +131,18 @@
             <el-radio label="all">全部数据 ({{ total }} 条)</el-radio>
           </el-radio-group>
         </el-form-item>
+        <!-- 大数据集 Excel 导出警告 -->
+        <el-alert
+          v-if="exportScope === 'all' && total > 100000 && exportFormat === 'xlsx'"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px"
+        >
+          <template #title>
+            数据量较大 ({{ total.toLocaleString() }} 条)，Excel 导出可能需要 2-3 分钟。建议使用 CSV 格式，速度更快。
+          </template>
+        </el-alert>
       </el-form>
       <template #footer>
         <el-button @click="exportDialogVisible = false">取消</el-button>
@@ -171,6 +183,8 @@ export interface FieldDefinition {
   fixed?: boolean | 'left' | 'right'
 }
 
+type ExportAllOptions = { fileName: string; format: 'csv' | 'xlsx' | 'json' }
+
 const props = withDefaults(defineProps<{
   // 数据相关
   data: any[]
@@ -203,6 +217,7 @@ const props = withDefaults(defineProps<{
   // 导出相关
   fetchAllData?: () => Promise<any[]>  // 获取全部数据的回调函数
   collectionName?: string  // 集合名称，用于导出文件命名
+  exportAllData?: (options: ExportAllOptions) => Promise<void>
 }>(), {
   loading: false,
   page: 1,
@@ -357,36 +372,42 @@ const handleExport = async () => {
   exporting.value = true
   
   try {
+    // 优先使用服务端导出
+    if (exportScope.value === 'all' && props.exportAllData) {
+      await props.exportAllData({
+        fileName: exportFileName.value.trim(),
+        format: exportFormat.value
+      })
+      ElMessage.success('已开始下载全部数据')
+      exportDialogVisible.value = false
+      return
+    }
+
     let dataToExport: any[]
-    
-    // 根据导出范围获取数据
+
     if (exportScope.value === 'all' && props.fetchAllData) {
-      // 导出全部数据
       ElMessage.info('正在获取全部数据，请稍候...')
       dataToExport = await props.fetchAllData()
     } else if (exportScope.value === 'all' && !props.fetchAllData) {
-      // 没有提供获取全部数据的方法，使用当前页数据
       ElMessage.warning('未配置全部数据获取方法，将导出当前页数据')
       dataToExport = props.data
     } else {
-      // 导出当前页数据
       dataToExport = props.data
     }
-    
+
     if (dataToExport.length === 0) {
       ElMessage.warning('没有数据可导出')
       return
     }
 
-    // 获取字段名列表
     const headers = props.fields.map(f => typeof f === 'string' ? f : f.name)
-    
+
     if (exportFormat.value === 'csv') {
       exportToCSV(dataToExport, headers)
     } else {
       await exportToXLSX(dataToExport, headers)
     }
-    
+
     ElMessage.success(`成功导出 ${dataToExport.length} 条数据`)
     exportDialogVisible.value = false
   } catch (error: any) {

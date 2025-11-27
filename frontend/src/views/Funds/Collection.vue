@@ -326,8 +326,8 @@
         :page="page"
         :page-size="pageSize"
         :sortable="true"
-        :fetch-all-data="fetchAllDataForExport"
         :collection-name="collectionName"
+        :export-all-data="exportAllData"
         v-model:filter-value="filterValue"
         v-model:filter-field="filterField"
         @search="loadData"
@@ -1996,40 +1996,54 @@ const handleSortChange = ({ prop, order }: any) => {
   loadData()
 }
 
-// 获取全部数据用于导出（分页获取）
-const fetchAllDataForExport = async (): Promise<any[]> => {
-  const allData: any[] = []
-  const batchSize = 500 // 后端限制最大 500
-  let currentPage = 1
-  let hasMore = true
-  
-  while (hasMore) {
-    const res = await fundsApi.getCollectionData(collectionName.value, {
-      page: currentPage,
-      page_size: batchSize,
+// 后端全量导出
+const exportAllData = async ({ fileName, format }: { fileName: string; format: 'csv' | 'xlsx' | 'json' }) => {
+  try {
+    const payload: Record<string, any> = {
+      file_format: format,
       sort_by: sortBy.value || undefined,
       sort_dir: sortDir.value,
       filter_field: filterField.value || undefined,
       filter_value: filterValue.value || undefined,
-    })
-    
-    if (!res.success) {
-      throw new Error(res.message || '获取数据失败')
     }
-    
-    const items = res.data?.items || []
-    allData.push(...items)
-    
-    // 检查是否还有更多数据
-    const totalItems = res.data?.total || 0
-    hasMore = allData.length < totalItems && items.length === batchSize
-    currentPage++
-    
-    // 安全限制，防止无限循环
-    if (currentPage > 1000) break
+
+    if (collectionName.value === 'fund_info_index_em') {
+      if (filterTarget.value && filterTarget.value !== '全部') {
+        payload.tracking_target = filterTarget.value
+      }
+      if (filterMethod.value && filterMethod.value !== '全部') {
+        payload.tracking_method = filterMethod.value
+      }
+      if (filterCompany.value && filterCompany.value !== '全部') {
+        payload.fund_company = filterCompany.value
+      }
+    }
+
+    const blob = await fundsApi.exportCollectionData(collectionName.value, payload)
+    downloadBlob(blob, buildExportFileName(fileName, format))
+  } catch (error: any) {
+    console.error('导出全部数据失败:', error)
+    const msg = error?.message || error?.response?.data?.detail || '导出失败'
+    ElMessage.error(msg)
+    throw error
   }
-  
-  return allData
+}
+
+const buildExportFileName = (baseName: string, format: 'csv' | 'xlsx' | 'json'): string => {
+  const normalized = baseName.replace(/\.(csv|xlsx|json)$/i, '')
+  const suffix = format === 'xlsx' ? 'xlsx' : format
+  return `${normalized}.${suffix}`
+}
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 // 处理下拉菜单命令

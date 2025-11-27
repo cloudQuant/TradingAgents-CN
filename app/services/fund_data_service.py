@@ -176,33 +176,47 @@ class FundDataService:
         Returns:
             文件内容（字节）
         """
+        import time
         try:
+            t0 = time.perf_counter()
             collection = self.db.get_collection(collection_name)
             
-            # 查询数据
+            # 查询数据 - 使用 projection 排除 _id 字段，减少数据传输
             query = filters or {}
-            cursor = collection.find(query)
+            cursor = collection.find(query, {'_id': 0})
             data = await cursor.to_list(length=None)
+            t1 = time.perf_counter()
+            logger.info(f"[导出] MongoDB 查询完成: {len(data)} 条, 耗时 {t1-t0:.2f}s")
             
             if not data:
                 raise ValueError("没有数据可导出")
             
             # 转换为DataFrame
             df = pd.DataFrame(data)
-            
-            # 移除 _id 字段
-            if '_id' in df.columns:
-                df = df.drop('_id', axis=1)
+            t2 = time.perf_counter()
+            logger.info(f"[导出] DataFrame 创建完成, 耗时 {t2-t1:.2f}s")
             
             # 根据格式导出
-            if file_format == 'csv':
-                return df.to_csv(index=False).encode('utf-8-sig')
-            elif file_format == 'excel':
+            normalized_format = file_format.lower()
+
+            if normalized_format == 'csv':
+                result = df.to_csv(index=False).encode('utf-8-sig')
+                t3 = time.perf_counter()
+                logger.info(f"[导出] CSV 生成完成, 耗时 {t3-t2:.2f}s, 总耗时 {t3-t0:.2f}s")
+                return result
+            elif normalized_format in ('excel', 'xlsx'):
                 output = io.BytesIO()
-                df.to_excel(output, index=False)
-                return output.getvalue()
-            elif file_format == 'json':
-                return df.to_json(orient='records', force_ascii=False).encode('utf-8')
+                # 使用 xlsxwriter 引擎，比 openpyxl 快 5-10 倍
+                df.to_excel(output, index=False, engine='xlsxwriter')
+                result = output.getvalue()
+                t3 = time.perf_counter()
+                logger.info(f"[导出] Excel 生成完成, 耗时 {t3-t2:.2f}s, 总耗时 {t3-t0:.2f}s")
+                return result
+            elif normalized_format == 'json':
+                result = df.to_json(orient='records', force_ascii=False).encode('utf-8')
+                t3 = time.perf_counter()
+                logger.info(f"[导出] JSON 生成完成, 耗时 {t3-t2:.2f}s, 总耗时 {t3-t0:.2f}s")
+                return result
             else:
                 raise ValueError(f"不支持的文件格式: {file_format}")
                 

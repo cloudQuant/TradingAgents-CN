@@ -22,5 +22,27 @@ export const cryptosApi = {
   async getCryptoAnalysis(cryptoSymbol: string) {
     const response = await axios.get(`${API_BASE_URL}/api/cryptos/analysis/${cryptoSymbol}`)
     return response.data
+  },
+
+  // 导出集合全部数据
+  async exportCollectionData(
+    collectionName: string,
+    payload: {
+      file_format: 'csv' | 'xlsx' | 'json'
+      filter_field?: string
+      filter_value?: string
+      sort_by?: string
+      sort_dir?: 'asc' | 'desc'
+    }
+  ): Promise<Blob> {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/cryptos/collections/${collectionName}/export`,
+      payload,
+      {
+        responseType: 'blob',
+        timeout: 300000
+      }
+    )
+    return response.data
   }
 }

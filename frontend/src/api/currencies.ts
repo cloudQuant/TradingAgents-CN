@@ -1,4 +1,4 @@
-import { ApiClient, type ApiResponse } from './request'
+import { ApiClient, request, type ApiResponse } from './request'
 
 export const currenciesApi = {
   async getOverview(): Promise<ApiResponse<any>> {
@@ -170,4 +170,25 @@ export const currenciesApi = {
     return ApiClient.get(`/api/currencies/collections/${collectionName}/overview`)
   },
 
+  // 导出集合全部数据
+  async exportCollectionData(
+    collectionName: string,
+    payload: {
+      file_format: 'csv' | 'xlsx' | 'json'
+      filter_field?: string
+      filter_value?: string
+      sort_by?: string
+      sort_dir?: 'asc' | 'desc'
+    }
+  ): Promise<Blob> {
+    const response = await request.post(
+      `/api/currencies/collections/${collectionName}/export`,
+      payload,
+      {
+        responseType: 'blob',
+        timeout: 300000
+      }
+    )
+    return response as unknown as Blob
+  }
 }
