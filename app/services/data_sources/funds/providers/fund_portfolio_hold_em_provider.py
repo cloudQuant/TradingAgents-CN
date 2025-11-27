@@ -1,70 +1,46 @@
 """
-基金持仓股票-东财数据提供者
+基金持仓股票-东财数据提供者（重构版：继承BaseProvider）
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FundPortfolioHoldEmProvider:
+class FundPortfolioHoldEmProvider(BaseProvider):
     """基金持仓股票-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_portfolio_hold_em"
-        self.display_name = "基金持仓股票-东财"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取基金持仓股票数据
-        
-        Returns:
-            DataFrame: 基金持仓股票-东财数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data, kwargs={kwargs}")
-
-            # 前端会传入 fund_code/year，AkShare 接口需要 symbol/date
-            symbol = kwargs.get("fund_code") or kwargs.get("symbol") or kwargs.get("code")
-            date = kwargs.get("year") or kwargs.get("date")
-
-            if not symbol:
-                raise ValueError("缺少必须参数: fund_code/symbol")
-            if not date:
-                raise ValueError("缺少必须参数: year/date")
-
-            df = ak.fund_portfolio_hold_em(symbol=str(symbol), date=str(date))
-
-            if df is None or df.empty:
-                logger.warning(f"No data returned for symbol={symbol}, date={date}")
-                return pd.DataFrame()
-
-            # 保留基金代码，方便后续统计
-            if '基金代码' not in df.columns:
-                df['基金代码'] = symbol
-
-            # 添加元数据
-            df['更新时间'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records for symbol={symbol}, date={date}")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "fund_portfolio_hold_em"
+    display_name = "基金持仓股票-东财"
+    akshare_func = "fund_portfolio_hold_em"
+    unique_keys = ["基金代码", "股票代码", "季度"]
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "基金代码", "type": "string", "description": "基金代码"},
-            {"name": "股票代码", "type": "string", "description": "股票代码"},
-            {"name": "股票名称", "type": "string", "description": "股票名称"},
-            {"name": "占净值比例", "type": "float", "description": "持仓占比"},
-            {"name": "持仓数", "type": "int", "description": "持仓数量"},
-            {"name": "持仓市值", "type": "float", "description": "持仓市值"},
-            {"name": "季度", "type": "string", "description": "季度"},
-            {"name": "更新时间", "type": "datetime", "description": "更新时间"},
-        ]
+    # 参数映射：多个前端参数映射到akshare参数
+    param_mapping = {
+        "fund_code": "symbol",
+        "symbol": "symbol",
+        "code": "symbol",
+        "year": "date",
+        "date": "date",
+    }
+    required_params = ["symbol", "date"]
+    
+    # 自动添加基金代码字段
+    add_param_columns = {
+        "symbol": "基金代码",
+    }
+    
+    # 自定义时间戳字段名
+    timestamp_field = "更新时间"
+    
+    field_info = [
+        {"name": "基金代码", "type": "string", "description": "基金代码"},
+        {"name": "股票代码", "type": "string", "description": "股票代码"},
+        {"name": "股票名称", "type": "string", "description": "股票名称"},
+        {"name": "占净值比例", "type": "float", "description": "持仓占比"},
+        {"name": "持仓数", "type": "int", "description": "持仓数量"},
+        {"name": "持仓市值", "type": "float", "description": "持仓市值"},
+        {"name": "季度", "type": "string", "description": "季度"},
+        {"name": "更新时间", "type": "datetime", "description": "更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_portfolio_hold_em"},
+    ]

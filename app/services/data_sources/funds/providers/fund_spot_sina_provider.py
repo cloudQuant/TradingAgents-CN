@@ -1,49 +1,34 @@
 """
-基金实时行情-新浪数据提供者
+基金实时行情-新浪数据提供者（重构版：继承SimpleProvider）
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class FundSpotSinaProvider:
+class FundSpotSinaProvider(SimpleProvider):
     """基金实时行情-新浪数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_spot_sina"
-        self.display_name = "基金实时行情-新浪"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取新浪基金实时行情数据
-        
-        Returns:
-            DataFrame: 基金实时行情-新浪数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.fund_spot_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    collection_name = "fund_spot_sina"
+    display_name = "基金实时行情-新浪"
+    akshare_func = "fund_spot_em"
+    unique_keys = ["代码", "更新时间"]
+
+    field_info = [
+        {"name": "代码", "type": "string", "description": ""},
+        {"name": "名称", "type": "string", "description": ""},
+        {"name": "最新价", "type": "float", "description": ""},
+        {"name": "涨跌额", "type": "float", "description": ""},
+        {"name": "涨跌幅", "type": "float", "description": "注意单位: %"},
+        {"name": "买入", "type": "float", "description": ""},
+        {"name": "卖出", "type": "float", "description": ""},
+        {"name": "昨收", "type": "float", "description": ""},
+        {"name": "今开", "type": "float", "description": ""},
+        {"name": "最高", "type": "float", "description": ""},
+        {"name": "最低", "type": "float", "description": ""},
+        {"name": "成交量", "type": "int", "description": "注意单位: 股"},
+        {"name": "成交额", "type": "int", "description": "注意单位: 元"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_spot_em"},
+    ]

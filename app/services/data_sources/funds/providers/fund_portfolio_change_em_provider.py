@@ -1,72 +1,57 @@
 """
-基金持仓变动-东财数据提供者
+基金持仓变动-东财数据提供者（重构版：继承BaseProvider）
 """
-import akshare as ak
+from app.services.data_sources.base_provider import BaseProvider
 import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-class FundPortfolioChangeEmProvider:
+class FundPortfolioChangeEmProvider(BaseProvider):
     """基金持仓变动-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_portfolio_change_em"
-        self.display_name = "基金持仓变动-东财"
-        
+    collection_name = "fund_portfolio_change_em"
+    display_name = "基金持仓变动-东财"
+    akshare_func = "fund_portfolio_change_em"
+    unique_keys = ["基金代码", "股票代码", "季度"]
+    
+    # 参数映射：多个前端参数映射到akshare参数
+    param_mapping = {
+        "fund_code": "symbol",
+        "symbol": "symbol",
+        "code": "symbol",
+        "year": "date",
+        "date": "date",
+    }
+    required_params = ["symbol", "date"]
+    
+    # 自动添加基金代码字段
+    add_param_columns = {
+        "symbol": "基金代码",
+    }
+    
+    field_info = [
+        {"name": "基金代码", "type": "string", "description": "基金代码"},
+        {"name": "股票代码", "type": "string", "description": "股票代码"},
+        {"name": "股票名称", "type": "string", "description": "股票名称"},
+        {"name": "持仓变动", "type": "string", "description": "持仓变动类型"},
+        {"name": "变动数量", "type": "float", "description": "变动数量"},
+        {"name": "变动市值", "type": "float", "description": "变动市值"},
+        {"name": "季度", "type": "string", "description": "季度"},
+        {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_portfolio_change_em"},
+    ]
+    
     def fetch_data(self, **kwargs) -> pd.DataFrame:
         """
         获取基金持仓变动数据
         
-        Returns:
-            DataFrame: 基金持仓变动-东财数据
+        重写以支持indicator默认值
         """
-        try:
-            logger.info(f"Fetching {self.collection_name} data, kwargs={kwargs}")
-
-            # 前端会传入 fund_code/date，AkShare 接口需要 symbol/indicator/date
-            symbol = kwargs.get("fund_code") or kwargs.get("symbol") or kwargs.get("code")
-            date = kwargs.get("year") or kwargs.get("date")
-            # indicator 前端暂未传入，默认使用累计买入，与文档示例保持一致
-            indicator = kwargs.get("indicator") or "累计买入"
-
-            if not symbol:
-                raise ValueError("缺少必须参数: fund_code/symbol")
-            if not date:
-                raise ValueError("缺少必须参数: year/date")
-
-            df = ak.fund_portfolio_change_em(symbol=str(symbol), indicator=str(indicator), date=str(date))
-
-            if df is None or df.empty:
-                logger.warning(f"No data returned for symbol={symbol}, indicator={indicator}, date={date}")
-                return pd.DataFrame()
-
-            # 保留基金代码，方便后续统计
-            if '基金代码' not in df.columns:
-                df['基金代码'] = symbol
-
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records for symbol={symbol}, indicator={indicator}, date={date}")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "基金代码", "type": "string", "description": "基金代码"},
-            {"name": "股票代码", "type": "string", "description": "股票代码"},
-            {"name": "股票名称", "type": "string", "description": "股票名称"},
-            {"name": "持仓变动", "type": "string", "description": "持仓变动类型"},
-            {"name": "变动数量", "type": "float", "description": "变动数量"},
-            {"name": "变动市值", "type": "float", "description": "变动市值"},
-            {"name": "季度", "type": "string", "description": "季度"},
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+        # 设置indicator默认值
+        if "indicator" not in kwargs:
+            kwargs["indicator"] = "累计买入"
+        
+        return super().fetch_data(**kwargs)

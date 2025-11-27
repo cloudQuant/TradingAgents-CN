@@ -1,49 +1,24 @@
 """
-基金盈利概率-雪球数据提供者
+基金盈利概率-雪球数据提供者（重构版：继承SimpleProvider）
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class FundIndividualProfitProbabilityXqProvider:
+class FundIndividualProfitProbabilityXqProvider(SimpleProvider):
     """基金盈利概率-雪球数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_individual_profit_probability_xq"
-        self.display_name = "基金盈利概率-雪球"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取雪球基金盈利概率数据
-        
-        Returns:
-            DataFrame: 基金盈利概率-雪球数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.fund_individual_profit_probability_xq(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    collection_name = "fund_individual_profit_probability_xq"
+    display_name = "基金盈利概率-雪球"
+    akshare_func = "fund_individual_profit_probability_xq"
+    unique_keys = ["更新时间"]
+
+    field_info = [
+        {"name": "持有时长", "type": "string", "description": ""},
+        {"name": "盈利概率", "type": "string", "description": ""},
+        {"name": "平均收益", "type": "string", "description": ""},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_individual_profit_probability_xq"},
+    ]

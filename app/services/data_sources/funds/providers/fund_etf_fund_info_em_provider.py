@@ -1,73 +1,57 @@
 """
-场内交易基金历史行情-东财数据提供者
+场内交易基金历史行情-东财数据提供者（重构版：继承BaseProvider）
 """
-import akshare as ak
+from app.services.data_sources.base_provider import BaseProvider
 import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-class FundEtfFundInfoEmProvider:
+class FundEtfFundInfoEmProvider(BaseProvider):
     """场内交易基金历史行情-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_etf_fund_info_em"
-        self.display_name = "场内交易基金历史行情-东财"
-        
+    collection_name = "fund_etf_fund_info_em"
+    display_name = "场内交易基金历史行情-东财"
+    akshare_func = "fund_etf_fund_info_em"
+    unique_keys = ["基金代码", "净值日期"]
+    
+    # 参数映射：多个前端参数映射到fund
+    param_mapping = {
+        "fund_code": "fund",
+        "fund": "fund",
+        "code": "fund",
+    }
+    required_params = ["fund"]
+    
+    # 自动添加基金代码字段
+    add_param_columns = {
+        "fund": "基金代码",
+    }
+    
+    field_info = [
+        {"name": "基金代码", "type": "string", "description": "基金代码"},
+        {"name": "净值日期", "type": "string", "description": "净值日期"},
+        {"name": "单位净值", "type": "float", "description": "单位净值"},
+        {"name": "累计净值", "type": "float", "description": "累计净值"},
+        {"name": "日增长率", "type": "float", "description": "日增长率"},
+        {"name": "申购状态", "type": "string", "description": "申购状态"},
+        {"name": "赎回状态", "type": "string", "description": "赎回状态"},
+        {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_etf_fund_info_em"},
+    ]
+    
     def fetch_data(self, **kwargs) -> pd.DataFrame:
         """
         获取场内交易基金历史行情数据
         
-        Args:
-            fund_code/fund: 基金代码（必填）
-            start_date: 开始日期（可选，格式 YYYYMMDD）
-            end_date: 结束日期（可选，格式 YYYYMMDD）
-        
-        Returns:
-            DataFrame: 场内交易基金历史行情-东财数据
+        重写以支持start_date和end_date默认值
         """
-        try:
-            # 处理参数名称映射
-            fund = kwargs.get("fund_code") or kwargs.get("fund") or kwargs.get("code")
-            start_date = kwargs.get("start_date", "")
-            end_date = kwargs.get("end_date", "")
-            
-            if not fund:
-                raise ValueError("缺少必须参数: fund_code/fund")
-            
-            logger.info(f"Fetching {self.collection_name} data for fund={fund}")
-            df = ak.fund_etf_fund_info_em(fund=str(fund), start_date=start_date, end_date=end_date)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned for fund={fund}")
-                return pd.DataFrame()
-            
-            # 添加基金代码字段
-            if '基金代码' not in df.columns:
-                df['基金代码'] = fund
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records for fund={fund}")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "基金代码", "type": "string", "description": "基金代码"},
-            {"name": "净值日期", "type": "string", "description": "净值日期"},
-            {"name": "单位净值", "type": "float", "description": "单位净值"},
-            {"name": "累计净值", "type": "float", "description": "累计净值"},
-            {"name": "日增长率", "type": "float", "description": "日增长率"},
-            {"name": "申购状态", "type": "string", "description": "申购状态"},
-            {"name": "赎回状态", "type": "string", "description": "赎回状态"},
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+        # 设置默认值
+        if "start_date" not in kwargs:
+            kwargs["start_date"] = ""
+        if "end_date" not in kwargs:
+            kwargs["end_date"] = ""
+        
+        return super().fetch_data(**kwargs)

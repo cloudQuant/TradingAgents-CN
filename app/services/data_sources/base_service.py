@@ -24,12 +24,13 @@
         def get_batch_params(self, code, year):
             return {"fund_code": code, "year": year}
 """
-from typing import Optional, Dict, Any, List, Set, Tuple, Type
+from typing import Optional, Dict, Any, List, Set, Tuple, Type, Callable
 from datetime import datetime
 import logging
 import asyncio
 from abc import ABC
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+import pandas as pd
 
 from app.services.database.control_mongodb import ControlMongodb
 from app.utils.task_manager import get_task_manager
@@ -61,6 +62,15 @@ class BaseService(ABC):
     # 增量更新：用于检查已存在数据的字段
     # 例如：["基金代码", "季度"] 用于检查组合是否已存在
     incremental_check_fields: List[str] = []
+    
+    # 字段值提取器：用于从字段值中提取关键信息
+    # 例如：从"季度"字段（"2024年1季度"）中提取年份（"2024"）
+    # 格式：{字段名: 提取函数}
+    # incremental_field_extractor = {"季度": lambda q: q[:4] if len(q) >= 4 and q[:4].isdigit() else ""}
+    incremental_field_extractor: Optional[Dict[str, Callable[[str], str]]] = None
+    
+    # 唯一键配置（如果provider没有get_unique_keys方法，使用此配置）
+    unique_keys: List[str] = []
     
     # 额外的元数据字段
     extra_metadata: Dict[str, str] = {
@@ -151,7 +161,7 @@ class BaseService(ABC):
                 }
             
             # 使用 ControlMongodb 保存数据
-            unique_keys = self.provider.get_unique_keys()
+            unique_keys = self._get_unique_keys()
             extra_fields = self._get_extra_fields()
             
             control_db = ControlMongodb(self.collection, unique_keys)
@@ -190,7 +200,7 @@ class BaseService(ABC):
         """
         try:
             task_manager = get_task_manager() if task_id else None
-            concurrency = int(kwargs.get("concurrency", self.batch_concurrency))
+            concurrency = int(kwargs.pop("concurrency", self.batch_concurrency))
             
             # 如果没有配置批量源，简单调用单条更新
             if not self.batch_source_collection:
@@ -234,7 +244,7 @@ class BaseService(ABC):
             task_manager.update_progress(task_id, 60, 100, f"正在保存 {len(df)} 条数据...")
         
         # 保存数据
-        unique_keys = self.provider.get_unique_keys()
+        unique_keys = self._get_unique_keys()
         extra_fields = self._get_extra_fields()
         
         control_db = ControlMongodb(self.collection, unique_keys)
@@ -380,16 +390,41 @@ class BaseService(ABC):
             ]
     
     async def _get_existing_combinations(self) -> Set[Tuple]:
-        """获取已存在的数据组合"""
+        """
+        获取已存在的数据组合（支持字段值提取器）
+        
+        支持从字段值中提取关键信息，例如：
+        - 从"季度"字段（"2024年1季度"）中提取年份（"2024"）
+        """
         existing: Set[Tuple] = set()
+        
+        if not self.incremental_check_fields:
+            return existing
         
         projection = {field: 1 for field in self.incremental_check_fields}
         cursor = self.collection.find({}, projection)
         
         async for doc in cursor:
-            values = tuple(str(doc.get(field, "")) for field in self.incremental_check_fields)
+            values = []
+            for field in self.incremental_check_fields:
+                value = doc.get(field, "")
+                
+                # 如果配置了字段值提取器，使用提取器处理
+                if self.incremental_field_extractor and field in self.incremental_field_extractor:
+                    extractor = self.incremental_field_extractor[field]
+                    try:
+                        value = extractor(str(value)) if value else ""
+                    except Exception as e:
+                        self.logger.debug(f"字段值提取失败 {field}={value}: {e}")
+                        value = str(value)
+                else:
+                    value = str(value)
+                
+                values.append(value)
+            
+            # 只有当所有值都存在时才添加到集合
             if all(values):
-                existing.add(values)
+                existing.add(tuple(values))
         
         return existing
     
@@ -400,7 +435,20 @@ class BaseService(ABC):
         task_manager,
         concurrency: int
     ) -> Dict[str, Any]:
-        """并发执行批量任务"""
+        """
+        并发执行批量任务（优化版：数据聚合批量保存）
+        
+        优化点：
+        1. 数据聚合批量保存：多个任务获取的数据先聚合，然后批量保存
+        2. 复用ControlMongodb实例：避免重复创建
+        3. 优化进度更新：减少锁竞争
+        4. 动态调整并发数：根据连接池大小限制
+        """
+        # 根据连接池大小动态调整并发数
+        from app.core.config import settings
+        max_allowed_concurrency = max(1, settings.MONGO_MAX_CONNECTIONS // 2)
+        concurrency = min(concurrency, max_allowed_concurrency)
+        
         semaphore = asyncio.Semaphore(concurrency)
         total_inserted = 0
         processed = 0
@@ -408,8 +456,90 @@ class BaseService(ABC):
         lock = asyncio.Lock()
         total_tasks = len(tasks)
         
+        # 数据聚合队列：用于批量保存
+        data_queue = asyncio.Queue()
+        batch_size_threshold = 5000  # 达到5000条数据时批量保存
+        save_interval = 5.0  # 5秒间隔批量保存
+        
+        # 复用ControlMongodb实例
+        unique_keys = self._get_unique_keys()
+        extra_fields = self._get_extra_fields()
+        control_db = ControlMongodb(self.collection, unique_keys)
+        
+        # 批量保存协程
+        save_task = None
+        save_completed = asyncio.Event()
+        
+        async def batch_saver():
+            """批量保存协程：定期从队列中取出数据并批量保存"""
+            nonlocal total_inserted
+            accumulated_dfs = []
+            last_save_time = asyncio.get_event_loop().time()
+            
+            async def save_accumulated():
+                """保存累积的数据"""
+                if accumulated_dfs:
+                    try:
+                        combined_df = pd.concat(accumulated_dfs, ignore_index=True)
+                        result = await control_db.save_dataframe_to_collection(
+                            combined_df,
+                            extra_fields=extra_fields
+                        )
+                        async with lock:
+                            total_inserted += result.get("inserted", 0) + result.get("updated", 0)
+                        
+                        self.logger.debug(
+                            f"[{self.collection_name}] 批量保存完成: "
+                            f"新增={result.get('inserted', 0)}, "
+                            f"更新={result.get('updated', 0)}, "
+                            f"总行数={len(combined_df)}"
+                        )
+                        accumulated_dfs.clear()
+                        return True
+                    except Exception as e:
+                        self.logger.error(f"[{self.collection_name}] 批量保存失败: {e}", exc_info=True)
+                        return False
+                return False
+            
+            while True:
+                try:
+                    # 检查是否需要退出
+                    if save_completed.is_set() and data_queue.empty():
+                        # 保存最后一批数据
+                        await save_accumulated()
+                        break
+                    
+                    # 等待数据或超时
+                    current_time = asyncio.get_event_loop().time()
+                    elapsed = current_time - last_save_time
+                    timeout = max(0.1, save_interval - elapsed)
+                    
+                    try:
+                        df = await asyncio.wait_for(data_queue.get(), timeout=timeout)
+                        if df is not None and not df.empty:
+                            accumulated_dfs.append(df)
+                    except asyncio.TimeoutError:
+                        # 超时，检查是否需要保存
+                        pass
+                    
+                    # 检查是否需要保存：达到阈值或超时
+                    total_rows = sum(len(df) for df in accumulated_dfs)
+                    should_save = (
+                        total_rows >= batch_size_threshold or  # 达到阈值
+                        (save_completed.is_set() and data_queue.empty() and accumulated_dfs)  # 完成且有数据
+                    )
+                    
+                    if should_save:
+                        await save_accumulated()
+                        last_save_time = asyncio.get_event_loop().time()
+                            
+                except Exception as e:
+                    self.logger.error(f"[{self.collection_name}] 批量保存协程错误: {e}", exc_info=True)
+                    # 发生错误时也尝试保存已累积的数据
+                    await save_accumulated()
+        
         async def process_task(task_params: Tuple):
-            nonlocal total_inserted, processed, failed
+            nonlocal processed, failed
             async with semaphore:
                 try:
                     # 构建参数
@@ -422,36 +552,54 @@ class BaseService(ABC):
                     )
                     
                     if df is not None and not df.empty:
-                        unique_keys = self.provider.get_unique_keys()
-                        extra_fields = self._get_extra_fields()
+                        # 将数据放入队列，由批量保存协程处理
+                        await data_queue.put(df)
+                    
+                    async with lock:
+                        processed += 1
                         
-                        control_db = ControlMongodb(self.collection, unique_keys)
-                        result = await control_db.save_dataframe_to_collection(df, extra_fields=extra_fields)
-                        
-                        async with lock:
-                            total_inserted += result.get("inserted", 0) + result.get("updated", 0)
-                            processed += 1
-                    else:
-                        async with lock:
-                            processed += 1
-                            
                 except Exception as e:
                     self.logger.debug(f"处理任务 {task_params} 失败: {e}")
                     async with lock:
                         failed += 1
                         processed += 1
                 
-                # 更新进度
-                async with lock:
-                    if task_manager and task_id and processed % self.batch_progress_interval == 0:
-                        progress = 10 + int((processed / total_tasks) * 85)
-                        task_manager.update_progress(
-                            task_id, progress, 100,
-                            f"已处理 {processed}/{total_tasks}，成功 {total_inserted} 条"
-                        )
+                # 优化进度更新：减少锁竞争，使用原子操作
+                if task_manager and task_id:
+                    # 只在特定间隔更新进度，减少锁竞争
+                    if processed % max(1, self.batch_progress_interval) == 0:
+                        async with lock:
+                            progress = 10 + int((processed / total_tasks) * 85)
+                            # 使用异步更新，不阻塞
+                            asyncio.create_task(
+                                task_manager.update_progress(
+                                    task_id, progress, 100,
+                                    f"已处理 {processed}/{total_tasks}，成功 {total_inserted} 条"
+                                )
+                            )
         
-        # 并发执行
-        await asyncio.gather(*[process_task(t) for t in tasks], return_exceptions=True)
+        # 启动批量保存协程
+        save_task = asyncio.create_task(batch_saver())
+        
+        try:
+            # 并发执行所有任务
+            await asyncio.gather(*[process_task(t) for t in tasks], return_exceptions=True)
+            
+            # 等待所有数据被处理
+            while not data_queue.empty():
+                await asyncio.sleep(0.1)
+            
+            # 通知批量保存协程可以退出
+            save_completed.set()
+            
+            # 等待批量保存协程完成
+            await save_task
+            
+        except Exception as e:
+            self.logger.error(f"[{self.collection_name}] 批量更新执行失败: {e}", exc_info=True)
+            if save_task:
+                save_completed.set()
+                await save_task
         
         # 完成
         message = f"批量更新完成，处理 {processed} 个任务，成功 {total_inserted} 条，失败 {failed} 个"
@@ -490,11 +638,66 @@ class BaseService(ABC):
         else:
             return {}
     
+    def _get_unique_keys(self) -> List[str]:
+        """
+        获取唯一键（自动检测provider或使用配置）
+        
+        优先级：
+        1. provider.get_unique_keys() 方法
+        2. provider.unique_keys 属性
+        3. service.unique_keys 配置
+        4. 空列表
+        """
+        # 优先使用provider的方法
+        if self.provider and hasattr(self.provider, 'get_unique_keys'):
+            try:
+                keys = self.provider.get_unique_keys()
+                if keys:
+                    return keys
+            except (AttributeError, TypeError):
+                pass
+        
+        # 其次使用provider的属性
+        if self.provider and hasattr(self.provider, 'unique_keys'):
+            keys = getattr(self.provider, 'unique_keys', [])
+            if keys:
+                return keys
+        
+        # 最后使用service配置
+        if hasattr(self, 'unique_keys') and self.unique_keys:
+            return self.unique_keys
+        
+        # 默认值
+        return []
+    
     def _get_extra_fields(self) -> Dict[str, str]:
-        """获取额外的元数据字段"""
+        """
+        获取额外的元数据字段（自动检测provider）
+        
+        自动检测provider的接口名称：
+        1. provider.akshare_func 属性
+        2. provider.collection_name 属性
+        3. service.collection_name
+        """
         fields = dict(self.extra_metadata)
+        
+        # 自动检测provider的接口名称
         if self.provider:
-            fields["接口名称"] = self.provider.akshare_func
+            # 优先使用akshare_func属性
+            if hasattr(self.provider, 'akshare_func'):
+                func_name = getattr(self.provider, 'akshare_func', None)
+                if func_name:
+                    fields["接口名称"] = func_name
+            # 其次使用collection_name
+            elif hasattr(self.provider, 'collection_name'):
+                coll_name = getattr(self.provider, 'collection_name', None)
+                if coll_name and not fields.get("接口名称"):
+                    fields["接口名称"] = coll_name
+        
+        # 如果还没有接口名称，使用service的collection_name
+        if not fields.get("接口名称") and hasattr(self, 'collection_name'):
+            fields["接口名称"] = self.collection_name
+        
         return fields
 
 

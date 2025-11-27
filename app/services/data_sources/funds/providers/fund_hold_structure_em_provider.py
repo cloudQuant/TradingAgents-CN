@@ -1,49 +1,28 @@
 """
-基金持有结构-东财数据提供者
+基金持有结构-东财数据提供者（重构版：继承SimpleProvider）
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class FundHoldStructureEmProvider:
+class FundHoldStructureEmProvider(SimpleProvider):
     """基金持有结构-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_hold_structure_em"
-        self.display_name = "基金持有结构-东财"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取基金持有结构数据
-        
-        Returns:
-            DataFrame: 基金持有结构-东财数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.fund_hold_structure_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    collection_name = "fund_hold_structure_em"
+    display_name = "基金持有结构-东财"
+    akshare_func = "fund_hold_structure_em"
+    unique_keys = ["截止日期"]
+
+    field_info = [
+        {"name": "序号", "type": "int", "description": ""},
+        {"name": "截止日期", "type": "string", "description": ""},
+        {"name": "基金家数", "type": "int", "description": ""},
+        {"name": "机构持有比列", "type": "float", "description": "注意单位: %"},
+        {"name": "个人持有比列", "type": "float", "description": "注意单位: %"},
+        {"name": "内部持有比列", "type": "float", "description": "注意单位: %"},
+        {"name": "总份额", "type": "float", "description": "注意单位: 亿份"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_hold_structure_em"},
+    ]

@@ -1,74 +1,61 @@
 """
-开放式基金历史行情-东财数据提供者
+开放式基金历史行情-东财数据提供者（重构版：继承BaseProvider）
 """
-import akshare as ak
+from app.services.data_sources.base_provider import BaseProvider
 import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-class FundOpenFundInfoEmProvider:
+class FundOpenFundInfoEmProvider(BaseProvider):
     """开放式基金历史行情-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_open_fund_info_em"
-        self.display_name = "开放式基金历史行情-东财"
-        
+    collection_name = "fund_open_fund_info_em"
+    display_name = "开放式基金历史行情-东财"
+    akshare_func = "fund_open_fund_info_em"
+    unique_keys = ["基金代码", "净值日期", "指标类型"]
+    
+    # 参数映射：多个前端参数映射到fund
+    param_mapping = {
+        "fund_code": "fund",
+        "fund": "fund",
+        "code": "fund",
+    }
+    required_params = ["fund"]
+    
+    # 自动添加基金代码和指标类型字段
+    add_param_columns = {
+        "fund": "基金代码",
+    }
+    
+    field_info = [
+        {"name": "基金代码", "type": "string", "description": "基金代码"},
+        {"name": "净值日期", "type": "string", "description": "净值日期"},
+        {"name": "单位净值", "type": "float", "description": "单位净值"},
+        {"name": "累计净值", "type": "float", "description": "累计净值"},
+        {"name": "日增长率", "type": "float", "description": "日增长率"},
+        {"name": "指标类型", "type": "string", "description": "指标类型"},
+        {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_open_fund_info_em"},
+    ]
+    
     def fetch_data(self, **kwargs) -> pd.DataFrame:
         """
         获取开放式基金历史行情数据
         
-        Args:
-            fund_code/fund: 基金代码（必填）
-            indicator: 指标类型（可选，默认 "单位净值走势"）
-                可选: "单位净值走势", "累计净值走势", "累计收益率走势", "同类排名走势", "同类排名百分比", "分红送配详情", "拆分详情"
-        
-        Returns:
-            DataFrame: 开放式基金历史行情-东财数据
+        重写以支持indicator默认值并添加指标类型字段
         """
-        try:
-            # 处理参数名称映射
-            fund = kwargs.get("fund_code") or kwargs.get("fund") or kwargs.get("code")
-            indicator = kwargs.get("indicator", "单位净值走势")
-            
-            if not fund:
-                raise ValueError("缺少必须参数: fund_code/fund")
-            
-            logger.info(f"Fetching {self.collection_name} data for fund={fund}, indicator={indicator}")
-            df = ak.fund_open_fund_info_em(fund=str(fund), indicator=indicator)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned for fund={fund}")
-                return pd.DataFrame()
-            
-            # 添加基金代码字段
-            if '基金代码' not in df.columns:
-                df['基金代码'] = fund
-            
-            # 添加指标类型字段
-            df['指标类型'] = indicator
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records for fund={fund}")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "基金代码", "type": "string", "description": "基金代码"},
-            {"name": "净值日期", "type": "string", "description": "净值日期"},
-            {"name": "单位净值", "type": "float", "description": "单位净值"},
-            {"name": "累计净值", "type": "float", "description": "累计净值"},
-            {"name": "日增长率", "type": "float", "description": "日增长率"},
-            {"name": "指标类型", "type": "string", "description": "指标类型"},
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+        # 设置indicator默认值
+        if "indicator" not in kwargs:
+            kwargs["indicator"] = "单位净值走势"
+        
+        # 调用父类方法获取数据
+        df = super().fetch_data(**kwargs)
+        
+        # 添加指标类型字段
+        if not df.empty and "指标类型" not in df.columns:
+            df["指标类型"] = kwargs.get("indicator", "单位净值走势")
+        
+        return df

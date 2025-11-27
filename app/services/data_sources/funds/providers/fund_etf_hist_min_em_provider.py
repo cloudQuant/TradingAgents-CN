@@ -1,49 +1,29 @@
 """
-ETF分时行情-东财数据提供者
+ETF分时行情-东财数据提供者（重构版：继承SimpleProvider）
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class FundEtfHistMinEmProvider:
+class FundEtfHistMinEmProvider(SimpleProvider):
     """ETF分时行情-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "fund_etf_hist_min_em"
-        self.display_name = "ETF分时行情-东财"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取ETF基金分时行情数据
-        
-        Returns:
-            DataFrame: ETF分时行情-东财数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.fund_etf_hist_min_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
-    
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    collection_name = "fund_etf_hist_min_em"
+    display_name = "ETF分时行情-东财"
+    akshare_func = "fund_etf_hist_min_em"
+    unique_keys = ["时间"]
+
+    field_info = [
+        {"name": "时间", "type": "string", "description": ""},
+        {"name": "开盘", "type": "float", "description": ""},
+        {"name": "收盘", "type": "float", "description": ""},
+        {"name": "最高", "type": "float", "description": ""},
+        {"name": "最低", "type": "float", "description": ""},
+        {"name": "成交量", "type": "float", "description": ""},
+        {"name": "成交额", "type": "float", "description": ""},
+        {"name": "均价", "type": "float", "description": ""},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口: fund_etf_hist_min_em"},
+    ]
