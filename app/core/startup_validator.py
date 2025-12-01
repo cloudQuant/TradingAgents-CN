@@ -103,13 +103,6 @@ class StartupValidator:
             example="sk-xxx",
             help_url="https://dashscope.aliyun.com/"
         ),
-        ConfigItem(
-            key="TUSHARE_TOKEN",
-            level=ConfigLevel.RECOMMENDED,
-            description="Tushare Token（推荐，专业A股数据）",
-            example="xxx",
-            help_url="https://tushare.pro/register?reg=tacn"
-        ),
     ]
     
     def __init__(self):

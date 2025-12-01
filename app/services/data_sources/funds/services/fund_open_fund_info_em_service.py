@@ -1,10 +1,15 @@
 """
 开放式基金历史行情-东财服务（重构版：继承BaseService）
+
+增量更新策略：
+- 批量更新时，检查基金代码是否已有数据
+- 如果某基金已有数据，跳过该基金（避免重复API调用）
+- 去重由 unique_keys (基金代码, 净值日期) 保证
 """
-from typing import Optional, Dict, Any, List, Set
+from typing import Optional, Dict, Any, List, Set, Tuple
 from datetime import datetime
 import logging
-
+import pandas as pd 
 from app.services.data_sources.base_service import BaseService
 from app.services.data_sources.funds.providers.fund_open_fund_info_em_provider import FundOpenFundInfoEmProvider
 from app.services.database.control_mongodb import ControlMongodb
@@ -28,11 +33,11 @@ class FundOpenFundInfoEmService(BaseService):
     batch_concurrency = 3
     batch_progress_interval = 50
     
-    # 增量更新检查字段
+    # 增量检查：按基金代码检查，已有数据的基金不再获取
     incremental_check_fields = ["基金代码"]
     
-    # 唯一键配置
-    unique_keys = ["基金代码", "净值日期", "指标类型"]
+    # 唯一键配置（基金代码+日期 唯一）
+    unique_keys = ["基金代码", "净值日期"]
     
     # 额外的元数据字段
     extra_metadata = {
@@ -56,15 +61,31 @@ class FundOpenFundInfoEmService(BaseService):
                 }
             
             self.logger.info(f"[{self.collection_name}] 调用 provider.fetch_data(fund_code={fund_code})")
-            df = self.provider.fetch_data(fund_code=fund_code)
+            df1 = self.provider.fetch_data(fund_code=fund_code, indicator="单位净值走势")
             
-            if df is None or df.empty:
+            if df1 is None or df1.empty:
                 self.logger.warning(f"[{self.collection_name}] provider 返回空数据")
                 return {
                     "success": True,
                     "message": "No data available",
                     "inserted": 0,
                 }
+            df2 = self.provider.fetch_data(fund_code=fund_code, indicator="累计净值走势")
+            if df2 is None or df2.empty:
+                self.logger.warning(f"[{self.collection_name}] provider 返回空数据")
+                return {
+                    "success": True,
+                    "message": "No data available",
+                    "inserted": 0,
+                }
+
+            # 合并操作
+            df = pd.merge(
+                df1,
+                df2[["净值日期", "累计净值"]],  # 仅选择需要的列
+                on="净值日期",
+                how="left"  # 保留df1所有行
+            )
             
             # 使用 ControlMongodb 处理数据去重
             unique_keys = self._get_unique_keys()

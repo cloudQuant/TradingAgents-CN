@@ -9,7 +9,7 @@ class FundEtfFundInfoEmProvider(BaseProvider):
     """场内交易基金历史行情-东财数据提供者"""
     
     collection_name = "fund_etf_fund_info_em"
-    display_name = "场内交易基金历史行情-东财"
+    display_name = "场内交易基金-历史行情"
     akshare_func = "fund_etf_fund_info_em"
     unique_keys = ["基金代码", "净值日期"]
     
@@ -34,7 +34,6 @@ class FundEtfFundInfoEmProvider(BaseProvider):
         {"name": "日增长率", "type": "float", "description": "日增长率"},
         {"name": "申购状态", "type": "string", "description": "申购状态"},
         {"name": "赎回状态", "type": "string", "description": "赎回状态"},
-        {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
         {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
         {"name": "更新人", "type": "string", "description": "数据更新人"},
         {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
@@ -42,6 +41,11 @@ class FundEtfFundInfoEmProvider(BaseProvider):
         {"name": "来源", "type": "string", "description": "来源接口: fund_etf_fund_info_em"},
     ]
     
+ 
+    collection_description = "东方财富网-天天基金网-场内交易基金-历史净值数据"
+    collection_route = "/funds/collections/fund_etf_fund_info_em"
+    collection_order = 25
+
     def fetch_data(self, **kwargs) -> pd.DataFrame:
         """
         获取场内交易基金历史行情数据
@@ -50,8 +54,8 @@ class FundEtfFundInfoEmProvider(BaseProvider):
         """
         # 设置默认值
         if "start_date" not in kwargs:
-            kwargs["start_date"] = ""
+            kwargs["start_date"] = "2000-01-01"
         if "end_date" not in kwargs:
-            kwargs["end_date"] = ""
+            kwargs["end_date"] = "2050-01-01"
         
         return super().fetch_data(**kwargs)

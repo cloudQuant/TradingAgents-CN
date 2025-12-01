@@ -179,24 +179,10 @@ def bridge_config_to_env():
 
         for ds_config in data_source_configs:
             if ds_config.enabled and ds_config.api_key:
-                # Tushare Token
-                # 🔥 优先级：数据库配置 > .env 文件（用户在 Web 后台修改后立即生效）
+                # Tushare 已移除，跳过处理
                 if ds_config.type.value == 'tushare':
-                    existing_token = os.getenv('TUSHARE_TOKEN')
-
-                    # 优先使用数据库配置
-                    if ds_config.api_key and not ds_config.api_key.startswith("your_"):
-                        os.environ['TUSHARE_TOKEN'] = ds_config.api_key
-                        logger.info(f"  ✓ 使用数据库中的 TUSHARE_TOKEN (长度: {len(ds_config.api_key)})")
-                        if existing_token and existing_token != ds_config.api_key:
-                            logger.info(f"  ℹ️  已覆盖 .env 文件中的 TUSHARE_TOKEN")
-                    # 降级到 .env 文件配置
-                    elif existing_token and not existing_token.startswith("your_"):
-                        logger.info(f"  ✓ 使用 .env 文件中的 TUSHARE_TOKEN (长度: {len(existing_token)})")
-                        logger.info(f"  ℹ️  数据库中未配置有效的 TUSHARE_TOKEN，使用 .env 降级方案")
-                    else:
-                        logger.warning(f"  ⚠️  TUSHARE_TOKEN 在数据库和 .env 中都未配置有效值")
-                        continue
+                    logger.info(f"  ℹ️  Tushare 数据源已移除，跳过配置")
+                    continue
                     bridged_count += 1
 
                 # FinnHub API Key
@@ -535,7 +521,6 @@ def clear_bridged_config():
         'TRADINGAGENTS_QUICK_MODEL',
         'TRADINGAGENTS_DEEP_MODEL',
         # 数据源 API 密钥
-        'TUSHARE_TOKEN',
         'FINNHUB_API_KEY',
         # 系统配置
         'APP_TIMEZONE',
@@ -548,7 +533,7 @@ def clear_bridged_config():
         keys_to_clear.append(f'{provider}_API_KEY')
 
     # 清除数据源细节配置
-    data_sources = ['TUSHARE', 'AKSHARE', 'FINNHUB']
+    data_sources = ['AKSHARE', 'FINNHUB']
     for ds in data_sources:
         keys_to_clear.extend([
             f'{ds}_TIMEOUT',

@@ -1,16 +1,35 @@
 """
-基金概况-东财数据提供者（重构版：继承SimpleProvider）
+基金概况-东财数据提供者（重构版：继承BaseProvider，需要symbol参数）
 """
-from app.services.data_sources.base_provider import SimpleProvider
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FundOverviewEmProvider(SimpleProvider):
-    """基金概况-东财数据提供者"""
-    
+class FundOverviewEmProvider(BaseProvider):
+    """基金概况-东财数据提供者（需要基金代码参数）"""
+
+    collection_description = "东方财富网-数据中心-基金基本概况（需要基金代码，支持单个/批量更新）"
+    collection_route = "/funds/collections/fund_overview_em"
+    collection_order = 40
+
     collection_name = "fund_overview_em"
-    display_name = "基金概况-东财"
+    display_name = "基金基本概况-东财"
     akshare_func = "fund_overview_em"
-    unique_keys = ["基金代码", "发行日期"]
+    
+    # 唯一键：基金代码
+    unique_keys = ["基金代码"]
+    
+    # 参数映射：symbol/fund_code/code 都映射到 symbol
+    param_mapping = {
+        "symbol": "symbol",
+        "fund_code": "symbol",
+        "code": "symbol",
+    }
+    required_params = ["symbol"]
+    
+    # 自动添加参数列：将symbol参数值写入"基金代码"列
+    add_param_columns = {
+        "symbol": "基金代码",
+    }
 
     field_info = [
         {"name": "基金全称", "type": "string", "description": ""},

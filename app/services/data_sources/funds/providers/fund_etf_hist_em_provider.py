@@ -5,10 +5,15 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundEtfHistEmProvider(SimpleProvider):
-    """ETF历史行情-东财数据提供者"""
     
+    """ETF历史行情-东财数据提供者"""
+
+    collection_description = "东方财富网-ETF 历史行情数据，支持按代码、周期（日/周/月）、复权方式查询历史K线数据"
+    collection_route = "/funds/collections/fund_etf_hist_em"
+    collection_order = 12
+
     collection_name = "fund_etf_hist_em"
-    display_name = "ETF历史行情-东财"
+    display_name = "ETF基金历史行情-东财"
     akshare_func = "fund_etf_hist_em"
     unique_keys = ["日期"]
 

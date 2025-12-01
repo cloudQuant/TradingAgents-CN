@@ -1,0 +1,18 @@
+<template>
+  <DefaultCollection />
+</template>
+
+<script setup lang="ts">
+import DefaultCollection from './DefaultCollection.vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const collectionName = route.params.collectionName as string
+
+// TODO: 在此添加 fund_lof_spot_em 的特殊逻辑
+// 例如：自定义图表、筛选器、更新参数等
+</script>
+
+<style lang="scss" scoped>
+@use '@/styles/collection.scss' as *;
+</style>

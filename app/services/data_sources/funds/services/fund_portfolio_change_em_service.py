@@ -32,23 +32,22 @@ class FundPortfolioChangeEmService(BaseService):
     batch_progress_interval = 100  # 进度更新间隔
     
     # 增量更新检查字段（用于检查已存在的数据）
-    # 注意：这里使用 ["基金代码", "季度"] 来检查，但实际检查逻辑需要从季度中提取年份
-    incremental_check_fields = ["基金代码", "季度"]
+    # 改为检查"年份"字段，如果存在该年份就不更新
+    incremental_check_fields = ["基金代码", "年份", "指标"]
     
-    # 字段值提取器：从"季度"字段中提取年份
-    # 季度格式如 "2024年1季度"，需要提取年份部分 "2024"
-    incremental_field_extractor = {
-        "季度": lambda q: q[:4] if len(q) >= 4 and q[:4].isdigit() else ""
-    }
-    
-    # 唯一键配置（因为旧provider没有get_unique_keys方法）
-    unique_keys = ["基金代码", "股票代码", "季度"]
+    # 唯一键配置
+    unique_keys = ["基金代码", "指标", "季度", "股票代码"]
     
     # 额外的元数据字段
     extra_metadata = {
         "数据源": "akshare",
         "接口名称": "fund_portfolio_change_em",
     }
+    
+    def __init__(self, db=None, current_user=None):
+        """初始化服务，添加 indicator 实例变量"""
+        super().__init__(db=db, current_user=current_user)
+        self._batch_indicator = "累计买入"  # 批量更新时的默认指标
     
     async def update_single_data(self, **kwargs) -> Dict[str, Any]:
         """
@@ -62,8 +61,9 @@ class FundPortfolioChangeEmService(BaseService):
             # 参数解析：支持多种参数名
             fund_code = kwargs.get("fund_code") or kwargs.get("symbol") or kwargs.get("code")
             year = kwargs.get("year") or kwargs.get("date")
+            indicator = kwargs.get("indicator", "累计买入")  # 默认值为"累计买入"
             
-            self.logger.info(f"[{self.collection_name}] 解析参数: fund_code={fund_code}, year={year}")
+            self.logger.info(f"[{self.collection_name}] 解析参数: fund_code={fund_code}, year={year}, indicator={indicator}")
             
             # 参数验证
             if not fund_code:
@@ -80,7 +80,7 @@ class FundPortfolioChangeEmService(BaseService):
                 }
             
             # 调用 provider 获取数据
-            df = self.provider.fetch_data(fund_code=fund_code, year=year)
+            df = self.provider.fetch_data(fund_code=fund_code, year=year, indicator=indicator)
             
             if df is None or df.empty:
                 self.logger.warning(f"[{self.collection_name}] provider 返回空数据")
@@ -128,11 +128,13 @@ class FundPortfolioChangeEmService(BaseService):
         Args:
             task_id: 任务ID，用于更新进度
             year: 年份参数（必填）
+            indicator: 指标类型（可选，默认"累计买入"）
             concurrency: 并发数（默认3）
         """
         try:
             task_manager = get_task_manager() if task_id else None
             year = kwargs.get("year")
+            indicator = kwargs.get("indicator", "累计买入")  # 默认值为"累计买入"
             concurrency = int(kwargs.get("concurrency", self.batch_concurrency))
             
             # 年份必填（与基类的默认行为不同）
@@ -145,8 +147,19 @@ class FundPortfolioChangeEmService(BaseService):
                     "inserted": 0,
                 }
             
+            # 将 indicator 保存到实例变量中，以便在 get_batch_params 中使用
+            self._batch_indicator = indicator
+            
+            # 从 kwargs 中移除已处理的参数，避免重复传递
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ['year', 'indicator', 'concurrency']}
+            
             # 调用基类的批量更新方法，但先验证年份参数
-            return await super().update_batch_data(task_id=task_id, year=year, concurrency=concurrency, **kwargs)
+            result = await super().update_batch_data(task_id=task_id, year=year, concurrency=concurrency, **filtered_kwargs)
+            
+            # 重置 indicator
+            self._batch_indicator = "累计买入"
+            
+            return result
             
         except Exception as e:
             self.logger.error(f"[{self.collection_name}] 批量更新失败: {e}", exc_info=True)
@@ -164,5 +177,12 @@ class FundPortfolioChangeEmService(BaseService):
         构建批量任务的参数
         
         重写基类方法以匹配 provider 的参数格式
+        
+        Args:
+            code: 基金代码
+            year: 年份
         """
-        return {"fund_code": code, "year": year}
+        params = {"fund_code": code, "year": year}
+        # 使用实例变量中的 indicator（在 update_batch_data 中设置）
+        params["indicator"] = getattr(self, "_batch_indicator", "累计买入")
+        return params

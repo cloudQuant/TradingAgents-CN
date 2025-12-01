@@ -5,10 +5,15 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundFeeEmProvider(SimpleProvider):
-    """基金费率-东财数据提供者"""
     
+    """基金费率-东财数据提供者"""
+
+    collection_description = "东方财富网-数据中心-基金交易费率（需要基金代码，支持单个/批量更新）"
+    collection_route = "/funds/collections/fund_fee_em"
+    collection_order = 41
+
     collection_name = "fund_fee_em"
-    display_name = "基金费率-东财"
+    display_name = "基金交易费率-东财"
     akshare_func = "fund_fee_em"
     unique_keys = ["更新时间"]
 

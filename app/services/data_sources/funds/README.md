@@ -106,8 +106,6 @@ print(f"获取到 {len(df)} 条数据")
 - `fund_spot_sina`: 基金实时行情-新浪
 - `fund_open_fund_daily_em`: 开放式基金实时行情-东财
 - `fund_money_fund_daily_em`: 货币型基金实时行情-东财
-- `fund_financial_fund_daily_em`: 理财型基金实时行情-东财
-- `fund_graded_fund_daily_em`: 分级基金实时数据-东财
 - `fund_etf_fund_daily_em`: 场内交易基金实时数据-东财
 
 ### 历史行情类
@@ -118,8 +116,6 @@ print(f"获取到 {len(df)} 条数据")
 - `fund_hist_sina`: 基金历史行情-新浪
 - `fund_open_fund_info_em`: 开放式基金历史行情-东财
 - `fund_money_fund_info_em`: 货币型基金历史行情-东财
-- `fund_financial_fund_info_em`: 理财型基金历史行情-东财
-- `fund_graded_fund_info_em`: 分级基金历史数据-东财
 - `fund_hk_hist_em`: 香港基金历史数据-东财
 - `fund_etf_fund_info_em`: 场内交易基金历史行情-东财
 

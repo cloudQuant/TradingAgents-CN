@@ -638,7 +638,7 @@ class BaoStockProvider(BaseStockDataProvider):
     async def get_financial_data(self, code: str, year: Optional[int] = None,
                                quarter: Optional[int] = None) -> Dict[str, Any]:
         """
-        获取财务数据
+        获取财务数据（优化版：统一登录/登出，避免频繁登录）
 
         Args:
             code: 股票代码
@@ -663,50 +663,90 @@ class BaoStockProvider(BaseStockDataProvider):
 
             financial_data = {}
 
-            # 1. 获取盈利能力数据
-            try:
-                profit_data = await self._get_profit_data(code, year, quarter)
-                if profit_data:
-                    financial_data['profit_data'] = profit_data
-                    logger.debug(f"✅ {code}盈利能力数据获取成功")
-            except Exception as e:
-                logger.debug(f"获取{code}盈利能力数据失败: {e}")
+            # 优化：统一登录一次，所有财务数据查询共享连接
+            def fetch_all_financial_data():
+                bs_code = self._to_baostock_code(code)
+                lg = self.bs.login()
+                if lg.error_code != '0':
+                    raise Exception(f"登录失败: {lg.error_msg}")
 
-            # 2. 获取营运能力数据
-            try:
-                operation_data = await self._get_operation_data(code, year, quarter)
-                if operation_data:
-                    financial_data['operation_data'] = operation_data
-                    logger.debug(f"✅ {code}营运能力数据获取成功")
-            except Exception as e:
-                logger.debug(f"获取{code}营运能力数据失败: {e}")
+                try:
+                    result = {}
+                    
+                    # 1. 获取盈利能力数据
+                    try:
+                        rs = self.bs.query_profit_data(code=bs_code, year=year, quarter=quarter)
+                        if rs.error_code == '0':
+                            data_list = []
+                            while (rs.error_code == '0') & rs.next():
+                                data_list.append(rs.get_row_data())
+                            if data_list:
+                                df = pd.DataFrame(data_list, columns=rs.fields)
+                                result['profit_data'] = df.to_dict('records')[0] if not df.empty else None
+                    except Exception as e:
+                        logger.debug(f"获取{code}盈利能力数据失败: {e}")
 
-            # 3. 获取成长能力数据
-            try:
-                growth_data = await self._get_growth_data(code, year, quarter)
-                if growth_data:
-                    financial_data['growth_data'] = growth_data
-                    logger.debug(f"✅ {code}成长能力数据获取成功")
-            except Exception as e:
-                logger.debug(f"获取{code}成长能力数据失败: {e}")
+                    # 2. 获取营运能力数据
+                    try:
+                        rs = self.bs.query_operation_data(code=bs_code, year=year, quarter=quarter)
+                        if rs.error_code == '0':
+                            data_list = []
+                            while (rs.error_code == '0') & rs.next():
+                                data_list.append(rs.get_row_data())
+                            if data_list:
+                                df = pd.DataFrame(data_list, columns=rs.fields)
+                                result['operation_data'] = df.to_dict('records')[0] if not df.empty else None
+                    except Exception as e:
+                        logger.debug(f"获取{code}营运能力数据失败: {e}")
 
-            # 4. 获取偿债能力数据
-            try:
-                balance_data = await self._get_balance_data(code, year, quarter)
-                if balance_data:
-                    financial_data['balance_data'] = balance_data
-                    logger.debug(f"✅ {code}偿债能力数据获取成功")
-            except Exception as e:
-                logger.debug(f"获取{code}偿债能力数据失败: {e}")
+                    # 3. 获取成长能力数据
+                    try:
+                        rs = self.bs.query_growth_data(code=bs_code, year=year, quarter=quarter)
+                        if rs.error_code == '0':
+                            data_list = []
+                            while (rs.error_code == '0') & rs.next():
+                                data_list.append(rs.get_row_data())
+                            if data_list:
+                                df = pd.DataFrame(data_list, columns=rs.fields)
+                                result['growth_data'] = df.to_dict('records')[0] if not df.empty else None
+                    except Exception as e:
+                        logger.debug(f"获取{code}成长能力数据失败: {e}")
 
-            # 5. 获取现金流量数据
-            try:
-                cash_flow_data = await self._get_cash_flow_data(code, year, quarter)
-                if cash_flow_data:
-                    financial_data['cash_flow_data'] = cash_flow_data
-                    logger.debug(f"✅ {code}现金流量数据获取成功")
-            except Exception as e:
-                logger.debug(f"获取{code}现金流量数据失败: {e}")
+                    # 4. 获取偿债能力数据
+                    try:
+                        rs = self.bs.query_balance_data(code=bs_code, year=year, quarter=quarter)
+                        if rs.error_code == '0':
+                            data_list = []
+                            while (rs.error_code == '0') & rs.next():
+                                data_list.append(rs.get_row_data())
+                            if data_list:
+                                df = pd.DataFrame(data_list, columns=rs.fields)
+                                result['balance_data'] = df.to_dict('records')[0] if not df.empty else None
+                    except Exception as e:
+                        logger.debug(f"获取{code}偿债能力数据失败: {e}")
+
+                    # 5. 获取现金流量数据
+                    try:
+                        rs = self.bs.query_cash_flow_data(code=bs_code, year=year, quarter=quarter)
+                        if rs.error_code == '0':
+                            data_list = []
+                            while (rs.error_code == '0') & rs.next():
+                                data_list.append(rs.get_row_data())
+                            if data_list:
+                                df = pd.DataFrame(data_list, columns=rs.fields)
+                                result['cash_flow_data'] = df.to_dict('records')[0] if not df.empty else None
+                    except Exception as e:
+                        logger.debug(f"获取{code}现金流量数据失败: {e}")
+
+                    return result
+                finally:
+                    self.bs.logout()
+
+            # 异步执行所有财务数据查询（只登录一次）
+            all_data = await asyncio.to_thread(fetch_all_financial_data)
+            
+            # 过滤掉 None 值
+            financial_data = {k: v for k, v in all_data.items() if v is not None}
 
             if financial_data:
                 logger.info(f"✅ BaoStock财务数据获取成功: {code}, {len(financial_data)}个数据集")

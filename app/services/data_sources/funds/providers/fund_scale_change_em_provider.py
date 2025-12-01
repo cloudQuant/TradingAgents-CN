@@ -1,25 +1,56 @@
 """
-基金规模变动-东财数据提供者（重构版：继承SimpleProvider）
+基金规模变动-东财数据提供者（重构版：继承SimpleProvider，无参数接口）
 """
+import pandas as pd
 from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundScaleChangeEmProvider(SimpleProvider):
-    """基金规模变动-东财数据提供者"""
-    
+    """基金规模变动-东财数据提供者（无参数接口，直接获取所有数据）"""
+
+    collection_description = "天天基金网-基金数据-规模份额-规模变动（无需参数，支持更新所有）"
+    collection_route = "/funds/collections/fund_scale_change_em"
+    collection_order = 64
+
     collection_name = "fund_scale_change_em"
-    display_name = "基金规模变动-东财"
+    display_name = "规模变动-东财"
     akshare_func = "fund_scale_change_em"
-    unique_keys = ["截止日期"]
+    unique_keys = ["截止日期"]  # 以截止日期为唯一标识
+    
+    def fetch_data(self, **kwargs) -> pd.DataFrame:
+        """
+        获取数据（无参数接口）
+        
+        重写基类方法，确保不传递任何参数给 akshare
+        """
+        try:
+            self.logger.info(f"Fetching {self.collection_name} data (无参数接口)")
+            
+            # 不传递任何参数给 akshare（fund_scale_change_em 接口不需要参数）
+            df = self._call_akshare(self.akshare_func)
+            
+            if df is None or df.empty:
+                self.logger.warning(f"No data returned for {self.collection_name}")
+                return pd.DataFrame()
+            
+            # 添加元数据
+            df = self._add_metadata(df)
+            
+            self.logger.info(f"Successfully fetched {len(df)} records")
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching {self.collection_name} data: {e}")
+            raise
 
     field_info = [
-        {"name": "序号", "type": "int", "description": ""},
-        {"name": "截止日期", "type": "string", "description": ""},
-        {"name": "基金家数", "type": "int", "description": ""},
-        {"name": "期间申购", "type": "float", "description": "注意单位: 亿份"},
-        {"name": "期间赎回", "type": "float", "description": "注意单位: 亿份"},
-        {"name": "期末总份额", "type": "float", "description": "注意单位: 亿份"},
-        {"name": "期末净资产", "type": "float", "description": "注意单位: 亿份"},
+        {"name": "序号", "type": "int", "description": "序号"},
+        {"name": "截止日期", "type": "string", "description": "截止日期"},
+        {"name": "基金家数", "type": "int", "description": "基金家数"},
+        {"name": "期间申购", "type": "float", "description": "期间申购（亿份）"},
+        {"name": "期间赎回", "type": "float", "description": "期间赎回（亿份）"},
+        {"name": "期末总份额", "type": "float", "description": "期末总份额（亿份）"},
+        {"name": "期末净资产", "type": "float", "description": "期末净资产（亿份）"},
         {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
         {"name": "更新人", "type": "string", "description": "数据更新人"},
         {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},

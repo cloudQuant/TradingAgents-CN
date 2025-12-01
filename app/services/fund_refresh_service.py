@@ -1,293 +1,211 @@
 """
-基金数据刷新服务 V2
-重构版：使用funds目录中的provider和service模块
-包含全部70个基金数据集合
+基金数据刷新服务 V3
+使用动态注册机制，消除代码重复
 """
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 import asyncio
 
 from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
+from app.services.data_sources.base_service import BaseService
+from app.services.data_sources.funds.provider_registry import (
+    get_provider_class,
+    get_collection_definitions,
+)
+from app.services.data_sources.funds.service_registry import get_service_class
+from app.exceptions.funds import (
+    FundCollectionNotFound,
+    FundDataUpdateError,
+)
 
-# 导入所有基金服务
-from app.services.data_sources.funds.services.fund_name_em_service import FundNameEmService
-from app.services.data_sources.funds.services.fund_basic_info_service import FundBasicInfoService
-from app.services.data_sources.funds.services.fund_info_index_em_service import FundInfoIndexEmService
-from app.services.data_sources.funds.services.fund_purchase_status_service import FundPurchaseStatusService
-from app.services.data_sources.funds.services.fund_etf_spot_em_service import FundEtfSpotEmService
-from app.services.data_sources.funds.services.fund_etf_spot_ths_service import FundEtfSpotThsService
-from app.services.data_sources.funds.services.fund_lof_spot_em_service import FundLofSpotEmService
-from app.services.data_sources.funds.services.fund_spot_sina_service import FundSpotSinaService
-from app.services.data_sources.funds.services.fund_etf_hist_min_em_service import FundEtfHistMinEmService
-from app.services.data_sources.funds.services.fund_lof_hist_min_em_service import FundLofHistMinEmService
-from app.services.data_sources.funds.services.fund_etf_hist_em_service import FundEtfHistEmService
-from app.services.data_sources.funds.services.fund_lof_hist_em_service import FundLofHistEmService
-from app.services.data_sources.funds.services.fund_hist_sina_service import FundHistSinaService
-from app.services.data_sources.funds.services.fund_open_fund_daily_em_service import FundOpenFundDailyEmService
-from app.services.data_sources.funds.services.fund_open_fund_info_em_service import FundOpenFundInfoEmService
-from app.services.data_sources.funds.services.fund_money_fund_daily_em_service import FundMoneyFundDailyEmService
-from app.services.data_sources.funds.services.fund_money_fund_info_em_service import FundMoneyFundInfoEmService
-from app.services.data_sources.funds.services.fund_financial_fund_daily_em_service import FundFinancialFundDailyEmService
-from app.services.data_sources.funds.services.fund_financial_fund_info_em_service import FundFinancialFundInfoEmService
-from app.services.data_sources.funds.services.fund_graded_fund_daily_em_service import FundGradedFundDailyEmService
-from app.services.data_sources.funds.services.fund_graded_fund_info_em_service import FundGradedFundInfoEmService
-from app.services.data_sources.funds.services.fund_etf_fund_daily_em_service import FundEtfFundDailyEmService
-from app.services.data_sources.funds.services.fund_hk_hist_em_service import FundHkHistEmService
-from app.services.data_sources.funds.services.fund_etf_fund_info_em_service import FundEtfFundInfoEmService
-from app.services.data_sources.funds.services.fund_etf_dividend_sina_service import FundEtfDividendSinaService
-from app.services.data_sources.funds.services.fund_fh_em_service import FundFhEmService
-from app.services.data_sources.funds.services.fund_cf_em_service import FundCfEmService
-from app.services.data_sources.funds.services.fund_fh_rank_em_service import FundFhRankEmService
-from app.services.data_sources.funds.services.fund_open_fund_rank_em_service import FundOpenFundRankEmService
-from app.services.data_sources.funds.services.fund_exchange_rank_em_service import FundExchangeRankEmService
-from app.services.data_sources.funds.services.fund_money_rank_em_service import FundMoneyRankEmService
-from app.services.data_sources.funds.services.fund_lcx_rank_em_service import FundLcxRankEmService
-from app.services.data_sources.funds.services.fund_hk_rank_em_service import FundHkRankEmService
-from app.services.data_sources.funds.services.fund_individual_achievement_xq_service import FundIndividualAchievementXqService
-from app.services.data_sources.funds.services.fund_value_estimation_em_service import FundValueEstimationEmService
-from app.services.data_sources.funds.services.fund_individual_analysis_xq_service import FundIndividualAnalysisXqService
-from app.services.data_sources.funds.services.fund_individual_profit_probability_xq_service import FundIndividualProfitProbabilityXqService
-from app.services.data_sources.funds.services.fund_individual_detail_hold_xq_service import FundIndividualDetailHoldXqService
-from app.services.data_sources.funds.services.fund_overview_em_service import FundOverviewEmService
-from app.services.data_sources.funds.services.fund_fee_em_service import FundFeeEmService
-from app.services.data_sources.funds.services.fund_individual_detail_info_xq_service import FundIndividualDetailInfoXqService
-from app.services.data_sources.funds.services.fund_portfolio_hold_em_service import FundPortfolioHoldEmService
-from app.services.data_sources.funds.services.fund_portfolio_bond_hold_em_service import FundPortfolioBondHoldEmService
-from app.services.data_sources.funds.services.fund_portfolio_industry_allocation_em_service import FundPortfolioIndustryAllocationEmService
-from app.services.data_sources.funds.services.fund_portfolio_change_em_service import FundPortfolioChangeEmService
-from app.services.data_sources.funds.services.fund_rating_all_em_service import FundRatingAllEmService
-from app.services.data_sources.funds.services.fund_rating_sh_em_service import FundRatingShEmService
-from app.services.data_sources.funds.services.fund_rating_zs_em_service import FundRatingZsEmService
-from app.services.data_sources.funds.services.fund_rating_ja_em_service import FundRatingJaEmService
-from app.services.data_sources.funds.services.fund_manager_em_service import FundManagerEmService
-from app.services.data_sources.funds.services.fund_new_found_em_service import FundNewFoundEmService
-from app.services.data_sources.funds.services.fund_scale_open_sina_service import FundScaleOpenSinaService
-from app.services.data_sources.funds.services.fund_scale_close_sina_service import FundScaleCloseSinaService
-from app.services.data_sources.funds.services.fund_scale_structured_sina_service import FundScaleStructuredSinaService
-from app.services.data_sources.funds.services.fund_aum_em_service import FundAumEmService
-from app.services.data_sources.funds.services.fund_aum_trend_em_service import FundAumTrendEmService
-from app.services.data_sources.funds.services.fund_aum_hist_em_service import FundAumHistEmService
-from app.services.data_sources.funds.services.reits_realtime_em_service import ReitsRealtimeEmService
-from app.services.data_sources.funds.services.reits_hist_em_service import ReitsHistEmService
-from app.services.data_sources.funds.services.fund_report_stock_cninfo_service import FundReportStockCninfoService
-from app.services.data_sources.funds.services.fund_report_industry_allocation_cninfo_service import FundReportIndustryAllocationCninfoService
-from app.services.data_sources.funds.services.fund_report_asset_allocation_cninfo_service import FundReportAssetAllocationCninfoService
-from app.services.data_sources.funds.services.fund_scale_change_em_service import FundScaleChangeEmService
-from app.services.data_sources.funds.services.fund_hold_structure_em_service import FundHoldStructureEmService
-from app.services.data_sources.funds.services.fund_stock_position_lg_service import FundStockPositionLgService
-from app.services.data_sources.funds.services.fund_balance_position_lg_service import FundBalancePositionLgService
-from app.services.data_sources.funds.services.fund_linghuo_position_lg_service import FundLinghuoPositionLgService
-from app.services.data_sources.funds.services.fund_announcement_dividend_em_service import FundAnnouncementDividendEmService
-from app.services.data_sources.funds.services.fund_announcement_report_em_service import FundAnnouncementReportEmService
-from app.services.data_sources.funds.services.fund_announcement_personnel_em_service import FundAnnouncementPersonnelEmService
-
-logger = logging.getLogger("webapi")
+logger = logging.getLogger(__name__)
 
 
 class FundRefreshService:
-    """基金数据刷新服务 V2"""
+    """基金数据刷新服务 V3 - 使用动态注册"""
     
-    def __init__(self, db=None):
+    def __init__(self, db=None, current_user=None):
+        """
+        初始化服务
+        
+        Args:
+            db: MongoDB 数据库实例
+            current_user: 当前用户信息
+        """
+        from app.core.database import get_mongo_db
         self.db = db if db is not None else get_mongo_db()
         self.task_manager = get_task_manager()
-        
-        # 初始化所有70个服务
-        self.services = {
-            "fund_name_em": FundNameEmService(self.db),
-            "fund_basic_info": FundBasicInfoService(self.db),
-            "fund_info_index_em": FundInfoIndexEmService(self.db),
-            "fund_purchase_status": FundPurchaseStatusService(self.db),
-            "fund_etf_spot_em": FundEtfSpotEmService(self.db),
-            "fund_etf_spot_ths": FundEtfSpotThsService(self.db),
-            "fund_lof_spot_em": FundLofSpotEmService(self.db),
-            "fund_spot_sina": FundSpotSinaService(self.db),
-            "fund_etf_hist_min_em": FundEtfHistMinEmService(self.db),
-            "fund_lof_hist_min_em": FundLofHistMinEmService(self.db),
-            "fund_etf_hist_em": FundEtfHistEmService(self.db),
-            "fund_lof_hist_em": FundLofHistEmService(self.db),
-            "fund_hist_sina": FundHistSinaService(self.db),
-            "fund_open_fund_daily_em": FundOpenFundDailyEmService(self.db),
-            "fund_open_fund_info_em": FundOpenFundInfoEmService(self.db),
-            "fund_money_fund_daily_em": FundMoneyFundDailyEmService(self.db),
-            "fund_money_fund_info_em": FundMoneyFundInfoEmService(self.db),
-            "fund_financial_fund_daily_em": FundFinancialFundDailyEmService(self.db),
-            "fund_financial_fund_info_em": FundFinancialFundInfoEmService(self.db),
-            "fund_graded_fund_daily_em": FundGradedFundDailyEmService(self.db),
-            "fund_graded_fund_info_em": FundGradedFundInfoEmService(self.db),
-            "fund_etf_fund_daily_em": FundEtfFundDailyEmService(self.db),
-            "fund_hk_hist_em": FundHkHistEmService(self.db),
-            "fund_etf_fund_info_em": FundEtfFundInfoEmService(self.db),
-            "fund_etf_dividend_sina": FundEtfDividendSinaService(self.db),
-            "fund_fh_em": FundFhEmService(self.db),
-            "fund_cf_em": FundCfEmService(self.db),
-            "fund_fh_rank_em": FundFhRankEmService(self.db),
-            "fund_open_fund_rank_em": FundOpenFundRankEmService(self.db),
-            "fund_exchange_rank_em": FundExchangeRankEmService(self.db),
-            "fund_money_rank_em": FundMoneyRankEmService(self.db),
-            "fund_lcx_rank_em": FundLcxRankEmService(self.db),
-            "fund_hk_rank_em": FundHkRankEmService(self.db),
-            "fund_individual_achievement_xq": FundIndividualAchievementXqService(self.db),
-            "fund_value_estimation_em": FundValueEstimationEmService(self.db),
-            "fund_individual_analysis_xq": FundIndividualAnalysisXqService(self.db),
-            "fund_individual_profit_probability_xq": FundIndividualProfitProbabilityXqService(self.db),
-            "fund_individual_detail_hold_xq": FundIndividualDetailHoldXqService(self.db),
-            "fund_overview_em": FundOverviewEmService(self.db),
-            "fund_fee_em": FundFeeEmService(self.db),
-            "fund_individual_detail_info_xq": FundIndividualDetailInfoXqService(self.db),
-            "fund_portfolio_hold_em": FundPortfolioHoldEmService(self.db),
-            "fund_portfolio_bond_hold_em": FundPortfolioBondHoldEmService(self.db),
-            "fund_portfolio_industry_allocation_em": FundPortfolioIndustryAllocationEmService(self.db),
-            "fund_portfolio_change_em": FundPortfolioChangeEmService(self.db),
-            "fund_rating_all_em": FundRatingAllEmService(self.db),
-            "fund_rating_sh_em": FundRatingShEmService(self.db),
-            "fund_rating_zs_em": FundRatingZsEmService(self.db),
-            "fund_rating_ja_em": FundRatingJaEmService(self.db),
-            "fund_manager_em": FundManagerEmService(self.db),
-            "fund_new_found_em": FundNewFoundEmService(self.db),
-            "fund_scale_open_sina": FundScaleOpenSinaService(self.db),
-            "fund_scale_close_sina": FundScaleCloseSinaService(self.db),
-            "fund_scale_structured_sina": FundScaleStructuredSinaService(self.db),
-            "fund_aum_em": FundAumEmService(self.db),
-            "fund_aum_trend_em": FundAumTrendEmService(self.db),
-            "fund_aum_hist_em": FundAumHistEmService(self.db),
-            "reits_realtime_em": ReitsRealtimeEmService(self.db),
-            "reits_hist_em": ReitsHistEmService(self.db),
-            "fund_report_stock_cninfo": FundReportStockCninfoService(self.db),
-            "fund_report_industry_allocation_cninfo": FundReportIndustryAllocationCninfoService(self.db),
-            "fund_report_asset_allocation_cninfo": FundReportAssetAllocationCninfoService(self.db),
-            "fund_scale_change_em": FundScaleChangeEmService(self.db),
-            "fund_hold_structure_em": FundHoldStructureEmService(self.db),
-            "fund_stock_position_lg": FundStockPositionLgService(self.db),
-            "fund_balance_position_lg": FundBalancePositionLgService(self.db),
-            "fund_linghuo_position_lg": FundLinghuoPositionLgService(self.db),
-            "fund_announcement_dividend_em": FundAnnouncementDividendEmService(self.db),
-            "fund_announcement_report_em": FundAnnouncementReportEmService(self.db),
-            "fund_announcement_personnel_em": FundAnnouncementPersonnelEmService(self.db),
-        }
+        self.current_user = current_user
+        self._services_cache: Dict[str, BaseService] = {}
     
-    # 前端特有的参数，不应传递给 akshare 函数
-    FRONTEND_ONLY_PARAMS = {
-        # 批量更新控制参数
-        'batch', 'batch_update', 'batch_size', 'concurrency', 'delay', 'update_type',
-        # 分页和过滤参数
-        'page', 'limit', 'skip', 'filters', 'sort', 'order',
-        # 任务和回调参数
-        'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
-        # 更新控制参数
-        'force', 'clear_first', 'overwrite', 'mode'
-    }
+    def _get_service(self, collection_name: str) -> Optional[BaseService]:
+        """
+        动态获取服务实例
+        
+        优先使用已注册的专门服务类（包含批量更新配置等），
+        如果没有专门服务类，则动态创建一个基础服务类。
+        
+        Args:
+            collection_name: 集合名称
+            
+        Returns:
+            服务实例，如果不存在则返回 None
+        """
+        # 使用缓存
+        if collection_name in self._services_cache:
+            return self._services_cache[collection_name]
+        
+        # 优先查找已注册的专门服务类
+        service_cls = get_service_class(collection_name)
+        
+        if not service_cls:
+            # 没有专门服务类，动态创建
+            provider_cls = get_provider_class(collection_name)
+            if not provider_cls:
+                logger.warning(f"未找到集合 {collection_name} 的 provider")
+                return None
+            
+            # 动态创建服务类
+            service_cls = type(
+                f"{collection_name.replace('_', ' ').title().replace(' ', '')}Service",
+                (BaseService,),
+                {
+                    "collection_name": collection_name,
+                    "provider_class": provider_cls,
+                }
+            )
+        
+        try:
+            service = service_cls(self.db, self.current_user)
+            self._services_cache[collection_name] = service
+            return service
+        except Exception as e:
+            logger.error(f"创建服务实例失败 {collection_name}: {e}", exc_info=True)
+            return None
+    
+    def get_supported_collections(self) -> List[str]:
+        """
+        获取所有支持的集合名称
+        
+        Returns:
+            集合名称列表
+        """
+        return [c["name"] for c in get_collection_definitions()]
+    
+    async def get_collection_overview(self, collection_name: str) -> Dict[str, Any]:
+        """
+        获取集合概览信息
+        
+        Args:
+            collection_name: 集合名称
+            
+        Returns:
+            概览信息字典
+            
+        Raises:
+            FundCollectionNotFound: 集合不存在
+        """
+        service = self._get_service(collection_name)
+        if not service:
+            raise FundCollectionNotFound(collection_name)
+        
+        try:
+            return await service.get_overview()
+        except Exception as e:
+            logger.error(f"获取集合概览失败 {collection_name}: {e}", exc_info=True)
+            raise FundDataUpdateError(f"获取概览失败: {str(e)}", collection_name)
     
     async def refresh_collection(
         self,
         collection_name: str,
         task_id: str,
-        params: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+        params: Dict[str, Any]
+    ) -> None:
         """
-        刷新指定的基金数据集合
+        刷新集合数据
         
         Args:
             collection_name: 集合名称
             task_id: 任务ID
-            params: 参数
+            params: 更新参数
             
-        Returns:
-            刷新结果
+        Raises:
+            FundCollectionNotFound: 集合不存在
+            FundDataUpdateError: 更新失败
         """
+        service = self._get_service(collection_name)
+        if not service:
+            raise FundCollectionNotFound(collection_name)
+        
         try:
-            self.task_manager.start_task(task_id)
-            self.task_manager.update_progress(task_id, 0, 100, f"开始刷新 {collection_name}...")
+            update_type = params.get("update_type", "batch")
+            update_mode = params.get("update_mode", "incremental")  # 默认增量更新
             
-            # 检查服务是否存在
-            if collection_name not in self.services:
-                raise ValueError(f"未找到集合 {collection_name} 的服务")
-            
-            service = self.services[collection_name]
-            
-            # 更新进度
-            self.task_manager.update_progress(task_id, 10, 100, f"正在获取 {collection_name} 数据...")
-            
-            # 判断是批量更新还是单条更新
-            is_batch = (
-                params.get("batch") or 
-                params.get("batch_update") or 
-                params.get("update_type") == "batch"
-            ) if params else False
-            
-            # 过滤掉前端特有的参数，只保留 akshare 需要的参数
-            api_params = {}
-            if params:
-                api_params = {
-                    k: v for k, v in params.items() 
-                    if k not in self.FRONTEND_ONLY_PARAMS
-                }
-                # 对于批量更新，保留 concurrency 参数
-                if is_batch and "concurrency" in params:
-                    api_params["concurrency"] = params["concurrency"]
-                logger.info(f"[参数过滤] 原始参数: {params}, 过滤后: {api_params}, 批量更新: {is_batch}")
-            
-            # 调用服务刷新数据
-            if is_batch and hasattr(service, "update_batch_data"):
-                logger.info(f"[{collection_name}] 调用批量更新方法 update_batch_data")
-                # 批量更新方法自己管理任务状态和进度
-                result = await service.update_batch_data(task_id=task_id, **api_params)
-                # 批量更新方法已经处理了任务完成状态，不需要再次调用
-            else:
-                logger.info(f"[{collection_name}] 调用单条更新方法 update_single_data")
-                result = await service.update_single_data(**api_params)
+            if update_type == "single":
+                # 单条更新 - 将 params 作为 **kwargs 传递
+                # 开始任务
+                self.task_manager.start_task(task_id)
+                self.task_manager.update_progress(task_id, 0, 100, "开始单条更新...")
                 
-                # 单条更新需要在这里处理任务状态
-                if result.get("success"):
-                    self.task_manager.update_progress(
-                        task_id, 100, 100, 
-                        f"成功刷新 {collection_name}，插入 {result.get('inserted', 0)} 条数据"
+                try:
+                    result = await service.update_single_data(**params)
+                    logger.info(f"单条更新完成 {collection_name}: {result}")
+                    
+                    # 更新任务状态为成功
+                    message = result.get("message", "单条更新完成")
+                    inserted = result.get("inserted", 0)
+                    if inserted > 0:
+                        message = f"成功更新 {inserted} 条数据"
+                    
+                    self.task_manager.complete_task(
+                        task_id,
+                        result={
+                            "saved": inserted,
+                            "message": message
+                        },
+                        message=message
                     )
-                    self.task_manager.complete_task(task_id)
+                except Exception as e:
+                    # 更新任务状态为失败
+                    error_msg = str(e)
+                    logger.error(f"单条更新失败 {collection_name}: {error_msg}", exc_info=True)
+                    self.task_manager.fail_task(task_id, error_msg)
+                    raise
+            else:
+                # 批量更新
+                # 开始任务
+                self.task_manager.start_task(task_id)
+                
+                # 如果是全量更新，先清除数据
+                if update_mode == "full":
+                    self.task_manager.update_progress(task_id, 0, 100, "开始全量更新：正在清除现有数据...")
+                    try:
+                        clear_result = await service.clear_data()
+                        if clear_result.get("success"):
+                            deleted_count = clear_result.get("deleted_count", 0)
+                            logger.info(f"[{collection_name}] 全量更新：已清除 {deleted_count} 条数据")
+                            self.task_manager.update_progress(task_id, 5, 100, f"已清除 {deleted_count} 条数据，开始增量更新...")
+                        else:
+                            logger.warning(f"[{collection_name}] 全量更新：清除数据失败，继续增量更新")
+                            self.task_manager.update_progress(task_id, 5, 100, "清除数据失败，继续增量更新...")
+                    except Exception as e:
+                        logger.error(f"[{collection_name}] 全量更新：清除数据异常: {e}", exc_info=True)
+                        self.task_manager.update_progress(task_id, 5, 100, "清除数据异常，继续增量更新...")
                 else:
-                    self.task_manager.fail_task(task_id, result.get("message", "刷新失败"))
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"刷新 {collection_name} 失败: {e}", exc_info=True)
-            self.task_manager.fail_task(task_id, str(e))
+                    self.task_manager.update_progress(task_id, 0, 100, "开始增量更新...")
+                
+                # 执行批量更新（将 params 作为 **kwargs 传递）
+                result = await service.update_batch_data(task_id=task_id, **params)
+                logger.info(f"批量更新完成 {collection_name}: {result}")
+                
+        except FundCollectionNotFound:
             raise
+        except Exception as e:
+            logger.error(f"刷新集合失败 {collection_name}: {e}", exc_info=True)
+            raise FundDataUpdateError(str(e), collection_name)
     
-    async def get_collection_overview(self, collection_name: str) -> Dict[str, Any]:
-        """获取集合数据概览"""
-        if collection_name not in self.services:
-            raise ValueError(f"未找到集合 {collection_name} 的服务")
-        
-        service = self.services[collection_name]
-        return await service.get_overview()
-    
-    async def get_collection_data(
-        self,
-        collection_name: str,
-        skip: int = 0,
-        limit: int = 100,
-        filters: Dict = None
-    ) -> Dict[str, Any]:
-        """获取集合数据"""
-        if collection_name not in self.services:
-            raise ValueError(f"未找到集合 {collection_name} 的服务")
-        
-        service = self.services[collection_name]
-        return await service.get_data(skip=skip, limit=limit, filters=filters)
-    
-    async def clear_collection(self, collection_name: str) -> Dict[str, Any]:
-        """清空集合数据"""
-        if collection_name not in self.services:
-            raise ValueError(f"未找到集合 {collection_name} 的服务")
-        
-        service = self.services[collection_name]
-        return await service.clear_data()
-    
-    def get_supported_collections(self) -> list:
-        """获取支持的所有数据集合列表"""
-        return list(self.services.keys())
-    
-    def get_collection_count(self) -> int:
-        """获取支持的数据集合数量"""
-        return len(self.services)
+    def clear_cache(self):
+        """清空服务缓存"""
+        self._services_cache.clear()
+        logger.info("已清空服务缓存")

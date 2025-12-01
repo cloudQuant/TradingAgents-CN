@@ -19,54 +19,58 @@ echo ""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# 杀死占用指定端口的所有进程
+kill_port_processes() {
+    local port=$1
+    local raw_pids=""
+
+    if command -v lsof >/dev/null 2>&1; then
+        raw_pids=$(lsof -ti:"$port" 2>/dev/null || true)
+    elif command -v netstat >/dev/null 2>&1; then
+        raw_pids=$(netstat -tuln 2>/dev/null | grep ":$port" | grep LISTEN | awk '{print $NF}' | cut -d'/' -f1 || true)
+    elif command -v ss >/dev/null 2>&1; then
+        raw_pids=$(ss -tlnp 2>/dev/null | grep ":$port" | grep LISTEN | sed -n 's/.*pid=\([0-9]*\).*/\1/p' || true)
+    else
+        echo -e "${YELLOW}⚠️  无法检查端口占用情况（未找到 lsof/netstat/ss 命令）${NC}"
+        return 0
+    fi
+
+    if [ -z "$raw_pids" ]; then
+        echo -e "${GREEN}✅ 端口 $port 未被占用${NC}"
+        return 0
+    fi
+
+    echo -e "${YELLOW}发现端口 $port 被占用，PID 列表: $raw_pids${NC}"
+    for pid in $raw_pids; do
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            kill -9 "$pid" 2>/dev/null || true
+        fi
+    done
+
+    sleep 1
+    if kill_port_check "$port"; then
+        echo -e "${GREEN}✅ 端口 $port 已释放${NC}"
+    else
+        echo -e "${RED}❌ 无法释放端口 $port，请手动检查残留进程${NC}"
+    fi
+}
+
+kill_port_check() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        ! lsof -ti:"$port" >/dev/null 2>&1
+    elif command -v netstat >/dev/null 2>&1; then
+        ! netstat -tuln 2>/dev/null | grep -q ":$port"
+    elif command -v ss >/dev/null 2>&1; then
+        ! ss -tlnp 2>/dev/null | grep -q ":$port"
+    else
+        return 0
+    fi
+}
+
 # 检查 3000 端口是否被占用
 echo "[1/4] 检查 3000 端口占用情况..."
-
-# 尝试使用 lsof 查找占用端口的进程
-if command -v lsof >/dev/null 2>&1; then
-    PID=$(lsof -ti:3000 2>/dev/null || true)
-    if [ -n "$PID" ]; then
-        echo -e "${YELLOW}发现端口 3000 被进程占用，PID: $PID${NC}"
-        echo "正在关闭进程..."
-        kill -9 "$PID" 2>/dev/null || true
-        sleep 1
-        # 再次检查是否已关闭
-        if lsof -ti:3000 >/dev/null 2>&1; then
-            echo -e "${RED}❌ 关闭进程失败${NC}"
-        else
-            echo -e "${GREEN}✅ 进程已关闭${NC}"
-        fi
-    else
-        echo -e "${GREEN}✅ 端口 3000 未被占用${NC}"
-    fi
-# 如果没有 lsof，尝试使用 netstat (Linux)
-elif command -v netstat >/dev/null 2>&1; then
-    PID=$(netstat -tuln 2>/dev/null | grep ':3000' | grep LISTEN | awk '{print $NF}' | cut -d'/' -f1 | head -1 || true)
-    if [ -n "$PID" ]; then
-        echo -e "${YELLOW}发现端口 3000 被进程占用，PID: $PID${NC}"
-        echo "正在关闭进程..."
-        kill -9 "$PID" 2>/dev/null || true
-        sleep 1
-        echo -e "${GREEN}✅ 进程已关闭${NC}"
-    else
-        echo -e "${GREEN}✅ 端口 3000 未被占用${NC}"
-    fi
-# 如果没有 lsof 和 netstat，尝试使用 ss (Linux)
-elif command -v ss >/dev/null 2>&1; then
-    PID=$(ss -tlnp 2>/dev/null | grep ':3000' | grep LISTEN | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1 || true)
-    if [ -n "$PID" ]; then
-        echo -e "${YELLOW}发现端口 3000 被进程占用，PID: $PID${NC}"
-        echo "正在关闭进程..."
-        kill -9 "$PID" 2>/dev/null || true
-        sleep 1
-        echo -e "${GREEN}✅ 进程已关闭${NC}"
-    else
-        echo -e "${GREEN}✅ 端口 3000 未被占用${NC}"
-    fi
-else
-    echo -e "${YELLOW}⚠️  无法检查端口占用情况（未找到 lsof/netstat/ss 命令）${NC}"
-    echo "继续执行..."
-fi
+kill_port_processes 3000
 
 # 等待端口释放
 sleep 2

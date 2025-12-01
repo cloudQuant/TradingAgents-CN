@@ -13,10 +13,10 @@
         unique_keys = ["基金代码"]
     
     # 单参数provider（需要fund_code）
-    class FundFinancialFundInfoEmProvider(BaseProvider):
-        collection_name = "fund_financial_fund_info_em"
-        display_name = "理财型基金历史行情"
-        akshare_func = "fund_financial_fund_info_em"
+    class FundOpenFundInfoEmProvider(BaseProvider):
+        collection_name = "fund_open_fund_info_em"
+        display_name = "开放式基金历史行情"
+        akshare_func = "fund_open_fund_info_em"
         unique_keys = ["基金代码", "净值日期"]
         
         # 参数映射：多个前端参数映射到一个akshare参数
@@ -65,9 +65,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+SYSTEM_FIELDS = {"更新时间", "更新人", "创建时间", "创建人", "来源", "scraped_at"}
+
+
 class BaseProvider(ABC):
     """通用数据提供者基类"""
     
+    # BaseProvider 专注于“如何从第三方拿到干净的 DataFrame”，与落库无关。
+    # 典型流程：
+    #   1) _map_params：将前端/服务层传入的多种参数名映射为 akshare 认可的参数；
+    #   2) _validate_params：补齐必填项，提前发现调用错误；
+    #   3) _call_akshare：真正的 API 请求；失败时统一记录日志；
+    #   4) _add_param_columns：把关键参数写入列，便于落库时作为唯一键；
+    #   5) _add_metadata：写入时间戳等元数据，帮助追踪来源。
+    # 子类只需要决定 “用哪个 akshare 函数 + 唯一键 + 参数映射”，剩余流程由基类兜底。
+
     # ===== 子类必须定义的属性 =====
     collection_name: str = ""           # 集合名称
     display_name: str = ""              # 显示名称
@@ -76,6 +88,12 @@ class BaseProvider(ABC):
     # ===== 子类可选定义的属性 =====
     unique_keys: List[str] = []         # 数据去重的唯一键
     field_info: List[Dict[str, Any]] = []  # 字段信息列表
+    collection_description: str = ""    # 集合描述
+    collection_route: Optional[str] = None
+    collection_category: str = "默认"
+    collection_order: int = 100
+    collection_tags: List[str] = []
+    collection_visible: bool = True
     
     # 参数映射：将前端参数名映射到akshare参数名
     # 支持多个前端参数映射到一个akshare参数
@@ -90,7 +108,7 @@ class BaseProvider(ABC):
     add_param_columns: Dict[str, str] = {}
     
     # 时间戳字段名
-    timestamp_field: str = "scraped_at"
+    timestamp_field: str = "更新时间"
     
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -108,26 +126,26 @@ class BaseProvider(ABC):
         子类可以重写此方法以实现自定义逻辑
         """
         try:
-            # 1. 参数映射
+            # 1. 参数映射：支持多种前端命名，例如 fund_code / code / symbol -> symbol
             mapped_params = self._map_params(kwargs)
             
-            # 2. 验证必填参数
+            # 2. 验证必填参数，尽早抛出友好错误信息
             self._validate_params(mapped_params)
             
-            # 3. 记录调用日志
+            # 3. 记录调用日志，方便排查 akshare 限流/字段变动等问题
             self.logger.info(f"Fetching {self.collection_name} data, params={mapped_params}")
             
-            # 4. 调用 akshare
+            # 4. 真正调用 akshare
             df = self._call_akshare(self.akshare_func, **mapped_params)
             
             if df is None or df.empty:
                 self.logger.warning(f"No data returned for {self.collection_name}")
                 return pd.DataFrame()
             
-            # 5. 添加参数列（如基金代码）
+            # 5. 将关键参数写回 DataFrame，确保后续写库时有唯一索引
             df = self._add_param_columns(df, mapped_params)
             
-            # 6. 添加元数据
+            # 6. 加入时间戳等元数据，方便排查“数据何时刷新”
             df = self._add_metadata(df)
             
             self.logger.info(f"Successfully fetched {len(df)} records for {self.collection_name}")
@@ -147,19 +165,30 @@ class BaseProvider(ABC):
         支持多个前端参数映射到一个akshare参数
         例如：fund_code/symbol/code 都映射到 symbol
         """
+        # 过滤掉前端特有的参数，这些参数不应该传递给 akshare
+        frontend_only_params = {
+            'update_type', 'update_mode', 'batch_update', 'batch_size', 
+            'page', 'limit', 'skip', 'filters', 'sort', 'order',
+            'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
+            'force', 'clear_first', 'overwrite', 'mode', 'concurrency'
+        }
+        
+        # 先过滤掉前端特有参数
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in frontend_only_params}
+        
         result = {}
         used_keys = set()
         
-        # 首先处理映射
+        # 先处理 param_mapping 中自定义的别名
         for frontend_key, akshare_key in self.param_mapping.items():
-            if frontend_key in kwargs and kwargs[frontend_key] is not None:
+            if frontend_key in filtered_kwargs and filtered_kwargs[frontend_key] is not None:
                 # 如果akshare_key已经有值，跳过（优先使用第一个匹配的参数）
                 if akshare_key not in result:
-                    result[akshare_key] = kwargs[frontend_key]
+                    result[akshare_key] = filtered_kwargs[frontend_key]
                 used_keys.add(frontend_key)
         
-        # 保留未映射的参数（如果参数名直接匹配akshare参数名）
-        for key, value in kwargs.items():
+        # 其次保留那些"本来就是 akshare 参数名"的键，避免丢失
+        for key, value in filtered_kwargs.items():
             if key not in used_keys and value is not None:
                 # 如果key不在映射表中，且不在结果中，直接使用
                 if key not in result:
@@ -199,16 +228,46 @@ class BaseProvider(ABC):
         将参数值作为列添加到 DataFrame
         
         例如：将 symbol 参数的值写入 "基金代码" 列
+        
+        策略：
+        1. 如果列不存在，直接添加参数值
+        2. 如果列已存在但值为空或NaN，用参数值填充
+        3. 如果列已存在且值不为空，检查是否与参数值一致，不一致时记录警告并使用参数值
         """
         df = df.copy()
         for param_name, column_name in self.add_param_columns.items():
-            if param_name in params and column_name not in df.columns:
-                df[column_name] = params[param_name]
+            if param_name in params:
+                param_value = params[param_name]
+                if column_name not in df.columns:
+                    # 列不存在，直接添加
+                    df[column_name] = param_value
+                else:
+                    # 列已存在，检查是否需要填充或覆盖
+                    # 1. 填充空值
+                    mask_empty = df[column_name].isna() | (df[column_name].astype(str).str.strip() == "")
+                    if mask_empty.any():
+                        df.loc[mask_empty, column_name] = param_value
+                        self.logger.debug(f"填充 {column_name} 列的空值，使用参数值: {param_value}")
+                    
+                    # 2. 检查非空值是否与参数值一致
+                    mask_filled = ~mask_empty
+                    if mask_filled.any():
+                        inconsistent = df.loc[mask_filled, column_name] != param_value
+                        if inconsistent.any():
+                            inconsistent_values = df.loc[mask_filled & inconsistent, column_name].unique()[:3]
+                            self.logger.warning(
+                                f"{column_name} 列的值与参数不一致: "
+                                f"参数值={param_value}, 数据中的值={list(inconsistent_values)}, "
+                                f"将使用参数值覆盖"
+                            )
+                            # 使用参数值覆盖，确保数据一致性
+                            df[column_name] = param_value
         return df
     
     def _add_metadata(self, df: pd.DataFrame) -> pd.DataFrame:
         """添加元数据字段（时间戳）"""
         df = df.copy()
+        # timestamp_field 默认为“更新时间”，子类可覆盖为“更新日期”等别名
         df[self.timestamp_field] = datetime.now()
         return df
     
@@ -234,6 +293,42 @@ class BaseProvider(ABC):
     def get_display_name(self) -> str:
         """获取显示名称"""
         return self.display_name
+
+    def get_collection_route(self) -> str:
+        """获取集合路由"""
+        if self.collection_route:
+            return self.collection_route
+        return f"/funds/collections/{self.collection_name}"
+
+    def get_collection_description(self) -> str:
+        """获取集合描述"""
+        if self.collection_description:
+            return self.collection_description
+        if self.__doc__:
+            return self.__doc__.strip()
+        return self.display_name or self.collection_name
+
+    def get_display_fields(self) -> List[str]:
+        """获取需要展示的字段列表（排除系统字段）"""
+        display_fields = []
+        for field in self.get_field_info():
+            name = field.get("name")
+            if name and name not in SYSTEM_FIELDS:
+                display_fields.append(name)
+        return display_fields
+
+    def get_collection_meta(self) -> Dict[str, Any]:
+        """获取集合元信息"""
+        return {
+            "name": self.collection_name,
+            "display_name": self.get_display_name() or self.collection_name,
+            "description": self.get_collection_description(),
+            "route": self.get_collection_route(),
+            "fields": self.get_display_fields(),
+            "category": self.collection_category,
+            "order": self.collection_order,
+            "tags": self.collection_tags,
+        }
 
 
 class SimpleProvider(BaseProvider):

@@ -11,6 +11,9 @@ export { default as CollectionOverviewDialog } from './CollectionOverviewDialog.
 export { default as FileImportDialog } from './FileImportDialog.vue'
 export { default as RemoteSyncDialog } from './RemoteSyncDialog.vue'
 
+// Composable 导出
+export { useFundCollection } from './useFundCollection'
+
 // 类型导出
 export type { FieldDefinition } from './CollectionDataTable.vue'
 export type { RemoteSyncConfig, SyncResult } from './RemoteSyncDialog.vue'

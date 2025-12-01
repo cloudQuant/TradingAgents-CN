@@ -31,14 +31,8 @@ class FundPortfolioHoldEmService(BaseService):
     batch_progress_interval = 100  # 进度更新间隔
     
     # 增量更新检查字段（用于检查已存在的数据）
-    # 注意：这里使用 ["基金代码", "季度"] 来检查，但实际检查逻辑需要从季度中提取年份
-    incremental_check_fields = ["基金代码", "季度"]
-    
-    # 字段值提取器：从"季度"字段中提取年份
-    # 季度格式如 "2024年1季度"，需要提取年份部分 "2024"
-    incremental_field_extractor = {
-        "季度": lambda q: q[:4] if len(q) >= 4 and q[:4].isdigit() else ""
-    }
+    # 改为检查"年份"字段，如果存在该年份就不更新
+    incremental_check_fields = ["基金代码", "年份"]
     
     # 唯一键配置（因为旧provider没有get_unique_keys方法）
     unique_keys = ["基金代码", "股票代码", "季度"]

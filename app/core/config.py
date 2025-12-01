@@ -184,21 +184,21 @@ class Settings(BaseSettings):
 
     # Tushare基础配置
     TUSHARE_TOKEN: str = Field(default="", description="Tushare API Token")
-    TUSHARE_ENABLED: bool = Field(default=True, description="启用Tushare数据源")
+    TUSHARE_ENABLED: bool = Field(default=False, description="启用Tushare数据源")
     TUSHARE_TIER: str = Field(default="standard", description="Tushare积分等级 (free/basic/standard/premium/vip)")
     TUSHARE_RATE_LIMIT_SAFETY_MARGIN: float = Field(default=0.8, ge=0.1, le=1.0, description="速率限制安全边际")
 
     # Tushare统一数据同步配置
-    TUSHARE_UNIFIED_ENABLED: bool = Field(default=True)
-    TUSHARE_BASIC_INFO_SYNC_ENABLED: bool = Field(default=True)
+    TUSHARE_UNIFIED_ENABLED: bool = Field(default=False)
+    TUSHARE_BASIC_INFO_SYNC_ENABLED: bool = Field(default=False)
     TUSHARE_BASIC_INFO_SYNC_CRON: str = Field(default="0 2 * * *")  # 每日凌晨2点
-    TUSHARE_QUOTES_SYNC_ENABLED: bool = Field(default=True)
+    TUSHARE_QUOTES_SYNC_ENABLED: bool = Field(default=False)
     TUSHARE_QUOTES_SYNC_CRON: str = Field(default="*/5 9-15 * * 1-5")  # 交易时间每5分钟
-    TUSHARE_HISTORICAL_SYNC_ENABLED: bool = Field(default=True)
+    TUSHARE_HISTORICAL_SYNC_ENABLED: bool = Field(default=False)
     TUSHARE_HISTORICAL_SYNC_CRON: str = Field(default="0 16 * * 1-5")  # 工作日16点
-    TUSHARE_FINANCIAL_SYNC_ENABLED: bool = Field(default=True)
+    TUSHARE_FINANCIAL_SYNC_ENABLED: bool = Field(default=False)
     TUSHARE_FINANCIAL_SYNC_CRON: str = Field(default="0 3 * * 0")  # 周日凌晨3点
-    TUSHARE_STATUS_CHECK_ENABLED: bool = Field(default=True)
+    TUSHARE_STATUS_CHECK_ENABLED: bool = Field(default=False)
     TUSHARE_STATUS_CHECK_CRON: str = Field(default="0 * * * *")  # 每小时
 
     # Tushare数据初始化配置
@@ -356,11 +356,11 @@ class Settings(BaseSettings):
     US_DEFAULT_DATA_SOURCE: str = Field(default="yfinance", description="美股默认数据源（yfinance/finnhub）")
 
     # ===== 新闻数据同步服务配置 =====
-    NEWS_SYNC_ENABLED: bool = Field(default=True)
+    NEWS_SYNC_ENABLED: bool = Field(default=False)  # 默认禁用，AKShare个股新闻接口不稳定
     NEWS_SYNC_CRON: str = Field(default="0 */2 * * *")  # 每2小时
     NEWS_SYNC_HOURS_BACK: int = Field(default=24)
     NEWS_SYNC_MAX_PER_SOURCE: int = Field(default=50)
-    NEWS_SYNC_SOURCES: str = Field(default="tushare,akshare", description="新闻同步使用的数据源，逗号分隔（默认不含realtime）")
+    NEWS_SYNC_SOURCES: str = Field(default="akshare", description="新闻同步使用的数据源，逗号分隔（默认不含realtime）")
     NEWS_SYNC_DISABLE_INTRADAY: bool = Field(default=True, description="是否禁止在盘中抓取新闻（工作日 09:30-11:30, 13:00-15:00）")
 
     @property

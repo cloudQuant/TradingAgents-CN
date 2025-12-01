@@ -5,10 +5,15 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundLofSpotEmProvider(SimpleProvider):
-    """LOF实时行情-东财数据提供者"""
     
+    """LOF实时行情-东财数据提供者"""
+
+    collection_description = "东方财富网-LOF实时行情数据，包括最新价、涨跌幅、成交量、市值等"
+    collection_route = "/funds/collections/fund_lof_spot_em"
+    collection_order = 8
+
     collection_name = "fund_lof_spot_em"
-    display_name = "LOF实时行情-东财"
+    display_name = "LOF基金实时行情-东财"
     akshare_func = "fund_lof_spot_em"
     unique_keys = ["代码", "更新时间"]
 

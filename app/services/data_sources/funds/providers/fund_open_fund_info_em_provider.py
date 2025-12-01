@@ -9,21 +9,22 @@ class FundOpenFundInfoEmProvider(BaseProvider):
     """开放式基金历史行情-东财数据提供者"""
     
     collection_name = "fund_open_fund_info_em"
-    display_name = "开放式基金历史行情-东财"
+    display_name = "开放式基金历史行情-东方财富"
     akshare_func = "fund_open_fund_info_em"
     unique_keys = ["基金代码", "净值日期", "指标类型"]
     
-    # 参数映射：多个前端参数映射到fund
+    # 参数映射：多个前端参数映射到symbol（akshare函数需要symbol参数）
     param_mapping = {
-        "fund_code": "fund",
-        "fund": "fund",
-        "code": "fund",
+        "fund_code": "symbol",
+        "fund": "symbol",
+        "code": "symbol",
+        "symbol": "symbol",
     }
-    required_params = ["fund"]
+    required_params = ["symbol"]
     
     # 自动添加基金代码和指标类型字段
     add_param_columns = {
-        "fund": "基金代码",
+        "symbol": "基金代码",
     }
     
     field_info = [
@@ -40,7 +41,12 @@ class FundOpenFundInfoEmProvider(BaseProvider):
         {"name": "创建人", "type": "string", "description": "数据创建人"},
         {"name": "来源", "type": "string", "description": "来源接口: fund_open_fund_info_em"},
     ]
-    
+  
+    collection_description = "东方财富网-天天基金网-基金历史数据，支持7个指标：单位净值走势、累计净值走势、累计收益率走势、同类排名走势、同类排名百分比、分红送配详情、拆分详情"
+    collection_route = "/funds/collections/fund_open_fund_info_em"
+    collection_order = 16
+
+      
     def fetch_data(self, **kwargs) -> pd.DataFrame:
         """
         获取开放式基金历史行情数据

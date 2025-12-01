@@ -307,18 +307,7 @@ class UnifiedConfigManager:
         )
         data_sources.append(akshare_config)
 
-        # Tushare (如果有配置)
-        if settings.get("tushare_token"):
-            tushare_config = DataSourceConfig(
-                name="Tushare",
-                type=DataSourceType.TUSHARE,
-                api_key=settings.get("tushare_token"),
-                endpoint="http://api.tushare.pro",
-                enabled=True,
-                priority=2,
-                description="Tushare专业金融数据接口"
-            )
-            data_sources.append(tushare_config)
+        # Tushare 已移除，不再配置
 
         # 按优先级排序
         data_sources.sort(key=lambda x: x.priority, reverse=True)
@@ -375,18 +364,7 @@ class UnifiedConfigManager:
         )
         data_sources.append(akshare_config)
 
-        # Tushare (如果有配置)
-        if settings.get("tushare_token"):
-            tushare_config = DataSourceConfig(
-                name="Tushare",
-                type=DataSourceType.TUSHARE,
-                api_key=settings.get("tushare_token"),
-                endpoint="http://api.tushare.pro",
-                enabled=True,
-                priority=2,
-                description="Tushare专业金融数据接口"
-            )
-            data_sources.append(tushare_config)
+        # Tushare 已移除，不再配置
 
         # Finnhub (如果有配置)
         if settings.get("finnhub_api_key"):

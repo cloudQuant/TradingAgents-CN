@@ -5,10 +5,15 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundEtfSpotEmProvider(SimpleProvider):
-    """ETF实时行情-东财数据提供者"""
     
+    """ETF实时行情-东财数据提供者"""
+
+    collection_description = "东方财富网-ETF实时行情数据，包括最新价、涨跌幅、成交量、资金流向等"
+    collection_route = "/funds/collections/fund_etf_spot_em"
+    collection_order = 6
+
     collection_name = "fund_etf_spot_em"
-    display_name = "ETF实时行情-东财"
+    display_name = "ETF基金实时行情-东财"
     akshare_func = "fund_etf_spot_em"
     unique_keys = ["代码", "数据日期"]
 

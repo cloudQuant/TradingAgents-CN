@@ -5,10 +5,15 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 
 class FundLofHistEmProvider(SimpleProvider):
-    """LOF历史行情-东财数据提供者"""
     
+    """LOF历史行情-东财数据提供者"""
+
+    collection_description = "东方财富网-LOF 历史行情数据，支持按代码、周期（日/周/月）、复权方式查询历史K线数据"
+    collection_route = "/funds/collections/fund_lof_hist_em"
+    collection_order = 13
+
     collection_name = "fund_lof_hist_em"
-    display_name = "LOF历史行情-东财"
+    display_name = "LOF基金历史行情-东财"
     akshare_func = "fund_lof_hist_em"
     unique_keys = ["日期"]
 

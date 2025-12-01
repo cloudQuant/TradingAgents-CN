@@ -127,7 +127,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collections/:collectionName',
         name: 'FundCollection',
-        component: () => import('@/views/Funds/Collection.vue'),
+        component: () => import('@/views/Funds/collections/index.vue'),
         meta: {
           title: '基金数据集合详情',
           requiresAuth: true
