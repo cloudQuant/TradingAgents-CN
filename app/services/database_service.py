@@ -7,6 +7,7 @@ import os
 import csv
 import gzip
 import shutil
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from bson import ObjectId
@@ -21,6 +22,10 @@ from app.services.database import status_checks as _db_status
 from app.services.database import cleanup as _db_cleanup
 from app.services.database import backups as _db_backups
 from app.services.database.serialization import serialize_document as _serialize_doc
+
+
+# 统一使用 webapi 日志记录器，便于前端排查问题
+logger = logging.getLogger("webapi")
 
 
 class DatabaseService:
