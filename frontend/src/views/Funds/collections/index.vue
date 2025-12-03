@@ -18,7 +18,10 @@ function toPascalCase(name: string): string {
   return name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('')
 }
 
-// 动态生成组件映射
+// 使用 Vite 的 import.meta.glob 预加载同目录下所有 .vue 组件，避免生产环境下按字符串动态加载 .vue 源文件
+const moduleMap = import.meta.glob('./*.vue')
+
+// 动态生成集合到组件加载函数的映射
 const collectionComponents: Record<string, () => Promise<any>> = {}
 const collectionNames = [
   'fund_name_em', 'fund_basic_info', 'fund_info_index_em', 'fund_ranking',
@@ -43,7 +46,12 @@ const collectionNames = [
 // 为每个集合注册组件
 collectionNames.forEach(name => {
   const componentName = toPascalCase(name)
-  collectionComponents[name] = () => import(/* @vite-ignore */ `./${componentName}.vue`)
+  const path = `./${componentName}.vue`
+
+  if (moduleMap[path]) {
+    // 使用 Vite 预处理过的异步组件加载函数
+    collectionComponents[name] = moduleMap[path] as () => Promise<any>
+  }
 })
 
 const collectionComponent = ref<any>(null)
