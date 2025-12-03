@@ -17,3 +17,6 @@ export { useFundCollection } from './useFundCollection'
 // 类型导出
 export type { FieldDefinition } from './CollectionDataTable.vue'
 export type { RemoteSyncConfig, SyncResult } from './RemoteSyncDialog.vue'
+
+// 同步 API 类型重导出
+export type { SyncNode, SyncTask } from '@/api/sync'

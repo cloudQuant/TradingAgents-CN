@@ -137,6 +137,13 @@
         <el-menu-item index="/settings/scheduler">定时任务</el-menu-item>
         <el-menu-item index="/settings/usage">使用统计</el-menu-item>
       </el-sub-menu>
+
+      <!-- 数据同步 -->
+      <el-sub-menu index="/sync">
+        <template #title>数据同步</template>
+        <el-menu-item index="/sync/nodes">同步节点</el-menu-item>
+        <el-menu-item index="/sync/tasks">同步任务</el-menu-item>
+      </el-sub-menu>
     </el-sub-menu>
 
     <el-menu-item index="/about">
@@ -190,6 +197,7 @@ const activeMenu = computed(() => {
     '/settings', '/settings/config', '/settings/cache', '/settings/database', 
     '/settings/logs', '/settings/system-logs', '/settings/sync', 
     '/settings/scheduler', '/settings/usage',
+    '/sync/nodes', '/sync/tasks',
     '/about'
   ]
   

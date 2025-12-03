@@ -37,7 +37,8 @@ export interface SyncRequest {
 // API响应格式
 export interface ApiResponse<T = any> {
   success: boolean
-  message: string
+  message?: string
+  error?: string
   data: T
 }
 
@@ -182,4 +183,158 @@ export const runSingleSourceSync = (): Promise<ApiResponse<any>> => {
 
 export const getSingleSourceSyncStatus = (): Promise<ApiResponse<any>> => {
   return ApiClient.get('/api/sync/stock_basics/status')
+}
+
+
+// ==================== 数据集合同步 API ====================
+
+// 同步节点接口
+export interface SyncNode {
+  _id?: string
+  node_id: string
+  name: string
+  url: string
+  api_key?: string
+  api_key_masked?: string
+  description?: string
+  tags?: string[]
+  status: 'active' | 'inactive'
+  last_sync_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+// 同步任务接口
+export interface SyncTask {
+  _id?: string
+  task_id: string
+  direction: 'push' | 'pull'
+  source_node: string
+  target_node: string
+  collection: string
+  filter?: Record<string, any>
+  strategy: 'full' | 'incremental'
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  stats: {
+    total_records: number
+    transferred: number
+    inserted: number
+    updated: number
+    failed: number
+  }
+  started_at?: string
+  completed_at?: string
+  error_message?: string
+}
+
+// 可同步集合信息
+export interface SyncableCollection {
+  name: string
+  count: number
+  unique_keys: string[]
+  incremental_field?: string
+  chunk_size: number
+}
+
+// 节点连接测试结果
+export interface NodeTestResult {
+  success: boolean
+  latency_ms?: number
+  version?: string
+  node_name?: string
+  error?: string
+}
+
+/**
+ * 获取所有同步节点
+ */
+export const getSyncNodes = (): Promise<ApiResponse<SyncNode[]>> => {
+  return ApiClient.get('/api/sync/nodes')
+}
+
+/**
+ * 获取单个同步节点
+ */
+export const getSyncNode = (nodeId: string): Promise<ApiResponse<SyncNode>> => {
+  return ApiClient.get(`/api/sync/nodes/${nodeId}`)
+}
+
+/**
+ * 创建同步节点
+ */
+export const createSyncNode = (node: Partial<SyncNode>): Promise<ApiResponse<SyncNode>> => {
+  return ApiClient.post('/api/sync/nodes', node)
+}
+
+/**
+ * 更新同步节点
+ */
+export const updateSyncNode = (nodeId: string, node: Partial<SyncNode>): Promise<ApiResponse<SyncNode>> => {
+  return ApiClient.put(`/api/sync/nodes/${nodeId}`, node)
+}
+
+/**
+ * 删除同步节点
+ */
+export const deleteSyncNode = (nodeId: string): Promise<ApiResponse<{ message: string }>> => {
+  return ApiClient.delete(`/api/sync/nodes/${nodeId}`)
+}
+
+/**
+ * 测试节点连接
+ */
+export const testSyncNode = (nodeId: string): Promise<ApiResponse<NodeTestResult>> => {
+  return ApiClient.post(`/api/sync/nodes/${nodeId}/test`)
+}
+
+/**
+ * 获取同步任务列表
+ */
+export const getSyncTasks = (params?: {
+  limit?: number
+  skip?: number
+}): Promise<ApiResponse<SyncTask[]>> => {
+  const queryParams = new URLSearchParams()
+  if (params?.limit) queryParams.append('limit', params.limit.toString())
+  if (params?.skip) queryParams.append('skip', params.skip.toString())
+  const url = `/api/sync/tasks${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+  return ApiClient.get(url)
+}
+
+/**
+ * 获取单个同步任务状态
+ */
+export const getSyncTask = (taskId: string): Promise<ApiResponse<SyncTask>> => {
+  return ApiClient.get(`/api/sync/tasks/${taskId}`)
+}
+
+/**
+ * 从远程节点拉取数据
+ */
+export const pullData = (params: {
+  source_node: string
+  collection: string
+  strategy?: 'full' | 'incremental'
+  filter?: Record<string, any>
+}): Promise<ApiResponse<SyncTask>> => {
+  return ApiClient.post('/api/sync/pull', params)
+}
+
+/**
+ * 推送数据到远程节点
+ */
+export const pushData = (params: {
+  target_node: string
+  collection: string
+  strategy?: 'full' | 'incremental'
+  filter?: Record<string, any>
+}): Promise<ApiResponse<SyncTask>> => {
+  return ApiClient.post('/api/sync/push', params)
+}
+
+/**
+ * 获取可同步的集合列表
+ */
+export const getSyncableCollections = (): Promise<ApiResponse<SyncableCollection[]>> => {
+  return ApiClient.get('/api/sync/collections')
 }

@@ -185,14 +185,19 @@ export function useFundCollection() {
     progressPercentage.value = 0
     progressStatus.value = ''
     progressMessage.value = ''
-    
-    switch(command) {
+
+    // 与共享页头组件保持一致：
+    // - 'api'  -> API 更新
+    // - 'file' -> 文件导入
+    // - 'sync' -> 远程同步（历史上曾用 'remote'，这里同时兼容）
+    switch (command) {
       case 'api':
         apiRefreshDialogVisible.value = true
         break
       case 'file':
         fileImportDialogVisible.value = true
         break
+      case 'sync':
       case 'remote':
         remoteSyncDialogVisible.value = true
         break

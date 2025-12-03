@@ -586,6 +586,38 @@ const routes: RouteRecordRaw[] = [
       }
     ]
   },
+  {
+    path: '/sync',
+    name: 'Sync',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/sync/nodes',
+    meta: {
+      title: '数据同步',
+      icon: 'Connection',
+      requiresAuth: true,
+      transition: 'fade'
+    },
+    children: [
+      {
+        path: 'nodes',
+        name: 'SyncNodes',
+        component: () => import('@/views/Sync/SyncNodes.vue'),
+        meta: {
+          title: '同步节点',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'tasks',
+        name: 'SyncTasks',
+        component: () => import('@/views/Sync/SyncTasks.vue'),
+        meta: {
+          title: '同步任务',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
 
   {
     path: '/login',
