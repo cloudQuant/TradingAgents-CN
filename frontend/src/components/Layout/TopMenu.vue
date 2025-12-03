@@ -175,7 +175,8 @@ import {
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
-const appStore = useAppStore()
+// appStore is available for future use
+void useAppStore()
 
 const activeMenu = computed(() => {
   const path = route.path

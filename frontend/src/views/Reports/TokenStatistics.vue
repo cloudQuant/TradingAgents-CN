@@ -188,7 +188,7 @@
       <el-table
         :data="filteredRecords"
         v-loading="loading"
-        style="width: 100%"
+        :style="{ width: '100%' }"
         :default-sort="{ prop: 'timestamp', order: 'descending' }"
       >
         <el-table-column prop="timestamp" label="时间" width="180" sortable>
@@ -269,6 +269,26 @@ import {
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 
+// 数据类型
+interface TokenRecord {
+  timestamp: string
+  provider: string
+  model: string
+  stock_symbol: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  cost: number
+  duration: number
+}
+
+interface ModelUsage {
+  name: string
+  requests: number
+  tokens: number
+  cost: number
+}
+
 // 响应式数据
 const loading = ref(false)
 const timeRange = ref('month')
@@ -295,9 +315,9 @@ const overview = reactive({
   avgCostChange: 0
 })
 
-const records = ref([])
-const filteredRecords = ref([])
-const modelRanking = ref([])
+const records = ref<TokenRecord[]>([])
+const filteredRecords = ref<TokenRecord[]>([])
+const modelRanking = ref<ModelUsage[]>([])
 
 // 方法
 const formatNumber = (num: number): string => {
@@ -325,14 +345,16 @@ const formatDateTime = (timestamp: string): string => {
   return new Date(timestamp).toLocaleString('zh-CN')
 }
 
+type ProviderKey = 'dashscope' | 'openai' | 'google' | 'deepseek'
+
 const getProviderName = (provider: string): string => {
-  const names = {
+  const names: Record<ProviderKey, string> = {
     'dashscope': '阿里百炼',
     'openai': 'OpenAI',
     'google': 'Google',
     'deepseek': 'DeepSeek'
   }
-  return names[provider] || provider
+  return (names as Record<string, string>)[provider] || provider
 }
 
 const loadStatistics = async () => {
@@ -389,7 +411,7 @@ const filterRecords = () => {
     filteredRecords.value = records.value
   } else {
     const keyword = searchKeyword.value.toLowerCase()
-    filteredRecords.value = records.value.filter(record =>
+    filteredRecords.value = records.value.filter((record) =>
       record.stock_symbol.toLowerCase().includes(keyword) ||
       record.model.toLowerCase().includes(keyword)
     )
@@ -447,7 +469,7 @@ const exportData = () => {
   ElMessage.info('导出功能开发中...')
 }
 
-const viewDetails = (row: any) => {
+const viewDetails = (_row: any) => {
   ElMessage.info('详情功能开发中...')
 }
 

@@ -186,7 +186,7 @@
       <el-table 
         :data="historyList" 
         v-loading="loading" 
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
@@ -397,7 +397,7 @@ const exportHistory = () => {
   ElMessage.info('导出功能开发中...')
 }
 
-const viewTaskDetail = (task: any) => {
+const viewTaskDetail = (_task: any) => {
   ElMessage.info('任务详情功能开发中...')
 }
 

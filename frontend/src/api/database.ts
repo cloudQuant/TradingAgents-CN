@@ -2,7 +2,7 @@
  * 数据库管理API
  */
 
-import { ApiClient } from './request'
+import { ApiClient, request } from './request'
 
 // 数据库状态接口
 export interface DatabaseStatus {
@@ -154,9 +154,10 @@ export const databaseApi = {
     format?: string
     sanitize?: boolean  // 是否脱敏（清空敏感字段，用于演示系统）
   }): Promise<Blob> {
-    return ApiClient.post('/api/system/database/export', options, {
+    // 这里返回的是文件流，不符合统一的 ApiResponse<T> 结构，直接通过底层 request 处理
+    return (request as any).post('/api/system/database/export', options, {
       responseType: 'blob'
-    })
+    }) as Promise<Blob>
   },
 
   // 清理旧数据

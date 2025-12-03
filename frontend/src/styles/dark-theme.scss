@@ -663,9 +663,7 @@ html.dark {
           }
         }
 
-        .risk-label {
-          // 保持原有的风险颜色，不覆盖
-        }
+        /* .risk-label 保持原有的风险颜色，不覆盖 */
 
         .risk-description {
           color: var(--el-text-color-secondary) !important;

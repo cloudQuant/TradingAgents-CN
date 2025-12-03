@@ -443,9 +443,9 @@ const showSyncCompletionNotification = (status: string) => {
   }
 }
 
-// 获取状态类型
-const getStatusType = (status?: string) => {
-  const typeMap: Record<string, string> = {
+// 获取状态类型（用于 el-tag）
+const getStatusType = (status?: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' => {
+  const typeMap: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
     idle: 'info',
     running: 'warning',
     success: 'success',

@@ -62,7 +62,8 @@ import UserProfile from '@/components/Layout/UserProfile.vue'
 import HeaderActions from '@/components/Layout/HeaderActions.vue'
 import AppFooter from '@/components/Layout/AppFooter.vue'
 
-const appStore = useAppStore()
+// Initialize appStore for theme and other settings
+void useAppStore()
 
 // 需要缓存的组件
 const keepAliveComponents = computed(() => [

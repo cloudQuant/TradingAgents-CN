@@ -160,50 +160,53 @@ export interface SettingMeta {
 // 配置管理API
 export const configApi = {
   // 获取系统配置
-  getSystemConfig(): Promise<SystemConfig> {
-    return ApiClient.get('/api/config/system')
+  async getSystemConfig(): Promise<SystemConfig> {
+    const response = await ApiClient.get<SystemConfig>('/api/config/system')
+    // 后端统一返回 ApiResponse<T>，这里统一从 data 中取出业务数据
+    return (response as any).data || (response as any)
   },
 
   // ========== 大模型厂家管理 ==========
 
   // 获取所有大模型厂家
-  getLLMProviders(): Promise<LLMProvider[]> {
-    return ApiClient.get('/api/config/llm/providers')
+  async getLLMProviders(): Promise<LLMProvider[]> {
+    const response = await ApiClient.get<LLMProvider[]>('/api/config/llm/providers')
+    return (response as any).data || (response as any)
   },
 
   // 添加大模型厂家
   addLLMProvider(provider: Partial<LLMProvider>): Promise<{ message: string; id: string }> {
-    return ApiClient.post('/api/config/llm/providers', provider)
+    return ApiClient.post('/api/config/llm/providers', provider) as any
   },
 
   // 更新大模型厂家
   updateLLMProvider(id: string, provider: Partial<LLMProvider>): Promise<{ message: string }> {
-    return ApiClient.put(`/api/config/llm/providers/${id}`, provider)
+    return ApiClient.put(`/api/config/llm/providers/${id}`, provider) as any
   },
 
   // 删除大模型厂家
   deleteLLMProvider(id: string): Promise<{ message: string }> {
-    return ApiClient.delete(`/api/config/llm/providers/${id}`)
+    return ApiClient.delete(`/api/config/llm/providers/${id}`) as any
   },
 
   // 启用/禁用大模型厂家
   toggleLLMProvider(id: string, isActive: boolean): Promise<{ message: string }> {
-    return ApiClient.patch(`/api/config/llm/providers/${id}/toggle`, { is_active: isActive })
+    return ApiClient.patch(`/api/config/llm/providers/${id}/toggle`, { is_active: isActive }) as any
   },
 
   // 迁移环境变量到厂家管理
   migrateEnvToProviders(): Promise<{ message: string; data: any }> {
-    return ApiClient.post('/api/config/llm/providers/migrate-env')
+    return ApiClient.post('/api/config/llm/providers/migrate-env') as any
   },
 
   // 🆕 初始化聚合渠道厂家配置
   initAggregatorProviders(): Promise<{ success: boolean; message: string; data: { added_count: number; skipped_count: number } }> {
-    return ApiClient.post('/api/config/llm/providers/init-aggregators')
+    return ApiClient.post('/api/config/llm/providers/init-aggregators') as any
   },
 
   // 测试厂家API
   testProviderAPI(providerId: string): Promise<{ success: boolean; message: string; data?: any }> {
-    return ApiClient.post(`/api/config/llm/providers/${providerId}/test`)
+    return ApiClient.post(`/api/config/llm/providers/${providerId}/test`) as any
   },
 
   // 获取可用的模型列表（按厂家分组）
@@ -212,7 +215,7 @@ export const configApi = {
     provider_name: string
     models: Array<{ name: string; display_name: string }>
   }>> {
-    return ApiClient.get('/api/config/models')
+    return ApiClient.get('/api/config/models').then((res: any) => res.data || res)
   },
 
   // ========== 模型目录管理 ==========
@@ -235,7 +238,7 @@ export const configApi = {
       capabilities?: string[]
     }>
   }>> {
-    return ApiClient.get('/api/config/model-catalog')
+    return ApiClient.get('/api/config/model-catalog').then((res: any) => res.data || res)
   },
 
   // 获取指定厂家的模型目录
@@ -256,7 +259,7 @@ export const configApi = {
       capabilities?: string[]
     }>
   }> {
-    return ApiClient.get(`/api/config/model-catalog/${provider}`)
+    return ApiClient.get(`/api/config/model-catalog/${provider}`).then((res: any) => res.data || res)
   },
 
   // 保存模型目录
@@ -265,12 +268,12 @@ export const configApi = {
     provider_name: string
     models: Array<{ name: string; display_name: string; description?: string }>
   }): Promise<{ success: boolean; message: string }> {
-    return ApiClient.post('/api/config/model-catalog', catalog)
+    return ApiClient.post('/api/config/model-catalog', catalog) as any
   },
 
   // 删除模型目录
   deleteModelCatalog(provider: string): Promise<{ success: boolean; message: string }> {
-    return ApiClient.delete(`/api/config/model-catalog/${provider}`)
+    return ApiClient.delete(`/api/config/model-catalog/${provider}`) as any
   },
 
   // 初始化默认模型目录
@@ -288,76 +291,80 @@ export const configApi = {
       context_length?: number
     }>
   }> {
-    return ApiClient.post(`/api/config/llm/providers/${provider}/fetch-models`)
+    return ApiClient.post(`/api/config/llm/providers/${provider}/fetch-models`) as any
   },
 
   // ========== 大模型配置管理 ==========
 
   // 获取所有大模型配置
-  getLLMConfigs(): Promise<LLMConfig[]> {
-    return ApiClient.get('/api/config/llm')
+  async getLLMConfigs(): Promise<LLMConfig[]> {
+    const response = await ApiClient.get<LLMConfig[]>('/api/config/llm')
+    return (response as any).data || (response as any)
   },
 
   // 添加或更新大模型配置
   updateLLMConfig(config: Partial<LLMConfig>): Promise<{ message: string; model_name: string }> {
-    return ApiClient.post('/api/config/llm', config)
+    return ApiClient.post('/api/config/llm', config) as any
   },
 
   // 删除大模型配置
   deleteLLMConfig(provider: string, modelName: string): Promise<{ message: string }> {
-    return ApiClient.delete(`/api/config/llm/${provider}/${modelName}`)
+    return ApiClient.delete(`/api/config/llm/${provider}/${modelName}`) as any
   },
 
   // 设置默认大模型
   setDefaultLLM(name: string): Promise<{ message: string; default_llm: string }> {
-    return ApiClient.post('/api/config/llm/set-default', { name })
+    return ApiClient.post('/api/config/llm/set-default', { name }) as any
   },
 
   // 获取所有数据源配置
-  getDataSourceConfigs(): Promise<DataSourceConfig[]> {
-    return ApiClient.get('/api/config/datasource')
+  async getDataSourceConfigs(): Promise<DataSourceConfig[]> {
+    const response = await ApiClient.get<DataSourceConfig[]>('/api/config/datasource')
+    return (response as any).data || (response as any)
   },
 
   // 添加数据源配置
   addDataSourceConfig(config: Partial<DataSourceConfig>): Promise<{ message: string; name: string }> {
-    return ApiClient.post('/api/config/datasource', config)
+    return ApiClient.post('/api/config/datasource', config) as any
   },
 
   // 设置默认数据源
   setDefaultDataSource(name: string): Promise<{ message: string; default_data_source: string }> {
-    return ApiClient.post('/api/config/datasource/set-default', { name })
+    return ApiClient.post('/api/config/datasource/set-default', { name }) as any
   },
 
   // 更新数据源配置
   updateDataSourceConfig(name: string, config: Partial<DataSourceConfig>): Promise<{ message: string }> {
-    return ApiClient.put(`/api/config/datasource/${name}`, config)
+    return ApiClient.put(`/api/config/datasource/${name}`, config) as any
   },
 
   // 删除数据源配置
   deleteDataSourceConfig(name: string): Promise<{ message: string }> {
-    return ApiClient.delete(`/api/config/datasource/${name}`)
+    return ApiClient.delete(`/api/config/datasource/${name}`) as any
   },
 
   // 市场分类管理
-  getMarketCategories(): Promise<MarketCategory[]> {
-    return ApiClient.get('/api/config/market-categories')
+  async getMarketCategories(): Promise<MarketCategory[]> {
+    const response = await ApiClient.get<MarketCategory[]>('/api/config/market-categories')
+    return (response as any).data || (response as any)
   },
 
   addMarketCategory(category: Partial<MarketCategory>): Promise<{ message: string; id: string }> {
-    return ApiClient.post('/api/config/market-categories', category)
+    return ApiClient.post('/api/config/market-categories', category) as any
   },
 
   updateMarketCategory(id: string, category: Partial<MarketCategory>): Promise<{ message: string }> {
-    return ApiClient.put(`/api/config/market-categories/${id}`, category)
+    return ApiClient.put(`/api/config/market-categories/${id}`, category) as any
   },
 
   deleteMarketCategory(id: string): Promise<{ message: string }> {
-    return ApiClient.delete(`/api/config/market-categories/${id}`)
+    return ApiClient.delete(`/api/config/market-categories/${id}`) as any
   },
 
   // 数据源分组管理
-  getDataSourceGroupings(): Promise<DataSourceGrouping[]> {
-    return ApiClient.get('/api/config/datasource-groupings')
+  async getDataSourceGroupings(): Promise<DataSourceGrouping[]> {
+    const response = await ApiClient.get<DataSourceGrouping[]>('/api/config/datasource-groupings')
+    return (response as any).data || (response as any)
   },
 
   addDataSourceToCategory(dataSourceName: string, categoryId: string, priority?: number): Promise<{ message: string }> {
@@ -366,22 +373,22 @@ export const configApi = {
       market_category_id: categoryId,
       priority: priority || 0,
       enabled: true
-    })
+    }) as any
   },
 
   removeDataSourceFromCategory(dataSourceName: string, categoryId: string): Promise<{ message: string }> {
-    return ApiClient.delete(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`)
+    return ApiClient.delete(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`) as any
   },
 
   updateDataSourceGrouping(dataSourceName: string, categoryId: string, updates: Partial<DataSourceGrouping>): Promise<{ message: string }> {
-    return ApiClient.put(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`, updates)
+    return ApiClient.put(`/api/config/datasource-groupings/${dataSourceName}/${categoryId}`, updates) as any
   },
 
   // 批量更新分类内数据源排序
   updateCategoryDataSourceOrder(categoryId: string, orderedDataSources: Array<{name: string, priority: number}>): Promise<{ message: string }> {
     return ApiClient.put(`/api/config/market-categories/${categoryId}/datasource-order`, {
       data_sources: orderedDataSources
-    })
+    }) as any
   },
 
   // 获取系统设置元数据
@@ -393,28 +400,30 @@ export const configApi = {
   // ========== 数据库配置管理 ==========
 
   // 获取所有数据库配置
-  getDatabaseConfigs(): Promise<DatabaseConfig[]> {
-    return ApiClient.get('/api/config/database')
+  async getDatabaseConfigs(): Promise<DatabaseConfig[]> {
+    const response = await ApiClient.get<DatabaseConfig[]>('/api/config/database')
+    return (response as any).data || (response as any)
   },
 
   // 获取指定的数据库配置
-  getDatabaseConfig(dbName: string): Promise<DatabaseConfig> {
-    return ApiClient.get(`/api/config/database/${encodeURIComponent(dbName)}`)
+  async getDatabaseConfig(dbName: string): Promise<DatabaseConfig> {
+    const response = await ApiClient.get<DatabaseConfig>(`/api/config/database/${encodeURIComponent(dbName)}`)
+    return (response as any).data || (response as any)
   },
 
   // 添加数据库配置
   addDatabaseConfig(config: Partial<DatabaseConfig>): Promise<{ success: boolean; message: string }> {
-    return ApiClient.post('/api/config/database', config)
+    return ApiClient.post('/api/config/database', config) as any
   },
 
   // 更新数据库配置
   updateDatabaseConfig(dbName: string, config: Partial<DatabaseConfig>): Promise<{ success: boolean; message: string }> {
-    return ApiClient.put(`/api/config/database/${encodeURIComponent(dbName)}`, config)
+    return ApiClient.put(`/api/config/database/${encodeURIComponent(dbName)}`, config) as any
   },
 
   // 删除数据库配置
   deleteDatabaseConfig(dbName: string): Promise<{ success: boolean; message: string }> {
-    return ApiClient.delete(`/api/config/database/${encodeURIComponent(dbName)}`)
+    return ApiClient.delete(`/api/config/database/${encodeURIComponent(dbName)}`) as any
   },
 
   // 测试数据库配置连接
@@ -424,45 +433,48 @@ export const configApi = {
 
   // 获取系统设置
   getSystemSettings(): Promise<Record<string, any>> {
-    return ApiClient.get('/api/config/settings')
+    return ApiClient.get('/api/config/settings').then((res: any) => res.data || res)
   },
 
   // 获取默认模型配置
   getDefaultModels(): Promise<{ quick_analysis_model: string; deep_analysis_model: string }> {
-    return ApiClient.get('/api/config/settings').then(settings => ({
-      quick_analysis_model: settings.quick_analysis_model || 'qwen-turbo',
-      deep_analysis_model: settings.deep_analysis_model || 'qwen-max'
-    }))
+    return ApiClient.get('/api/config/settings').then((res: any) => {
+      const settings = res.data || res
+      return {
+        quick_analysis_model: settings.quick_analysis_model || 'qwen-turbo',
+        deep_analysis_model: settings.deep_analysis_model || 'qwen-max'
+      }
+    })
   },
 
   // 更新系统设置
   updateSystemSettings(settings: Record<string, any>): Promise<{ message: string }> {
-    return ApiClient.put('/api/config/settings', settings)
+    return ApiClient.put('/api/config/settings', settings) as any
   },
 
   // 测试配置连接
   testConfig(testRequest: ConfigTestRequest): Promise<ConfigTestResponse> {
-    return ApiClient.post('/api/config/test', testRequest)
+    return ApiClient.post('/api/config/test', testRequest).then((res: any) => res.data || res)
   },
 
   // 导出配置
   exportConfig(): Promise<{ message: string; data: any; exported_at: string }> {
-    return ApiClient.post('/api/config/export')
+    return ApiClient.post('/api/config/export', {}).then((res: any) => res.data || res)
   },
 
   // 导入配置
   importConfig(configData: Record<string, any>): Promise<{ message: string }> {
-    return ApiClient.post('/api/config/import', configData)
+    return ApiClient.post('/api/config/import', configData) as any
   },
 
   // 迁移传统配置
   migrateLegacyConfig(): Promise<{ message: string }> {
-    return ApiClient.post('/api/config/migrate-legacy')
+    return ApiClient.post('/api/config/migrate-legacy') as any
   },
 
   // 配置重载
   reloadConfig(): Promise<{ success: boolean; message: string; data?: any }> {
-    return ApiClient.post('/api/config/reload')
+    return ApiClient.post('/api/config/reload') as any
   }
 }
 

@@ -20,8 +20,8 @@
         <template #header>
           <span>价格走势</span>
         </template>
-        <v-chart
-          :option="priceChartOption"
+        <VChart
+          :option="priceChartOption || {}"
           :autoresize="true"
           style="height: 300px; width: 100%"
         />
@@ -226,12 +226,6 @@ const collectionInfo = ref<any>(null)
 const chartData = ref<any[]>([])
 const fields = ref<any[]>([])
 const overviewDialogVisible = ref(false)
-const currentCollectionInfo = ref<any>({
-  name: '',
-  displayName: '',
-  fieldCount: 0,
-  dataSource: '暂无',
-})
 
 // 筛选
 const filterValue = ref('')
@@ -259,30 +253,9 @@ let taskPollTimer: any = null
 const fileImportRef = ref()
 const importing = ref(false)
 
-// 远程同步相关
-const remoteSyncHost = ref('')
-const remoteSyncDbType = ref('mongodb')
-const remoteSyncBatchSize = ref(1000)
-const remoteSyncCollection = ref('')
-const remoteSyncUsername = ref('')
-const remoteSyncPassword = ref('')
-const remoteSyncAuthSource = ref('admin')
+// 远程同步相关（配置由共享组件 RemoteSyncDialog 管理，此处仅跟踪同步状态）
 const remoteSyncing = ref(false)
 const remoteSyncStats = ref<any>(null)
-
-// 计算显示的字段
-const displayFields = computed(() => {
-  if (tableData.value.length === 0) return []
-  const firstRow = tableData.value[0]
-  return Object.keys(firstRow).filter(key => key !== '_id')
-})
-
-const displayColumns = computed(() => {
-  if (fields.value && fields.value.length > 0) {
-    return fields.value.map((f: any) => f.name)
-  }
-  return displayFields.value
-})
 
 // 价格图表配置
 const priceChartOption = computed(() => {
@@ -318,11 +291,6 @@ const priceChartOption = computed(() => {
     }]
   }
 })
-
-const formatNumber = (value: number) => {
-  if (!value) return '0'
-  return value.toLocaleString()
-}
 
 // 加载集合信息
 const loadCollectionInfo = async () => {
@@ -377,26 +345,6 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const showOverviewDialog = () => {
-  const info = collectionInfo.value || {}
-  const name = info.name || collectionName.value
-  const displayName = info.display_name || collectionName.value
-  const fieldCount = Array.isArray(info.fields) ? info.fields.length : (fields.value?.length || 0)
-  const dataSource = info.data_source || info.source || '暂无'
-  currentCollectionInfo.value = {
-    name,
-    displayName,
-    fieldCount,
-    dataSource,
-  }
-  overviewDialogVisible.value = true
-}
-
-// 显示更新对话框
-const showRefreshDialog = () => {
-  refreshDialogVisible.value = true
 }
 
 // 处理更新数据下拉菜单命令
@@ -632,18 +580,6 @@ const handleClearData = async () => {
 // 筛选
 const handleFilter = () => {
   currentPage.value = 1
-  loadData()
-}
-
-// 分页
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  currentPage.value = 1
-  loadData()
-}
-
-const handlePageChange = (val: number) => {
-  currentPage.value = val
   loadData()
 }
 

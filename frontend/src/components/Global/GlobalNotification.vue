@@ -10,6 +10,6 @@
 
 <style lang="scss" scoped>
 .global-notification {
-  // 样式
+  display: block;
 }
 </style>

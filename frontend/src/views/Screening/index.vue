@@ -241,7 +241,7 @@
         :data="paginatedResults"
         @selection-change="handleSelectionChange"
         stripe
-        style="width: 100%"
+        :style="{ width: '100%' }"
       >
         <el-table-column type="selection" width="55" />
 
@@ -361,9 +361,9 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Collection, TrendCharts, Download, Star, Setting, Connection, Warning } from '@element-plus/icons-vue'
+import { Search, Refresh, TrendCharts, Download, Star, Connection, Warning } from '@element-plus/icons-vue'
 import type { StockInfo } from '@/types/analysis'
-import { screeningApi, type FieldConfigResponse, type FieldInfo } from '@/api/screening'
+import { screeningApi, type FieldConfigResponse } from '@/api/screening'
 import { favoritesApi } from '@/api/favorites'
 import { getCurrentDataSource } from '@/api/sync'
 import { normalizeMarketForAnalysis, exchangeCodeToMarket, getMarketByStockCode } from '@/utils/market'
@@ -467,11 +467,10 @@ const performScreening = async () => {
     // 明确指定：不加任何技术指标相关条件
 
     const payload = {
-      market: 'CN',
-      date: undefined,
-      adj: 'qfq',
+      market: 'CN' as const,
+      adj: 'qfq' as const,
       conditions: { logic: 'AND', children },
-      order_by: [{ field: 'market_cap', direction: 'desc' }],
+      order_by: [{ field: 'market_cap', direction: 'desc' as const }],
       limit: 500,
       offset: 0,
     }
@@ -528,18 +527,10 @@ const performScreening = async () => {
   }
 }
 
-const generateMockResults = (): StockInfo[] => {
-  const mockStocks = [
-    { code: '000001', name: '平安银行', industry: '银行', close: 12.50, pct_chg: 2.1, total_mv: 2400, pe: 5.2, pb: 0.8 },
-    { code: '000002', name: '万科A', industry: '房地产', close: 18.30, pct_chg: -1.5, total_mv: 2100, pe: 8.5, pb: 1.2 },
-    { code: '000858', name: '五粮液', industry: '食品饮料', close: 168.50, pct_chg: 3.2, total_mv: 6500, pe: 25.3, pb: 4.5 }
-  ]
-
-  return mockStocks.map(stock => ({
-    ...stock,
-    market: filters.market
-  }))
-}
+// const generateMockResults = (): StockInfo[] => {
+//   // 保留用于后续可能的本地调试，目前不在正式逻辑中使用
+//   return []
+// }
 
 const resetFilters = () => {
   Object.assign(filters, {
@@ -617,7 +608,7 @@ const isFavorited = (code: string) => favoriteSet.value.has(code)
 
 const toggleFavorite = async (stock: StockInfo) => {
   try {
-    const code = stock.code
+    const code = stock.code as string
     if (favoriteSet.value.has(code)) {
       // 取消自选
       const res = await favoritesApi.remove(code)

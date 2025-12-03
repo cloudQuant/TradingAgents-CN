@@ -69,8 +69,8 @@
         v-model:filter-value="filterValue"
         v-model:filter-field="filterField"
         @search="loadData"
-        @page-change="loadData"
-        @size-change="loadData"
+        @page-change="() => loadData()"
+        @size-change="() => loadData()"
         @sort-change="handleSortChange"
       />
     </div>
@@ -261,8 +261,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, onUnmounted, computed } from 'vue'
+// useRoute available for subcomponents
 import {
   CollectionPageHeader,
   CollectionDataTable,
@@ -271,7 +271,7 @@ import {
   RemoteSyncDialog,
   useFundCollection,
 } from '@/components/collection'
-import { ElMessage } from 'element-plus'
+// ElMessage available for future use
 import { useFundStore } from '@/stores/funds'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -292,8 +292,8 @@ const {
   total,
   filterField,
   filterValue,
-  sortBy,
-  sortDir,
+  sortBy: _sortBy,
+  sortDir: _sortDir,
   stats,
   collectionInfo,
   apiRefreshDialogVisible,

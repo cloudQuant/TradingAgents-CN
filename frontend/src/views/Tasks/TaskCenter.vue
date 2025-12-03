@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <el-table :data="filteredList" v-loading="loading" style="width: 100%" @selection-change="onSelectionChange">
+      <el-table :data="filteredList" v-loading="loading" :style="{ width: '100%' }" @selection-change="onSelectionChange">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="task_id" label="任务ID" width="220" />
         <el-table-column prop="stock_code" label="股票代码" width="120" />
@@ -155,9 +155,6 @@ import TaskReportDialog from '@/components/Global/TaskReportDialog.vue'
 
 
 marked.setOptions({ breaks: true, gfm: true })
-const renderMarkdown = (s: string) => {
-  try { return marked.parse(s||'') as string } catch { return s }
-}
 
 const router = useRouter()
 const route = useRoute()
@@ -196,7 +193,6 @@ const connectTaskWebSocket = (taskId: string) => {
   }
 
   try {
-    const token = localStorage.getItem('token') || ''
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
     const wsUrl = `${wsProtocol}//${host}/api/ws/task/${taskId}`
@@ -365,11 +361,14 @@ const openResult = async (row:any) => {
 
 const openReport = (row:any) => {
   const id = row?.task_id || row?.analysis_id || row?.id
-  if (!id) return ElMessage.warning('未找到报告ID')
+  if (!id) {
+    ElMessage.warning('未找到报告ID')
+    return
+  }
   router.push({ name: 'ReportDetail', params: { id } })
 }
 
-const retryTask = (row:any) => { ElMessage.info('重试功能待实现') }
+const retryTask = (_row:any) => { ElMessage.info('重试功能待实现') }
 
 // 显示错误详情
 const showErrorDetail = async (row: any) => {

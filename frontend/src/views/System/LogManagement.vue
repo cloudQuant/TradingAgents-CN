@@ -51,7 +51,7 @@
         :data="filteredLogFiles"
         v-loading="loading"
         stripe
-        style="width: 100%"
+        :style="{ width: '100%' }"
       >
         <el-table-column prop="name" label="文件名" min-width="200">
           <template #default="{ row }">
@@ -353,15 +353,19 @@ const exportLogs = async () => {
   }
 }
 
-const getLogTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
+import type { EpPropMergeType } from 'element-plus/es/utils'
+
+type TagType = EpPropMergeType<StringConstructor, 'primary' | 'success' | 'warning' | 'info' | 'danger', unknown>
+
+const getLogTypeColor = (type: string): TagType => {
+  const colors: Record<string, TagType> = {
     error: 'danger',
     webapi: 'primary',
     worker: 'success',
     access: 'info',
-    other: ''
+    other: 'info'
   }
-  return colors[type] || ''
+  return colors[type] || 'info'
 }
 
 const formatDate = (dateStr: string) => {

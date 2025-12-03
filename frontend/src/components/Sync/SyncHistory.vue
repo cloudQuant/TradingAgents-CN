@@ -198,9 +198,9 @@ const refreshHistory = async () => {
   ElMessage.success('同步历史已刷新')
 }
 
-// 获取状态类型
-const getStatusType = (status: string) => {
-  const typeMap: Record<string, string> = {
+// 获取状态类型（用于 el-tag）
+const getStatusType = (status: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' => {
+  const typeMap: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
     idle: 'info',
     running: 'warning',
     success: 'success',
@@ -225,8 +225,9 @@ const getStatusText = (status: string) => {
 }
 
 // 获取时间线类型
-const getTimelineType = (status: string) => {
-  const typeMap: Record<string, string> = {
+type TimelineType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+const getTimelineType = (status: string): TimelineType => {
+  const typeMap: Record<string, TimelineType> = {
     success: 'success',
     success_with_errors: 'warning',
     failed: 'danger',

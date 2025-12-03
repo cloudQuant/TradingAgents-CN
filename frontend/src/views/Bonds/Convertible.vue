@@ -104,7 +104,7 @@
         v-loading="loading"
         stripe
         border
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @sort-change="handleSortChange"
         @row-click="handleRowClick"
         highlight-current-row
@@ -519,11 +519,12 @@ const formatChangePercent = (value: number | undefined) => {
   return `${sign}${value.toFixed(2)}%`
 }
 
-const getPremiumTagType = (premium: number | undefined) => {
-  if (premium === undefined || premium === null) return ''
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+const getPremiumTagType = (premium: number | undefined): TagType => {
+  if (premium === undefined || premium === null) return 'info'
   if (premium < 0) return 'success'
   if (premium < 10) return 'success'
-  if (premium < 30) return ''
+  if (premium < 30) return 'info'
   if (premium < 50) return 'warning'
   return 'danger'
 }

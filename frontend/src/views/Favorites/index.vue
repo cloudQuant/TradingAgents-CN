@@ -105,7 +105,7 @@
       <el-table
         :data="filteredFavorites"
         v-loading="loading"
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
@@ -324,7 +324,7 @@
 
     <!-- 标签管理对话框 -->
     <el-dialog v-model="tagDialogVisible" title="标签管理" width="560px">
-      <el-table :data="tagList" v-loading="tagLoading" size="small" style="width: 100%; margin-bottom: 12px;">
+      <el-table :data="tagList" v-loading="tagLoading" size="small" :style="{ width: '100%', marginBottom: '12px' }">
         <el-table-column label="名称" min-width="220">
           <template #default="{ row }">
             <template v-if="row._editing">
@@ -580,7 +580,7 @@ const addForm = ref({
 })
 
 // 股票代码验证器
-const validateStockCode = (rule: any, value: any, callback: any) => {
+const validateStockCode = (_rule: any, value: any, callback: any) => {
   if (!value) {
     callback(new Error('请输入股票代码'))
     return
@@ -645,10 +645,11 @@ const filteredFavorites = computed<FavoriteItem[]>(() => {
   // 关键词搜索
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter((item: FavoriteItem) =>
-      item.stock_code.toLowerCase().includes(keyword) ||
-      item.stock_name.toLowerCase().includes(keyword)
-    )
+    result = result.filter((item: FavoriteItem) => {
+      const code = item.stock_code?.toLowerCase() || ''
+      const name = item.stock_name?.toLowerCase() || ''
+      return code.includes(keyword) || name.includes(keyword)
+    })
   }
 
   // 市场筛选
@@ -1025,8 +1026,8 @@ const handleSelectionChange = (selection: FavoriteItem[]) => {
 // 显示单个股票同步对话框
 const showSingleSyncDialog = (row: FavoriteItem) => {
   currentSyncStock.value = {
-    stock_code: row.stock_code,
-    stock_name: row.stock_name
+    stock_code: row.stock_code || '',
+    stock_name: row.stock_name || ''
   }
   singleSyncDialogVisible.value = true
 }
@@ -1119,7 +1120,9 @@ const handleBatchSync = async () => {
 
   batchSyncLoading.value = true
   try {
-    const symbols = selectedStocks.value.map(stock => stock.stock_code)
+    const symbols = selectedStocks.value
+      .map(stock => stock.stock_code)
+      .filter((code): code is string => typeof code === 'string' && code.length > 0)
 
     const res = await stockSyncApi.syncBatch({
       symbols,
@@ -1180,7 +1183,8 @@ const formatPercent = (value: any): string => {
   return `${sign}${n.toFixed(2)}%`
 }
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('zh-CN')
 }
 

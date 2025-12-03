@@ -402,12 +402,12 @@ const defaultFormData = {
   capability_level: 2,  // 默认标准级
   suitable_roles: ['both'],  // 默认两者都适合
   features: ['tool_calling'],  // 默认支持工具调用
-  recommended_depths: ['快速', '基础', '标准'],  // 默认推荐1-3级分析
+  recommended_depths: ['快速', '基础', '标准'] as string[],  // 默认推荐1-3级分析
   performance_metrics: {
     speed: 3,
     cost: 3,
     quality: 3
-  }
+  } as { speed: number; cost: number; quality: number }
 }
 
 const formData = ref({ ...defaultFormData })
@@ -577,7 +577,7 @@ watch(
         suitable_roles: config.suitable_roles || defaultFormData.suitable_roles,
         features: config.features || defaultFormData.features,
         recommended_depths: config.recommended_depths || defaultFormData.recommended_depths,
-        performance_metrics: config.performance_metrics || defaultFormData.performance_metrics
+        performance_metrics: (config.performance_metrics ?? { speed: 0, cost: 0, quality: 0 }) as { speed: number; cost: number; quality: number }
       }
       modelOptions.value = getModelOptions(config.provider)
 
@@ -623,7 +623,7 @@ watch(
           suitable_roles: props.config.suitable_roles || defaultFormData.suitable_roles,
           features: props.config.features || defaultFormData.features,
           recommended_depths: props.config.recommended_depths || defaultFormData.recommended_depths,
-          performance_metrics: props.config.performance_metrics || defaultFormData.performance_metrics
+          performance_metrics: (props.config.performance_metrics ?? { speed: 0, cost: 0, quality: 0 }) as { speed: number; cost: number; quality: number }
         }
         modelOptions.value = getModelOptions(props.config.provider)
 

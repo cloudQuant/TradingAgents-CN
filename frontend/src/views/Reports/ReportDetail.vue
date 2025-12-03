@@ -18,14 +18,14 @@
             <div class="report-meta">
               <el-tag type="primary">{{ report.stock_symbol }}</el-tag>
               <el-tag v-if="report.stock_name && report.stock_name !== report.stock_symbol" type="info">{{ report.stock_name }}</el-tag>
-              <el-tag type="success">{{ getStatusText(report.status) }}</el-tag>
+              <el-tag type="success">{{ getStatusText(report.status || '') }}</el-tag>
               <span class="meta-item">
                 <el-icon><Calendar /></el-icon>
-                {{ formatTime(report.created_at) }}
+                {{ formatTime(report.created_at || '') }}
               </span>
               <span class="meta-item">
                 <el-icon><User /></el-icon>
-                {{ formatAnalysts(report.analysts) }}
+                {{ formatAnalysts(report.analysts || []) }}
               </span>
               <span v-if="report.model_info && report.model_info !== 'Unknown'" class="meta-item">
                 <el-icon><Cpu /></el-icon>
@@ -261,7 +261,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, h, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, ElInput, ElInputNumber, ElForm, ElFormItem } from 'element-plus'
+import { ElMessage, ElMessageBox, ElInputNumber } from 'element-plus'
 import { paperApi } from '@/api/paper'
 import { stocksApi } from '@/api/stocks'
 import { configApi, type LLMConfig } from '@/api/config'
@@ -288,6 +288,24 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { marked } from 'marked'
 
+interface ReportData {
+  id?: string
+  stock_symbol: string
+  stock_name?: string
+  analysis_id?: string
+  analysis_date?: string
+  status?: string
+  created_at?: string
+  analysts?: string[]
+  model_info?: string
+  risk_level?: string
+  confidence_score?: number
+  key_points?: string[]
+  summary?: string
+  reports?: Record<string, any>
+  recommendation?: string
+}
+
 // 路由和认证
 const route = useRoute()
 const router = useRouter()
@@ -298,16 +316,16 @@ marked.setOptions({ breaks: true, gfm: true })
 
 // 响应式数据
 const loading = ref(true)
-const report = ref(null)
+const report = ref<ReportData | null>(null)
 const activeModule = ref('')
 const llmConfigs = ref<LLMConfig[]>([]) // 存储所有模型配置
 
 // 获取模型配置列表
 const fetchLLMConfigs = async () => {
   try {
-    const response = await configApi.getSystemConfig()
-    if (response.success && response.data?.llm_configs) {
-      llmConfigs.value = response.data.llm_configs
+    const systemConfig = await configApi.getSystemConfig()
+    if (systemConfig?.llm_configs) {
+      llmConfigs.value = systemConfig.llm_configs
     }
   } catch (error) {
     console.error('获取模型配置失败:', error)
@@ -362,6 +380,10 @@ const downloadReport = async (format: string = 'markdown') => {
       type: 'info',
       duration: 0
     })
+
+    if (!report.value) {
+      throw new Error('报告数据不存在')
+    }
 
     const response = await fetch(`/api/reports/${report.value.id}/download?format=${format}`, {
       headers: {
@@ -489,12 +511,12 @@ const applyToTrading = async () => {
     const positions = accountRes.data.positions
 
     // 查找当前持仓
-    const currentPosition = positions.find(p => p.code === report.value.stock_symbol)
+    const currentPosition = positions.find(p => p.code === report.value!.stock_symbol)
 
     // 获取当前实时价格
     let currentPrice = 10 // 默认价格
     try {
-      const quoteRes = await stocksApi.getQuote(report.value.stock_symbol)
+      const quoteRes = await stocksApi.getQuote(report.value!.stock_symbol)
       if (quoteRes.success && quoteRes.data && quoteRes.data.price) {
         currentPrice = quoteRes.data.price
       }
@@ -508,7 +530,7 @@ const applyToTrading = async () => {
 
     if (recommendation.action === 'buy') {
       // 买入：根据可用资金和当前价格计算
-      const availableCash = account.cash
+      const availableCash = Number(account.cash)
       maxQuantity = Math.floor(availableCash / currentPrice / 100) * 100 // 100股为单位
       const suggested = Math.floor(maxQuantity * 0.2) // 建议使用20%资金
       suggestedQuantity = Math.floor(suggested / 100) * 100 // 向下取整到100的倍数
@@ -560,7 +582,7 @@ const applyToTrading = async () => {
           ]),
           h('p', [
             h('strong', '股票代码：'),
-            h('span', report.value.stock_symbol)
+            h('span', report.value!.stock_symbol)
           ]),
           h('p', [
             h('strong', '操作类型：'),
@@ -582,7 +604,8 @@ const applyToTrading = async () => {
             ]),
             h(ElInputNumber, {
               modelValue: tradeForm.price,
-              'onUpdate:modelValue': (val: number) => { tradeForm.price = val },
+              // Element Plus 输入回调可能传入 undefined，这里使用 0 兜底以满足类型检查
+              'onUpdate:modelValue': (val: number | undefined) => { tradeForm.price = val ?? 0 },
               min: 0.01,
               max: 9999,
               precision: 2,
@@ -598,7 +621,8 @@ const applyToTrading = async () => {
             ]),
             h(ElInputNumber, {
               modelValue: tradeForm.quantity,
-              'onUpdate:modelValue': (val: number) => { tradeForm.quantity = val },
+              // 同上，处理可能的 undefined
+              'onUpdate:modelValue': (val: number | undefined) => { tradeForm.quantity = val ?? tradeForm.quantity },
               min: 100,
               max: maxQuantity,
               step: 100,
@@ -621,7 +645,7 @@ const applyToTrading = async () => {
             h('span', { style: 'color: #909399; font-size: 12px; margin-left: 8px;' }, '(实际风险可能更高)')
           ]),
           recommendation.action === 'buy' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
-            `可用资金：${account.cash.toFixed(2)}元，最大可买：${maxQuantity}股`
+            `可用资金：${Number(account.cash).toFixed(2)}元，最大可买：${maxQuantity}股`
           ) : null,
           recommendation.action === 'sell' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
             `当前持仓：${maxQuantity}股`
@@ -636,7 +660,8 @@ const applyToTrading = async () => {
       confirmButtonText: '确认下单',
       cancelButtonText: '取消',
       type: 'warning',
-      beforeClose: (action, instance, done) => {
+      // 未直接使用 instance 参数，使用下划线前缀避免 TS 未使用变量告警
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           // 验证输入
           if (tradeForm.quantity < 100 || tradeForm.quantity % 100 !== 0) {
@@ -655,7 +680,7 @@ const applyToTrading = async () => {
           // 检查资金是否充足
           if (recommendation.action === 'buy') {
             const totalAmount = tradeForm.price * tradeForm.quantity
-            if (totalAmount > account.cash) {
+            if (totalAmount > Number(account.cash)) {
               ElMessage.error('可用资金不足')
               return
             }
@@ -667,10 +692,10 @@ const applyToTrading = async () => {
 
     // 执行交易
     const orderRes = await paperApi.placeOrder({
-      code: report.value.stock_symbol,
+      code: report.value!.stock_symbol,
       side: recommendation.action,
       quantity: tradeForm.quantity,
-      analysis_id: report.value.analysis_id || report.value.id
+      analysis_id: report.value!.analysis_id || report.value!.id
     })
 
     if (orderRes.success) {
@@ -862,17 +887,6 @@ const getRiskColor = (riskLevel: string) => {
     '高': '#F56C6C'       // 深红色
   }
   return colorMap[riskLevel] || '#E6A23C'
-}
-
-const getRiskDescription = (riskLevel: string) => {
-  const descMap: Record<string, string> = {
-    '低': '风险较小，适合稳健投资者',
-    '中低': '风险可控，适合大多数投资者',
-    '中等': '风险适中，需要谨慎评估',
-    '中高': '风险较高，需要密切关注',
-    '高': '风险很高，建议谨慎投资'
-  }
-  return descMap[riskLevel] || '请根据自身风险承受能力决策'
 }
 
 // 生命周期

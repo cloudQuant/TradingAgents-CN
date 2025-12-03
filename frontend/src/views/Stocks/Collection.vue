@@ -269,7 +269,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { stocksApi, type CollectionStatsResponse, type RefreshStatusResponse } from '@/api/stocks'
 import { getRefreshConfig, type CollectionRefreshConfig } from './collectionRefreshConfig'
@@ -454,14 +453,6 @@ const apiParamsDialogVisible = ref(false)
 const fileImportRef = ref()
 const importing = ref(false)
 
-// 远程同步相关
-const remoteSyncHost = ref('')
-const remoteSyncDbType = ref('mongodb')
-const remoteSyncBatchSize = ref(1000)
-const remoteSyncCollection = ref('')
-const remoteSyncUsername = ref('')
-const remoteSyncPassword = ref('')
-const remoteSyncAuthSource = ref('admin')
 const remoteSyncing = ref(false)
 const remoteSyncStats = ref<any>(null)
 
@@ -485,11 +476,6 @@ const currentCollectionInfo = computed(() => {
     dataSource: 'https://akshare.akfamily.xyz/'
   }
 })
-
-// 格式化数字
-const formatNumber = (num: number): string => {
-  return num.toLocaleString('zh-CN')
-}
 
 const loadCollectionPage = async () => {
   const name = collectionName.value
@@ -619,22 +605,6 @@ const stopStatusPolling = () => {
     clearInterval(statusCheckInterval)
     statusCheckInterval = null
   }
-}
-
-// 格式化时间
-const formatTime = (timeStr: string) => {
-  try {
-    const date = new Date(timeStr)
-    return date.toLocaleString('zh-CN')
-  } catch {
-    return timeStr
-  }
-}
-
-
-// 显示数据概览
-const showOverview = () => {
-  overviewDialogVisible.value = true
 }
 
 // 处理更新数据菜单命令
@@ -770,7 +740,7 @@ const handleRemoteSync = async (config: RemoteSyncConfig) => {
       password: config.password,
       authSource: config.authSource,
       collection: config.collection || collectionName.value,
-      batch_size: config.batchSize
+      batchSize: config.batchSize
     })
 
     if (res.success) {

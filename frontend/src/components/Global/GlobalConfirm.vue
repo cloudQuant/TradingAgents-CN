@@ -10,6 +10,6 @@
 
 <style lang="scss" scoped>
 .global-confirm {
-  // 样式
+  display: block;
 }
 </style>

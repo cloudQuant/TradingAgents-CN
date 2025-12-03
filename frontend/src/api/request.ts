@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import router from '@/router'
@@ -466,10 +466,11 @@ export const testApiConnection = async (): Promise<boolean> => {
 
     const response = await request.get('/api/health', {
       timeout: 5000,
+      // 使用扩展的 RequestConfig 类型，允许自定义字段
       skipErrorHandler: true
-    })
+    } as RequestConfig)
 
-    console.log('🔍 [API_TEST] 健康检查成功:', response.data)
+    console.log('🔍 [API_TEST] 健康检查成功:', response)
     return true
   } catch (error: any) {
     console.error('🔍 [API_TEST] 健康检查失败:', error)
@@ -496,7 +497,7 @@ export class ApiClient {
     params?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // 响应拦截器已经返回 response.data（业务层 ApiResponse<T>），这里保持类型一致
     return await request.get(url, { params, ...config })
   }
 
@@ -574,7 +575,7 @@ export class ApiClient {
     const blobData = await request.get(url, {
       responseType: 'blob',
       ...config
-    })
+    }) as unknown as Blob
 
     const blob = new Blob([blobData])
     const downloadUrl = window.URL.createObjectURL(blob)

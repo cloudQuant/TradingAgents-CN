@@ -168,7 +168,6 @@ import {
   List,
   /* Document 移除：不再使用顶级分析报告菜单图标 */
   Setting,
-  Tools,
   InfoFilled,
   CreditCard
 } from '@element-plus/icons-vue'

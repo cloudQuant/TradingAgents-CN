@@ -76,7 +76,8 @@ export const useFundStore = defineStore('funds', () => {
         collections.value = res.data
         collectionsLastFetch.value = new Date()
       } else {
-        handleFundError(new Error(res.error || '加载集合列表失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '加载集合列表失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '加载集合列表失败')
@@ -106,7 +107,8 @@ export const useFundStore = defineStore('funds', () => {
         collectionStats.value[collectionName] = res.data
         return res.data
       } else {
-        handleFundError(new Error(res.error || '加载统计信息失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '加载统计信息失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '加载统计信息失败')
@@ -131,7 +133,8 @@ export const useFundStore = defineStore('funds', () => {
       if (res.success && res.data) {
         companies.value = res.data
       } else {
-        handleFundError(new Error(res.error || '加载基金公司列表失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '加载基金公司列表失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '加载基金公司列表失败')

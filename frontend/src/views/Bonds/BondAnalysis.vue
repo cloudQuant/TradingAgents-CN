@@ -403,8 +403,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Tickets, TrendCharts, Document, Refresh, Loading, WarningFilled, InfoFilled, Check, DataAnalysis, Switch } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Tickets, TrendCharts, Document, Refresh, Loading, WarningFilled, InfoFilled, Check } from '@element-plus/icons-vue'
+// DataAnalysis, Switch - used in dynamic icons
 import { ElMessage } from 'element-plus'
 import { bondsApi } from '@/api/bonds'
 import dayjs from 'dayjs'
@@ -654,7 +655,8 @@ const formatTime = (seconds: number): string => {
   return `${minutes}分${secs}秒`
 }
 
-const getProgressStatus = (): string => {
+type ProgressStatus = '' | 'success' | 'warning' | 'exception'
+const getProgressStatus = (): ProgressStatus => {
   if (progressInfo.value.progress >= 100) return 'success'
   if (progressInfo.value.progress >= 50) return ''
   return 'exception'
@@ -672,7 +674,8 @@ const formatPercent = (percent: number | null | undefined): string => {
 
 const formatMarkdown = (text: string): string => {
   if (!text) return ''
-  return marked(text)
+  const result = marked(text)
+  return typeof result === 'string' ? result : text
 }
 
 const formatRecommendation = (recommendation: string): string => {
@@ -689,11 +692,12 @@ const getRecommendationTitle = (): string => {
   return '投资建议'
 }
 
-const getRecommendationType = (): string => {
+type AlertType = 'success' | 'warning' | 'info' | 'error'
+const getRecommendationType = (): AlertType => {
   if (!analysisResults.value?.recommendation) return 'info'
   const rec = analysisResults.value.recommendation.toLowerCase()
   if (rec.includes('买入') || rec.includes('buy')) return 'success'
-  if (rec.includes('卖出') || rec.includes('sell')) return 'danger'
+  if (rec.includes('卖出') || rec.includes('sell')) return 'error'
   if (rec.includes('持有') || rec.includes('hold')) return 'warning'
   return 'info'
 }

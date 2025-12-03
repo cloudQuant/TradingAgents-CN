@@ -156,7 +156,7 @@ POST /api/sync/multi-source/stock_basics/run?force=true</code></pre>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+// ElMessage available for future use
 import {
   Promotion,
   Refresh,

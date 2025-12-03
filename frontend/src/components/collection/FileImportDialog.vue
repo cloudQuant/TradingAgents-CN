@@ -79,7 +79,7 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-const handleFileChange = (file: UploadFile, fileList: UploadFile[]) => {
+const handleFileChange = (_file: UploadFile, fileList: UploadFile[]) => {
   if (props.allowMultiple) {
     selectedFiles.value = fileList
   } else {
@@ -87,7 +87,7 @@ const handleFileChange = (file: UploadFile, fileList: UploadFile[]) => {
   }
 }
 
-const handleFileRemove = (file: UploadFile, fileList: UploadFile[]) => {
+const handleFileRemove = (_file: UploadFile, fileList: UploadFile[]) => {
   selectedFiles.value = fileList
 }
 

@@ -188,7 +188,7 @@
           v-loading="loading"
           stripe
           border
-          style="width: 100%"
+          :style="{ width: '100%' }"
           max-height="600"
         >
           <el-table-column prop="date" label="日期" width="120" sortable />

@@ -104,7 +104,7 @@
         </div>
       </template>
 
-      <el-table :data="records" style="width: 100%" v-loading="loading">
+      <el-table :data="records" :style="{ width: '100%' }" v-loading="loading">
         <el-table-column prop="timestamp" label="时间" width="180">
           <template #default="{ row }">
             {{ formatTimestamp(row.timestamp) }}

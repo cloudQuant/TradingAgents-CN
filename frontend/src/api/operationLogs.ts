@@ -164,7 +164,10 @@ export class OperationLogsApi {
     if (params.action_type) queryParams.append('action_type', params.action_type)
     
     const url = `/api/system/logs/export/csv${queryParams.toString() ? '?' + queryParams.toString() : ''}`
-    return ApiClient.get(url, { responseType: 'blob' })
+    // 导出日志为文件流，直接通过底层 request 处理
+    return (ApiClient as any).download
+      ? (ApiClient as any).download(url)
+      : (Promise.resolve(new Blob()) as Promise<Blob>)
   }
 }
 
@@ -200,8 +203,11 @@ export const ActionTypeNames = {
   [ActionTypes.REPORT_GENERATION]: '报告生成'
 } as const
 
+// Element Plus Tag 组件支持的类型
+export type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
 // 操作类型标签颜色映射
-export const ActionTypeTagColors = {
+export const ActionTypeTagColors: Record<(typeof ActionTypes)[keyof typeof ActionTypes], TagType> = {
   [ActionTypes.STOCK_ANALYSIS]: 'primary',
   [ActionTypes.CONFIG_MANAGEMENT]: 'success',
   [ActionTypes.CACHE_OPERATION]: 'warning',
@@ -221,7 +227,7 @@ export const getActionTypeName = (actionType: string): string => {
   return ActionTypeNames[actionType as keyof typeof ActionTypeNames] || actionType
 }
 
-export const getActionTypeTagColor = (actionType: string): string => {
+export const getActionTypeTagColor = (actionType: string): TagType => {
   return ActionTypeTagColors[actionType as keyof typeof ActionTypeTagColors] || 'info'
 }
 

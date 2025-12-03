@@ -29,7 +29,7 @@
         </div>
       </template>
 
-      <el-table :data="queueTasks" v-loading="loading" style="width: 100%" @mouseenter="isInteracting = true" @mouseleave="isInteracting = false">
+      <el-table :data="queueTasks" v-loading="loading" :style="{ width: '100%' }" @mouseenter="isInteracting = true" @mouseleave="isInteracting = false">
         <el-table-column prop="task_id" label="任务ID" width="200">
           <template #default="{ row }">
             <el-link type="primary" @click="viewTaskDetail(row)">

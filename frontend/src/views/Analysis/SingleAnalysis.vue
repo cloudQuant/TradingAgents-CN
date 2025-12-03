@@ -745,8 +745,10 @@ import { useAuthStore } from '@/stores/auth'
 import { configApi } from '@/api/config'
 import { ANALYSTS, convertAnalystNamesToIds } from '@/constants/analysts'
 import { marked } from 'marked'
-import { recommendModels, validateModels, type ModelRecommendationResponse } from '@/api/modelCapabilities'
-import { validateStockCode, getStockCodeFormatHelp, getStockCodeExamples } from '@/utils/stockValidator'
+import { recommendModels } from '@/api/modelCapabilities'
+// validateModels, type ModelRecommendationResponse - available for future use
+import { validateStockCode, getStockCodeFormatHelp } from '@/utils/stockValidator'
+// getStockCodeExamples - available for future use
 import { normalizeMarketForAnalysis, getMarketByStockCode } from '@/utils/market'
 
 // 配置marked选项
@@ -772,7 +774,6 @@ interface AnalysisForm {
 }
 
 // 使用store
-const appStore = useAppStore()
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
@@ -1623,7 +1624,7 @@ const goSimOrder = async () => {
 
     if (recommendation.action === 'buy') {
       // 买入：根据可用资金和当前价格计算
-      const availableCash = account.cash
+      const availableCash = Number(account.cash)
       maxQuantity = Math.floor(availableCash / currentPrice / 100) * 100 // 100股为单位
       const suggested = Math.floor(maxQuantity * 0.2) // 建议使用20%资金
       suggestedQuantity = Math.floor(suggested / 100) * 100 // 向下取整到100的倍数
@@ -1714,7 +1715,7 @@ const goSimOrder = async () => {
             h('span', recommendation.riskLevel)
           ]),
           recommendation.action === 'buy' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
-            `可用资金：${account.cash.toFixed(2)}元，最大可买：${maxQuantity}股`
+            `可用资金：${Number(account.cash).toFixed(2)}元，最大可买：${maxQuantity}股`
           ) : null,
           recommendation.action === 'sell' ? h('p', { style: 'color: #909399; font-size: 12px; margin-top: 12px;' },
             `当前持仓：${maxQuantity}股`
@@ -1729,7 +1730,7 @@ const goSimOrder = async () => {
       confirmButtonText: '确认下单',
       cancelButtonText: '取消',
       type: 'warning',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           // 验证输入
           if (tradeForm.quantity < 100 || tradeForm.quantity % 100 !== 0) {
@@ -1748,7 +1749,7 @@ const goSimOrder = async () => {
           // 检查资金是否充足
           if (recommendation.action === 'buy') {
             const totalAmount = tradeForm.price * tradeForm.quantity
-            if (totalAmount > account.cash) {
+            if (totalAmount > Number(account.cash)) {
               ElMessage.error('可用资金不足')
               return
             }

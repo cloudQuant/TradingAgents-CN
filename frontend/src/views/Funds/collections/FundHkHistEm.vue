@@ -18,7 +18,7 @@
       <!-- 数据类型筛选标签页 -->
       <!-- 注意：分红送配详情接口暂时有问题，已禁用，目前只显示历史净值明细数据 -->
       <el-card shadow="hover" style="margin-bottom: 16px;">
-        <el-tabs v-model="activeDataType" @tab-change="handleDataTypeChange">
+        <el-tabs v-model="activeDataType" @tab-change="(name: string | number) => handleDataTypeChange(String(name))">
           <el-tab-pane label="全部数据" name="all">
             <template #label>
               <span>全部数据 <el-badge :value="allDataCount" class="item" /></span>
@@ -47,8 +47,8 @@
         v-model:filter-value="filterValue"
         v-model:filter-field="filterField"
         @search="loadData"
-        @page-change="loadData"
-        @size-change="loadData"
+        @page-change="() => loadData()"
+        @size-change="() => loadData()"
         @sort-change="handleSortChange"
       />
     </div>
@@ -239,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import {
   CollectionPageHeader,
   CollectionDataTable,
@@ -262,8 +262,8 @@ const {
   total,
   filterField,
   filterValue,
-  sortBy,
-  sortDir,
+  sortBy: _sortBy,
+  sortDir: _sortDir,
   stats,
   collectionInfo,
   apiRefreshDialogVisible,

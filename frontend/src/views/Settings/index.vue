@@ -127,7 +127,7 @@
           
           <el-form :model="appearanceSettings" label-width="120px">
             <el-form-item label="主题模式">
-              <el-radio-group v-model="appearanceSettings.theme" @change="handleThemeChange">
+              <el-radio-group v-model="appearanceSettings.theme" @change="(val: string | number | boolean | undefined) => handleThemeChange(String(val))">
                 <el-radio label="light">浅色主题</el-radio>
                 <el-radio label="dark">深色主题</el-radio>
                 <el-radio label="auto">跟随系统</el-radio>
@@ -452,6 +452,7 @@ import {
   Refresh,
   DataAnalysis
 } from '@element-plus/icons-vue'
+import type { UserPreferences } from '@/types/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -556,6 +557,45 @@ const notificationSettings = ref({
   systemMaintenance: authStore.user?.preferences?.system_maintenance_notification ?? true
 })
 
+// 构造完整的 UserPreferences，避免只传部分字段导致类型不匹配
+const buildMergedPreferences = (overrides: Partial<UserPreferences>): UserPreferences => {
+  const current = authStore.user?.preferences
+
+  return {
+    // 分析偏好
+    default_market: current?.default_market ?? (analysisSettings.value.defaultMarket as 'A股' | '美股' | '港股'),
+    default_depth: current?.default_depth ?? (analysisSettings.value.defaultDepth as '1' | '2' | '3' | '4' | '5'),
+    default_analysts: current?.default_analysts ?? analysisSettings.value.defaultAnalysts,
+    auto_refresh: current?.auto_refresh ?? analysisSettings.value.autoRefresh,
+    refresh_interval: current?.refresh_interval ?? analysisSettings.value.refreshInterval,
+
+    // 外观设置
+    ui_theme: current?.ui_theme ?? (appearanceSettings.value.theme as 'light' | 'dark' | 'auto'),
+    sidebar_width: current?.sidebar_width ?? appearanceSettings.value.sidebarWidth,
+
+    // 语言和地区
+    language: overrides.language ?? current?.language ?? generalSettings.value.language as 'zh-CN' | 'en-US',
+
+    // 通知设置
+    notifications_enabled:
+      overrides.notifications_enabled ??
+      current?.notifications_enabled ??
+      (notificationSettings.value.desktop ||
+        notificationSettings.value.analysisComplete ||
+        notificationSettings.value.systemMaintenance),
+    email_notifications: current?.email_notifications ?? false,
+    desktop_notifications: overrides.desktop_notifications ?? current?.desktop_notifications ?? notificationSettings.value.desktop,
+    analysis_complete_notification:
+      overrides.analysis_complete_notification ??
+      current?.analysis_complete_notification ??
+      notificationSettings.value.analysisComplete,
+    system_maintenance_notification:
+      overrides.system_maintenance_notification ??
+      current?.system_maintenance_notification ??
+      notificationSettings.value.systemMaintenance,
+  }
+}
+
 // 监听用户信息变化，同步更新设置
 watch(() => authStore.user, (newUser) => {
   if (newUser) {
@@ -596,9 +636,9 @@ const saveGeneralSettings = async () => {
     // 调用 authStore 更新用户信息
     const success = await authStore.updateUserInfo({
       email: generalSettings.value.email,
-      preferences: {
-        language: generalSettings.value.language
-      }
+      preferences: buildMergedPreferences({
+        language: generalSettings.value.language as 'zh-CN' | 'en-US'
+      })
     })
 
     if (success) {
@@ -618,10 +658,10 @@ const saveAppearanceSettings = async () => {
 
     // 保存到后端
     const success = await authStore.updateUserInfo({
-      preferences: {
-        ui_theme: appearanceSettings.value.theme,
+      preferences: buildMergedPreferences({
+        ui_theme: appearanceSettings.value.theme as 'light' | 'dark' | 'auto',
         sidebar_width: appearanceSettings.value.sidebarWidth
-      }
+      })
     })
 
     if (success) {
@@ -645,13 +685,13 @@ const saveAnalysisSettings = async () => {
 
     // 保存到后端
     const success = await authStore.updateUserInfo({
-      preferences: {
-        default_market: analysisSettings.value.defaultMarket,
-        default_depth: analysisSettings.value.defaultDepth,
+      preferences: buildMergedPreferences({
+        default_market: analysisSettings.value.defaultMarket as 'A股' | '美股' | '港股',
+        default_depth: analysisSettings.value.defaultDepth as '1' | '2' | '3' | '4' | '5',
         default_analysts: analysisSettings.value.defaultAnalysts,
         auto_refresh: analysisSettings.value.autoRefresh,
         refresh_interval: analysisSettings.value.refreshInterval
-      }
+      })
     })
 
     if (success) {
@@ -667,12 +707,15 @@ const saveNotificationSettings = async () => {
   try {
     // 保存到后端
     const success = await authStore.updateUserInfo({
-      preferences: {
+      preferences: buildMergedPreferences({
         desktop_notifications: notificationSettings.value.desktop,
         analysis_complete_notification: notificationSettings.value.analysisComplete,
         system_maintenance_notification: notificationSettings.value.systemMaintenance,
-        notifications_enabled: notificationSettings.value.desktop || notificationSettings.value.analysisComplete || notificationSettings.value.systemMaintenance
-      }
+        notifications_enabled:
+          notificationSettings.value.desktop ||
+          notificationSettings.value.analysisComplete ||
+          notificationSettings.value.systemMaintenance
+      })
     })
 
     if (success) {
@@ -719,7 +762,7 @@ const changePasswordForm = ref({
   confirmPassword: ''
 })
 
-const validateConfirmPassword = (rule: any, value: any, callback: any) => {
+const validateConfirmPassword = (_rule: any, value: any, callback: any) => {
   if (value === '') {
     callback(new Error('请再次输入新密码'))
   } else if (value !== changePasswordForm.value.newPassword) {

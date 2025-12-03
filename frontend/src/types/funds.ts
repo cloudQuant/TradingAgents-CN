@@ -141,6 +141,13 @@ export interface TaskResult {
   inserted?: number
   updated?: number
   deleted?: number
+  // 批量任务统计字段（后端可选返回）
+  processed?: number
+  success?: number
+  failed?: number
+  fetched_rows?: number
+  saved_rows?: number
+  saved_fund_count?: number
 }
 
 export interface RefreshTask {
@@ -172,6 +179,7 @@ export interface ApiResponse<T = any> {
   success: boolean
   data?: T
   error?: string
+  detail?: any
   timestamp?: string
 }
 

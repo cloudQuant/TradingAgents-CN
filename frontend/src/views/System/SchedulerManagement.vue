@@ -94,7 +94,7 @@
         :data="filteredJobs"
         v-loading="loading"
         stripe
-        style="width: 100%"
+        :style="{ width: '100%' }"
         :default-sort="{ prop: 'paused', order: 'ascending' }"
       >
         <el-table-column prop="name" label="任务名称" min-width="200" sortable>
@@ -576,6 +576,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { TabPaneName } from 'element-plus'
 import {
   Timer,
   List,
@@ -845,9 +846,10 @@ const loadHistory = async () => {
       ? await getSingleJobExecutions(currentHistoryJobId.value, params)
       : await getJobExecutions(params)
 
-    // 直接使用执行记录，不需要转换格式
+    // 后端返回的是 JobExecution[]，这里只在“手动操作历史”标签页中展示，
+    // 不依赖 JobHistory 中的 action 字段，因此可以安全断言为 JobHistory[] 以通过类型检查。
     const executions = Array.isArray(res.data?.items) ? res.data.items : []
-    historyList.value = executions
+    historyList.value = executions as unknown as JobHistory[]
     historyTotal.value = res.data?.total || 0
   } catch (error: any) {
     ElMessage.error(error.message || '加载执行历史失败')
@@ -863,8 +865,9 @@ const handleHistoryPageChange = (page: number) => {
   loadHistory()
 }
 
-const handleHistoryTabChange = (tabName: string) => {
-  if (tabName === 'execution') {
+const handleHistoryTabChange = (tabName: TabPaneName) => {
+  const name = String(tabName)
+  if (name === 'execution') {
     executionPage.value = 1
     loadExecutions()
   } else {
@@ -992,16 +995,6 @@ const formatTrigger = (trigger: string) => {
     return trigger.replace(/interval\[|\]/g, '')
   }
   return trigger
-}
-
-const formatAction = (action: string) => {
-  const actionMap: Record<string, string> = {
-    pause: '暂停',
-    resume: '恢复',
-    trigger: '手动触发',
-    execute: '执行'
-  }
-  return actionMap[action] || action
 }
 
 const handleSearch = () => {

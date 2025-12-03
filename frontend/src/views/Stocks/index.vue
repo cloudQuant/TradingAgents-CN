@@ -44,7 +44,7 @@
         </el-col>
         <el-col :xs="12" :sm="8" :md="6">
           <el-card shadow="hover" class="stat-card">
-            <el-statistic title="数据更新" value="实时">
+            <el-statistic title="数据更新" :value="0" suffix="实时">
               <template #prefix>
                 <el-icon color="#67C23A"><CircleCheck /></el-icon>
               </template>
@@ -131,7 +131,7 @@
           :loading="loading"
           size="small"
           stripe
-          style="width: 100%"
+          :style="{ width: '100%' }"
           :default-sort="{ prop: 'amount', order: 'descending' }"
           @sort-change="handleSortChange"
         >

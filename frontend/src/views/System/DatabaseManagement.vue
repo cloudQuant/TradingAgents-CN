@@ -38,7 +38,7 @@
               <el-button @click="testConnections" :loading="testing">
                 测试连接
               </el-button>
-              <el-button @click="loadDatabaseStatus" :loading="loading" :icon="Refresh">
+              <el-button @click="loadDatabaseStatus" :loading="loading">
                 刷新状态
               </el-button>
             </div>
@@ -71,7 +71,7 @@
               <el-button @click="testConnections" :loading="testing">
                 测试连接
               </el-button>
-              <el-button @click="loadDatabaseStatus" :loading="loading" :icon="Refresh">
+              <el-button @click="loadDatabaseStatus" :loading="loading">
                 刷新状态
               </el-button>
             </div>

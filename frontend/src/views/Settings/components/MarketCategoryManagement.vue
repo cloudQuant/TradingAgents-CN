@@ -10,7 +10,7 @@
     <el-table
       v-loading="loading"
       :data="categories"
-      style="width: 100%"
+      :style="{ width: '100%' }"
       row-key="id"
     >
       <el-table-column prop="sort_order" label="排序" width="80" sortable />

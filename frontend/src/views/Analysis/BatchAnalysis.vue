@@ -552,20 +552,6 @@ const submitBatchAnalysis = async () => {
   }
 }
 
-const resetForm = () => {
-  // 从用户偏好加载默认值
-  const authStore = useAuthStore()
-  const userPrefs = authStore.user?.preferences
-
-  Object.assign(batchForm, {
-    title: '',
-    description: '',
-    market: userPrefs?.default_market || 'A股',
-    depth: userPrefs?.default_depth || '3',
-    analysts: userPrefs?.default_analysts ? [...userPrefs.default_analysts] : [...DEFAULT_ANALYSTS]
-  })
-  clearStocks()
-}
 </script>
 
 <style lang="scss" scoped>

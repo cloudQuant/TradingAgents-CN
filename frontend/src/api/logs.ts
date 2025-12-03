@@ -2,7 +2,7 @@
  * 日志管理 API
  */
 
-import { ApiClient } from './request'
+import { ApiClient, request as requestApi } from './request'
 
 export interface LogFileInfo {
   name: string
@@ -56,31 +56,34 @@ export const LogsApi = {
    * 获取日志文件列表
    */
   listLogFiles(): Promise<LogFileInfo[]> {
-    return ApiClient.get('/api/system/system-logs/files')
+    return ApiClient.get('/api/system/system-logs/files').then((res: any) => res.data || res)
   },
 
   /**
    * 读取日志文件内容
    */
   readLogFile(request: LogReadRequest): Promise<LogContentResponse> {
-    return ApiClient.post('/api/system/system-logs/read', request)
+    return ApiClient.post('/api/system/system-logs/read', request).then((res: any) => res.data || res)
   },
 
   /**
    * 导出日志文件
    */
   async exportLogs(request: LogExportRequest): Promise<Blob> {
-    const response = await ApiClient.post('/api/system/system-logs/export', request, {
+    // 文件导出为二进制流，不符合统一 ApiResponse 结构，直接通过底层 request 处理
+    const response = await (requestApi as any).post('/api/system/system-logs/export', request, {
       responseType: 'blob'
     })
-    return response as unknown as Blob
+    return response as Blob
   },
 
   /**
    * 获取日志统计信息
    */
   getStatistics(days: number = 7): Promise<LogStatistics> {
-    return ApiClient.get('/api/system/system-logs/statistics', { params: { days } })
+    return ApiClient.get('/api/system/system-logs/statistics', { params: { days } }).then(
+      (res: any) => res.data || res
+    )
   },
 
   /**

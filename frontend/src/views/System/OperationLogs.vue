@@ -154,7 +154,7 @@
       <el-table
         :data="logs"
         v-loading="loading"
-        style="width: 100%"
+        :style="{ width: '100%' }"
         :default-sort="{ prop: 'timestamp', order: 'descending' }"
         @row-click="viewLogDetails"
       >
@@ -321,6 +321,7 @@ import {
   OperationLogsApi,
   type OperationLog,
   type OperationLogStats,
+  type OperationLogQuery,
   getActionTypeName,
   getActionTypeTagColor,
   formatDateTime
@@ -329,7 +330,7 @@ import {
 // 响应式数据
 const loading = ref(false)
 const detailDialogVisible = ref(false)
-const selectedLog = ref(null)
+const selectedLog = ref<OperationLog | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const totalLogs = ref(0)
@@ -361,21 +362,25 @@ const logs = ref<OperationLog[]>([])
 const statsData = ref<OperationLogStats | null>(null)
 
 // 方法
-const getActionTypeTag = (actionType: string): string => {
-  return getActionTypeTagColor(actionType)
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+const getActionTypeTag = (actionType: string): TagType => {
+  return getActionTypeTagColor(actionType) as TagType
 }
 
 const loadLogs = async () => {
   loading.value = true
   try {
     // 构建查询参数
-    const queryParams = {
+    const queryParams: OperationLogQuery = {
       page: currentPage.value,
       page_size: pageSize.value,
       start_date: filterForm.dateRange[0] || undefined,
       end_date: filterForm.dateRange[1] || undefined,
       action_type: filterForm.actionType || undefined,
-      success: filterForm.success !== '' ? filterForm.success : undefined,
+      // 将下拉框中的字符串转换为布尔值，符合 OperationLogQuery 定义
+      success: filterForm.success === ''
+        ? undefined
+        : filterForm.success === 'true',
       keyword: filterForm.keyword || undefined
     }
 

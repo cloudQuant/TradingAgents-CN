@@ -63,7 +63,19 @@ export const fundsApi = {
 
   // 远程同步数据
   async syncData(collectionName: string, config: RemoteSyncConfig): Promise<ApiResponse<SyncResult>> {
-    return await ApiClient.post<SyncResult>(`/api/funds/collections/${collectionName}/sync`, config)
+    // 将前端的驼峰字段转换为后端期望的下划线格式
+    const payload = {
+      host: config.host,
+      username: config.username,
+      password: config.password,
+      auth_source: config.authSource,
+      collection: config.collection,
+      batch_size: config.batchSize
+    }
+    return await ApiClient.post<SyncResult>(
+      `/api/funds/collections/${collectionName}/sync`,
+      payload as any
+    )
   },
 
   // 刷新集合数据

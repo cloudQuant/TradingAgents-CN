@@ -1,10 +1,18 @@
-import { ApiClient, type ApiResponse } from './request'
+import { ApiClient } from './request'
+
+export interface MultiCurrencyAmount {
+  CNY?: number
+  HKD?: number
+  USD?: number
+  // 预留其它币种
+  [currency: string]: number | undefined
+}
 
 export interface PaperAccountSummary {
-  cash: number
-  realized_pnl: number
-  positions_value: number
-  equity: number
+  cash: number | MultiCurrencyAmount
+  realized_pnl: number | MultiCurrencyAmount
+  positions_value: number | MultiCurrencyAmount
+  equity: number | MultiCurrencyAmount
   updated_at?: string
 }
 

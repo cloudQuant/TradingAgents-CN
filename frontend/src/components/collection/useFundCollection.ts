@@ -127,7 +127,8 @@ export function useFundCollection() {
         
         total.value = dataRes.data.total || 0
       } else {
-        handleFundError(new Error(dataRes.error || '加载数据失败'))
+        const msg = (dataRes as any)?.message || (dataRes as any)?.error || '加载数据失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       console.error('加载数据失败:', error)
@@ -313,9 +314,10 @@ export function useFundCollection() {
           singleUpdating.value = false
         }
       } else {
+        const msg = (res as any)?.message || (res as any)?.error || '更新失败'
         progressStatus.value = 'exception'
-        progressMessage.value = res.error || '更新失败'
-        handleFundError(new Error(res.error || '单条更新失败'))
+        progressMessage.value = msg
+        handleFundError(new Error(msg || '单条更新失败'))
         singleUpdating.value = false
       }
     } catch (error) {
@@ -533,9 +535,10 @@ export function useFundCollection() {
           batchUpdating.value = false
         }
       } else {
+        const msg = (res as any)?.message || (res as any)?.error || '更新失败'
         progressStatus.value = 'exception'
-        progressMessage.value = res.error || '更新失败'
-        handleFundError(new Error(res.error || '批量更新失败'))
+        progressMessage.value = msg
+        handleFundError(new Error(msg || '批量更新失败'))
         batchUpdating.value = false
       }
     } catch (error) {
@@ -561,7 +564,8 @@ export function useFundCollection() {
         fileImportDialogVisible.value = false
         loadData()
       } else {
-        handleFundError(new Error(res.error || '导入失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '导入失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '导入失败')
@@ -582,7 +586,7 @@ export function useFundCollection() {
         password: config.password,
         authSource: config.authSource,
         collection: config.collection || collectionName.value,
-        batch_size: config.batchSize
+        batchSize: config.batchSize
       })
 
       if (res.success && res.data) {
@@ -590,7 +594,8 @@ export function useFundCollection() {
         ElMessage.success(res.data.message || '同步成功')
         loadData()
       } else {
-        handleFundError(new Error(res.error || '同步失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '同步失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '同步失败')
@@ -617,7 +622,8 @@ export function useFundCollection() {
         ElMessage.success(`成功清空 ${res.data.deleted_count || 0} 条数据`)
         await loadData()
       } else {
-        handleFundError(new Error(res.error || '清空数据失败'))
+        const msg = (res as any)?.message || (res as any)?.error || '清空数据失败'
+        handleFundError(new Error(msg))
       }
     } catch (error) {
       handleFundError(error, '清空数据失败')

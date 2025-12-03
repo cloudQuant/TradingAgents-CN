@@ -148,7 +148,7 @@
       </template>
       
       <div v-loading="detailsLoading">
-        <el-table :data="cacheDetails" style="width: 100%">
+        <el-table :data="cacheDetails" :style="{ width: '100%' }">
           <el-table-column prop="type" label="类型" width="120">
             <template #default="{ row }">
               <el-tag :type="getCacheTypeTag(row.type)">{{ row.type }}</el-tag>
@@ -210,6 +210,7 @@ import {
   Refresh
 } from '@element-plus/icons-vue'
 import * as cacheApi from '@/api/cache'
+import type { CacheDetailItem } from '@/api/cache'
 
 // 响应式数据
 const statsLoading = ref(false)
@@ -233,7 +234,9 @@ const cacheStats = ref({
 })
 
 // 缓存详情数据
-const cacheDetails = ref([])
+import type { EpPropMergeType } from 'element-plus/es/utils'
+
+const cacheDetails = ref<CacheDetailItem[]>([])
 
 // 清理天数标记
 const cleanupMarks = {
@@ -268,11 +271,13 @@ const getProgressColor = (percentage: number): string => {
   return '#f56c6c'
 }
 
-const getCacheTypeTag = (type: string): string => {
-  const typeMap = {
-    'stock': 'primary',
-    'news': 'success',
-    'analysis': 'warning'
+type TagType = EpPropMergeType<StringConstructor, 'primary' | 'success' | 'warning' | 'info' | 'danger', unknown>
+
+const getCacheTypeTag = (type: string): TagType => {
+  const typeMap: Record<string, TagType> = {
+    stock: 'primary',
+    news: 'success',
+    analysis: 'warning'
   }
   return typeMap[type] || 'info'
 }
