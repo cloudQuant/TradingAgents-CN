@@ -1,6 +1,7 @@
 """
 ETF实时行情-东财数据提供者（重构版：继承SimpleProvider）
 """
+import pandas as pd
 from app.services.data_sources.base_provider import SimpleProvider
 
 
@@ -16,6 +17,56 @@ class FundEtfSpotEmProvider(SimpleProvider):
     display_name = "ETF基金实时行情-东财"
     akshare_func = "fund_etf_spot_em"
     unique_keys = ["代码", "数据日期"]
+    
+    def fetch_data(self, **kwargs) -> pd.DataFrame:
+        """
+        获取ETF实时行情数据
+        
+        该接口不需要任何参数，过滤掉所有传入的参数
+        """
+        try:
+            self.logger.info(f"Fetching {self.collection_name} data")
+            
+            # fund_etf_spot_em 接口不需要任何参数，过滤掉所有传入的参数
+            # 过滤掉前端特有参数和业务参数
+            frontend_only_params = {
+                'update_type', 'update_mode', 'batch_update', 'batch_size', 
+                'page', 'limit', 'skip', 'filters', 'sort', 'order',
+                'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
+                'force', 'clear_first', 'overwrite', 'mode', 'concurrency',
+                'fund_code', 'symbol', 'year', 'date', 'period', 'adjust',
+                'start_year', 'end_year', 'delay', 'code'
+            }
+            
+            # 过滤掉所有参数（该接口不需要参数）
+            filtered_kwargs = {
+                k: v for k, v in kwargs.items() 
+                if k not in frontend_only_params and v is not None
+            }
+            
+            # 如果还有未过滤的参数，记录警告
+            if filtered_kwargs:
+                self.logger.warning(
+                    f"[{self.collection_name}] 收到未预期的参数: {list(filtered_kwargs.keys())}, "
+                    f"将忽略这些参数（该接口不需要参数）"
+                )
+            
+            # 调用akshare，不传递任何参数
+            df = self._call_akshare(self.akshare_func)
+            
+            if df is None or df.empty:
+                self.logger.warning(f"No data returned for {self.collection_name}")
+                return pd.DataFrame()
+            
+            # 添加元数据
+            df = self._add_metadata(df)
+            
+            self.logger.info(f"Successfully fetched {len(df)} records")
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching {self.collection_name} data: {e}")
+            raise
 
     field_info = [
         {"name": "代码", "type": "string", "description": ""},

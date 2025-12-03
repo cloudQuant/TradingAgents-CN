@@ -165,24 +165,14 @@ FUND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "display_name": "ETF实时行情",
         "update_description": "将从东方财富网获取ETF基金实时行情数据",
         "single_update": {
-            "enabled": False,
-            "description": "",
+            "enabled": True,
+            "description": "更新所有ETF实时行情数据（无参数，直接获取全部数据）",
             "params": []
         },
         "batch_update": {
-            "enabled": True,
-            "description": "一次性获取所有ETF实时行情",
-            "params": [
-                {
-                    "name": "concurrency",
-                    "label": "并发数",
-                    "type": "number",
-                    "default": 3,
-                    "min": 1,
-                    "max": 10,
-                    "step": 1
-                }
-            ]
+            "enabled": False,
+            "description": "无参数接口，不需要批量更新",
+            "params": []
         }
     },
     "fund_lof_spot_em": {
