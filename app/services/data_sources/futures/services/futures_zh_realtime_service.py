@@ -1,8 +1,7 @@
-"""内盘实时行情数据(品种)服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_zh_realtime_provider import FuturesZhRealtimeProvider
+"""内盘-实时行情数据(品种)服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesZhRealtimeService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_zh_realtime", FuturesZhRealtimeProvider())
+
+class FuturesZhRealtimeService(SimpleService):
+    """内盘-实时行情数据(品种)服务"""
+    collection_name = "futures_zh_realtime"

@@ -1,7 +1,14 @@
-"""债券成交概览服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_deal_summary_sse_provider import BondDealSummarySseProvider
+"""
+债券成交概览-上交所服务（重构版）
 
-class BondDealSummarySseService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_deal_summary_sse", BondDealSummarySseProvider(), unique_keys=["查询日期", "债券类型"])
+数据集合名称: bond_deal_summary_sse
+"""
+from app.services.data_sources.base_service import BaseService
+from ..providers.bond_deal_summary_sse_provider import BondDealSummarySseProvider
+
+
+class BondDealSummarySseService(BaseService):
+    """债券成交概览-上交所服务"""
+    
+    collection_name = "bond_deal_summary_sse"
+    provider_class = BondDealSummarySseProvider

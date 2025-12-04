@@ -1,12 +1,7 @@
-"""
-大连商品交易所仓单日报服务
-"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_warehouse_receipt_dce_provider import FuturesWarehouseReceiptDceProvider
+"""仓单日报-大连商品交易所数据服务"""
+from app.services.data_sources.base_service import SimpleService
 
 
-class FuturesWarehouseReceiptDceService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        provider = FuturesWarehouseReceiptDceProvider()
-        super().__init__(db, "futures_warehouse_receipt_dce", provider)
+class FuturesWarehouseReceiptDceService(SimpleService):
+    """仓单日报-大连商品交易所数据服务"""
+    collection_name = "futures_warehouse_receipt_dce"

@@ -1,49 +1,46 @@
 """
-Stock Yjyg Em数据提供者
+业绩预告数据提供者
+
+东方财富-数据中心-年报季报-业绩预告
+接口: stock_yjyg_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockYjygEmProvider:
-    """Stock Yjyg Em数据提供者"""
+class StockYjygEmProvider(BaseProvider):
+    """业绩预告数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_yjyg_em"
-        self.display_name = "Stock Yjyg Em"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Yjyg Em数据
-        
-        Returns:
-            DataFrame: Stock Yjyg Em数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_yjyg_em(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_yjyg_em"
+    display_name = "业绩预告"
+    akshare_func = "stock_yjyg_em"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富-数据中心-年报季报-业绩预告"
+    collection_route = "/stocks/collections/stock_yjyg_em"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "date": "date"
+    }
+    
+    # 必填参数
+    required_params = ['date']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "object", "description": "-"},
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "预测指标", "type": "float64", "description": "-"},
+        {"name": "业绩变动", "type": "float64", "description": "-"},
+        {"name": "预测数值", "type": "float64", "description": "注意单位: 元"},
+        {"name": "业绩变动幅度", "type": "float64", "description": "注意单位: %"},
+        {"name": "业绩变动原因", "type": "float64", "description": "-"},
+        {"name": "预告类型", "type": "float64", "description": "-"},
+        {"name": "上年同期值", "type": "float64", "description": "注意单位: 元"},
+        {"name": "公告日期", "type": "float64", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

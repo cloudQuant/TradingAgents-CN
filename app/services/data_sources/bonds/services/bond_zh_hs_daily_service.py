@@ -1,7 +1,15 @@
-"""沪深债券历史行情服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_zh_hs_daily_provider import BondZhHsDailyProvider
+"""
+沪深债券历史行情服务（重构版）
 
-class BondZhHsDailyService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_zh_hs_daily", BondZhHsDailyProvider(), unique_keys=["债券代码", "date"])
+需求文档: tests/bonds/requirements/04_沪深债券历史行情.md
+数据唯一标识: 债券代码和日期
+"""
+from app.services.data_sources.base_service import BaseService
+from ..providers.bond_zh_hs_daily_provider import BondZhHsDailyProvider
+
+
+class BondZhHsDailyService(BaseService):
+    """沪深债券历史行情服务"""
+    
+    collection_name = "bond_zh_hs_daily"
+    provider_class = BondZhHsDailyProvider

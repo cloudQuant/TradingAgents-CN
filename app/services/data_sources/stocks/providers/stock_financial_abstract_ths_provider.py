@@ -1,49 +1,63 @@
 """
-Stock Financial Abstract Ths数据提供者
+关键指标-同花顺数据提供者
+
+同花顺-财务指标-主要指标
+接口: stock_financial_abstract_ths
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockFinancialAbstractThsProvider:
-    """Stock Financial Abstract Ths数据提供者"""
+class StockFinancialAbstractThsProvider(BaseProvider):
+    """关键指标-同花顺数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_financial_abstract_ths"
-        self.display_name = "Stock Financial Abstract Ths"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Financial Abstract Ths数据
-        
-        Returns:
-            DataFrame: Stock Financial Abstract Ths数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_financial_abstract_ths(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_financial_abstract_ths"
+    display_name = "关键指标-同花顺"
+    akshare_func = "stock_financial_abstract_ths"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "同花顺-财务指标-主要指标"
+    collection_route = "/stocks/collections/stock_financial_abstract_ths"
+    collection_category = "财务数据"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "indicator": "indicator"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'indicator']
+
+    # 字段信息
+    field_info = [
+        {"name": "报告期", "type": "object", "description": "-"},
+        {"name": "净利润", "type": "object", "description": "-"},
+        {"name": "净利润同比增长率", "type": "object", "description": "-"},
+        {"name": "扣非净利润", "type": "object", "description": "-"},
+        {"name": "扣非净利润同比增长率", "type": "object", "description": "-"},
+        {"name": "营业总收入", "type": "object", "description": "-"},
+        {"name": "营业总收入同比增长率", "type": "object", "description": "-"},
+        {"name": "基本每股收益", "type": "object", "description": "-"},
+        {"name": "每股净资产", "type": "object", "description": "-"},
+        {"name": "每股资本公积金", "type": "object", "description": "-"},
+        {"name": "每股未分配利润", "type": "object", "description": "-"},
+        {"name": "每股经营现金流", "type": "object", "description": "-"},
+        {"name": "销售净利率", "type": "object", "description": "-"},
+        {"name": "销售毛利率", "type": "object", "description": "-"},
+        {"name": "净资产收益率", "type": "object", "description": "-"},
+        {"name": "净资产收益率-摊薄", "type": "object", "description": "-"},
+        {"name": "营业周期", "type": "object", "description": "-"},
+        {"name": "存货周转率", "type": "object", "description": "-"},
+        {"name": "存货周转天数", "type": "object", "description": "-"},
+        {"name": "应收账款周转天数", "type": "object", "description": "-"},
+        {"name": "流动比率", "type": "object", "description": "-"},
+        {"name": "速动比率", "type": "object", "description": "-"},
+        {"name": "保守速动比率", "type": "object", "description": "-"},
+        {"name": "产权比率", "type": "object", "description": "-"},
+        {"name": "资产负债率", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

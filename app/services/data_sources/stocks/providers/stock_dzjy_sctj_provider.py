@@ -1,49 +1,36 @@
 """
-Stock Dzjy Sctj数据提供者
+市场统计数据提供者
+
+东方财富网-数据中心-大宗交易-市场统计
+接口: stock_dzjy_sctj
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockDzjySctjProvider:
-    """Stock Dzjy Sctj数据提供者"""
+class StockDzjySctjProvider(SimpleProvider):
+    """市场统计数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_dzjy_sctj"
-        self.display_name = "Stock Dzjy Sctj"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Dzjy Sctj数据
-        
-        Returns:
-            DataFrame: Stock Dzjy Sctj数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_dzjy_sctj(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_dzjy_sctj"
+    display_name = "市场统计"
+    akshare_func = "stock_dzjy_sctj"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-大宗交易-市场统计"
+    collection_route = "/stocks/collections/stock_dzjy_sctj"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "交易日期", "type": "object", "description": "-"},
+        {"name": "上证指数", "type": "float64", "description": "-"},
+        {"name": "上证指数涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "大宗交易成交总额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "溢价成交总额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "溢价成交总额占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "折价成交总额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "折价成交总额占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

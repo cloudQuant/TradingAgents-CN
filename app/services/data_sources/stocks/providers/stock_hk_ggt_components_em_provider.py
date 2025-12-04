@@ -1,49 +1,38 @@
 """
-Stock Hk Ggt Components Em数据提供者
+港股通成份股数据提供者
+
+东方财富网-行情中心-港股市场-港股通成份股
+接口: stock_hk_ggt_components_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockHkGgtComponentsEmProvider:
-    """Stock Hk Ggt Components Em数据提供者"""
+class StockHkGgtComponentsEmProvider(SimpleProvider):
+    """港股通成份股数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_hk_ggt_components_em"
-        self.display_name = "Stock Hk Ggt Components Em"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Hk Ggt Components Em数据
-        
-        Returns:
-            DataFrame: Stock Hk Ggt Components Em数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_hk_ggt_components_em(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_hk_ggt_components_em"
+    display_name = "港股通成份股"
+    akshare_func = "stock_hk_ggt_components_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-行情中心-港股市场-港股通成份股"
+    collection_route = "/stocks/collections/stock_hk_ggt_components_em"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "注意单位: HKD"},
+        {"name": "涨跌额", "type": "float64", "description": "-"},
+        {"name": "涨跌幅", "type": "float64", "description": "-"},
+        {"name": "今开", "type": "float64", "description": "-"},
+        {"name": "最高", "type": "float64", "description": "-"},
+        {"name": "最低", "type": "float64", "description": "-"},
+        {"name": "昨收", "type": "float64", "description": "-"},
+        {"name": "成交量", "type": "float64", "description": "注意单位: 股"},
+        {"name": "成交额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

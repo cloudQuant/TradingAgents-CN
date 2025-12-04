@@ -4380,3 +4380,157 @@ class BondDataService:
         except Exception as e:
             logger.error(f"❌ [{tag}] 查询失败: {e}", exc_info=True)
             return {"total": 0, "items": [], "page": page, "page_size": page_size}
+    
+    # ==================== 文件导入、远程同步、清空数据 ====================
+    
+    def _get_collection_by_name(self, collection_name: str):
+        """根据集合名称获取对应的MongoDB集合"""
+        collection_map = {
+            "bond_info_cm": self.col_info_cm,
+            "bond_info_detail_cm": self.col_basic,
+            "bond_zh_hs_spot": self.col_zh_hs_spot,
+            "bond_zh_hs_daily": self.col_zh_hs_daily,
+            "bond_zh_hs_cov_spot": self.col_zh_hs_cov_spot,
+            "bond_zh_hs_cov_daily": self.col_zh_hs_cov_daily,
+            "bond_zh_cov": self.col_zh_cov,
+            "bond_cash_summary_sse": self.col_cash_summary_sse,
+            "bond_deal_summary_sse": self.col_deal_summary_sse,
+            "bond_debt_nafmii": self.col_debt_nafmii,
+            "bond_spot_quote": self.col_spot_quote,
+            "bond_spot_deal": self.col_spot_deal,
+            "bond_zh_hs_cov_min": self.col_zh_hs_cov_min,
+            "bond_zh_hs_cov_pre_min": self.col_zh_hs_cov_pre_min,
+            "bond_zh_cov_info": self.col_zh_cov_info,
+            "bond_zh_cov_info_ths": self.col_zh_cov_info_ths,
+            "bond_cov_comparison": self.col_cov_comparison,
+            "bond_zh_cov_value_analysis": self.col_zh_cov_value_analysis,
+            "bond_sh_buy_back_em": self.col_sh_buy_back,
+            "bond_sz_buy_back_em": self.col_sz_buy_back,
+            "bond_buy_back_hist_em": self.col_buybacks_hist,
+            "bond_cb_jsl": self.col_cov_jsl,
+            "bond_cb_redeem_jsl": self.col_cov_redeem_jsl,
+            "bond_cb_index_jsl": self.col_cov_index_jsl,
+            "bond_cb_adj_logs_jsl": self.col_cov_adj_jsl,
+            "bond_china_close_return": self.col_yield_curve_hist,
+            "bond_zh_us_rate": self.col_cn_us_yield,
+            "bond_treasure_issue_cninfo": self.col_treasury_issue,
+            "bond_local_government_issue_cninfo": self.col_local_issue,
+            "bond_corporate_issue_cninfo": self.col_corporate_issue,
+            "bond_cov_issue_cninfo": self.col_cov_issue,
+            "bond_cov_stock_issue_cninfo": self.col_cov_convert,
+            "bond_new_composite_index_cbond": self.col_zh_bond_new_index,
+            "bond_composite_index_cbond": self.col_zh_bond_index,
+        }
+        return collection_map.get(collection_name) or self.db.get_collection(collection_name)
+    
+    async def import_data_from_file(self, collection_name: str, content: bytes, filename: str) -> Dict[str, Any]:
+        """从文件导入数据"""
+        import io
+        
+        try:
+            collection = self._get_collection_by_name(collection_name)
+            
+            # 根据文件类型解析
+            if filename.endswith('.csv'):
+                df = pd.read_csv(io.BytesIO(content))
+            elif filename.endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(io.BytesIO(content))
+            elif filename.endswith('.json'):
+                import json
+                data = json.loads(content.decode('utf-8'))
+                df = pd.DataFrame(data)
+            else:
+                raise ValueError(f"不支持的文件格式: {filename}")
+            
+            if df.empty:
+                return {"success": True, "inserted": 0, "message": "文件为空"}
+            
+            # 转换为字典列表并插入
+            records = df.to_dict('records')
+            current_time = datetime.now()
+            
+            for record in records:
+                record['更新时间'] = current_time
+                record['来源'] = 'file_import'
+            
+            result = await collection.insert_many(records)
+            inserted_count = len(result.inserted_ids)
+            
+            logger.info(f"✅ [文件导入] {collection_name} 导入 {inserted_count} 条数据")
+            return {"success": True, "inserted": inserted_count, "message": f"成功导入 {inserted_count} 条数据"}
+            
+        except Exception as e:
+            logger.error(f"❌ [文件导入] {collection_name} 失败: {e}", exc_info=True)
+            raise
+    
+    async def sync_data_from_remote(self, collection_name: str, sync_config: Dict[str, Any]) -> Dict[str, Any]:
+        """从远程MongoDB同步数据"""
+        try:
+            remote_host = sync_config.get("remote_host")
+            remote_collection = sync_config.get("remote_collection", collection_name)
+            batch_size = sync_config.get("batch_size", 5000)
+            remote_username = sync_config.get("remote_username")
+            remote_password = sync_config.get("remote_password")
+            remote_auth_source = sync_config.get("remote_auth_source", "admin")
+            
+            if not remote_host:
+                raise ValueError("缺少远程数据库地址")
+            
+            # 构建连接URI
+            if remote_username and remote_password:
+                remote_uri = f"mongodb://{remote_username}:{remote_password}@{remote_host}/?authSource={remote_auth_source}"
+            else:
+                remote_uri = f"mongodb://{remote_host}/"
+            
+            # 连接远程数据库
+            remote_client = AsyncIOMotorClient(remote_uri)
+            remote_db = remote_client.get_database()
+            remote_col = remote_db.get_collection(remote_collection)
+            
+            # 获取本地集合
+            local_collection = self._get_collection_by_name(collection_name)
+            
+            # 同步数据
+            synced_count = 0
+            cursor = remote_col.find({}).batch_size(batch_size)
+            
+            batch = []
+            current_time = datetime.now()
+            
+            async for doc in cursor:
+                doc.pop("_id", None)
+                doc['同步时间'] = current_time
+                doc['来源'] = 'remote_sync'
+                batch.append(doc)
+                
+                if len(batch) >= batch_size:
+                    if batch:
+                        await local_collection.insert_many(batch)
+                        synced_count += len(batch)
+                        batch = []
+            
+            # 处理剩余数据
+            if batch:
+                await local_collection.insert_many(batch)
+                synced_count += len(batch)
+            
+            remote_client.close()
+            
+            logger.info(f"✅ [远程同步] {collection_name} 同步 {synced_count} 条数据")
+            return {"success": True, "synced": synced_count, "message": f"成功同步 {synced_count} 条数据"}
+            
+        except Exception as e:
+            logger.error(f"❌ [远程同步] {collection_name} 失败: {e}", exc_info=True)
+            raise
+    
+    async def clear_bond_data(self, collection_name: str) -> int:
+        """清空指定集合的数据"""
+        try:
+            collection = self._get_collection_by_name(collection_name)
+            result = await collection.delete_many({})
+            deleted_count = result.deleted_count
+            logger.info(f"✅ [清空数据] {collection_name} 清空 {deleted_count} 条数据")
+            return deleted_count
+        except Exception as e:
+            logger.error(f"❌ [清空数据] {collection_name} 失败: {e}", exc_info=True)
+            raise

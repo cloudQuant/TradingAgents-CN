@@ -1,63 +1,25 @@
 """
-可转债价值分析数据提供者
+可转债价值分析数据提供者（重构版）
+
+数据集合名称: bond_zh_cov_value_analysis
+数据唯一标识: 可转债代码, 日期
 """
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class BondZhCovValueAnalysisProvider:
+class BondZhCovValueAnalysisProvider(BaseProvider):
     """可转债价值分析数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "bond_zh_cov_value_analysis"
-        self.display_name = "可转债价值分析"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取可转债价值分析数据
-        
-        Args:
-            symbol: 可转债代码，如"113527"
-            
-        Returns:
-            DataFrame: 可转债价值分析历史数据
-        """
-        try:
-            symbol = kwargs.get("symbol")
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            
-            logger.info(f"Fetching {self.collection_name} data for {symbol}")
-            
-            df = ak.bond_zh_cov_value_analysis(symbol=symbol)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['可转债代码'] = symbol
-            df['数据源'] = 'akshare'
-            df['接口名称'] = 'bond_zh_cov_value_analysis'
-            df['更新时间'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "bond_zh_cov_value_analysis"
+    display_name = "可转债价值分析"
+    akshare_func = "bond_zh_cov_value_analysis"
+    unique_keys = ['可转债代码', '日期']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "日期", "type": "string", "description": "日期"},
-            {"name": "收盘价", "type": "float", "description": "收盘价(元)"},
-            {"name": "纯债价值", "type": "float", "description": "纯债价值(元)"},
-            {"name": "转股价值", "type": "float", "description": "转股价值(元)"},
-            {"name": "纯债溢价率", "type": "float", "description": "纯债溢价率(%)"},
-            {"name": "转股溢价率", "type": "float", "description": "转股溢价率(%)"},
-        ]
+    collection_description = "可转债价值分析数据"
+    collection_route = "/bonds/collections/bond_zh_cov_value_analysis"
+    collection_order = 18
+    
+    field_info = [
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "来源", "type": "string", "description": "来源接口"},
+    ]

@@ -1,8 +1,7 @@
 """COMEX库存数据服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_comex_inventory_provider import FuturesComexInventoryProvider
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesComexInventoryService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_comex_inventory", FuturesComexInventoryProvider())
+
+class FuturesComexInventoryService(SimpleService):
+    """COMEX库存数据服务"""
+    collection_name = "futures_comex_inventory"

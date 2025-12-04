@@ -1,8 +1,7 @@
 """期货合约详情-新浪服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_contract_detail_provider import FuturesContractDetailProvider
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesContractDetailService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_contract_detail", FuturesContractDetailProvider())
+
+class FuturesContractDetailService(SimpleService):
+    """期货合约详情-新浪服务"""
+    collection_name = "futures_contract_detail"

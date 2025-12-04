@@ -1,8 +1,7 @@
-"""外盘品种代码表服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_hq_subscribe_exchange_symbol_provider import FuturesHqSubscribeExchangeSymbolProvider
+"""外盘-品种代码表服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesHqSubscribeExchangeSymbolService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_hq_subscribe_exchange_symbol", FuturesHqSubscribeExchangeSymbolProvider())
+
+class FuturesHqSubscribeExchangeSymbolService(SimpleService):
+    """外盘-品种代码表服务"""
+    collection_name = "futures_hq_subscribe_exchange_symbol"

@@ -1,49 +1,50 @@
 """
-Stock Main Fund Flow数据提供者
+主力净流入排名数据提供者
+
+东方财富网-数据中心-资金流向-主力净流入排名
+接口: stock_main_fund_flow
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockMainFundFlowProvider:
-    """Stock Main Fund Flow数据提供者"""
+class StockMainFundFlowProvider(BaseProvider):
+    """主力净流入排名数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_main_fund_flow"
-        self.display_name = "Stock Main Fund Flow"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Main Fund Flow数据
-        
-        Returns:
-            DataFrame: Stock Main Fund Flow数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_main_fund_flow(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_main_fund_flow"
+    display_name = "主力净流入排名"
+    akshare_func = "stock_main_fund_flow"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-资金流向-主力净流入排名"
+    collection_route = "/stocks/collections/stock_main_fund_flow"
+    collection_category = "资金流向"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "-"},
+        {"name": "今日排行榜-主力净占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "今日排行榜-今日排名", "type": "float64", "description": "-"},
+        {"name": "今日排行榜-今日涨跌", "type": "float64", "description": "注意单位: %"},
+        {"name": "5日排行榜-主力净占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "5日排行榜-5日排名", "type": "int64", "description": "-"},
+        {"name": "5日排行榜-5日涨跌", "type": "float64", "description": "注意单位: %"},
+        {"name": "10日排行榜-主力净占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "10日排行榜-10日排名", "type": "int64", "description": "-"},
+        {"name": "10日排行榜-10日涨跌", "type": "float64", "description": "注意单位: %"},
+        {"name": "所属板块", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

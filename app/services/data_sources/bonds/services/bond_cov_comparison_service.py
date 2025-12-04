@@ -1,7 +1,14 @@
-"""可转债比价表服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_cov_comparison_provider import BondCovComparisonProvider
+"""
+可转债比价表服务（重构版）
 
-class BondCovComparisonService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_cov_comparison", BondCovComparisonProvider(), unique_keys=["转债代码"])
+数据集合名称: bond_cov_comparison
+"""
+from app.services.data_sources.base_service import SimpleService
+from ..providers.bond_cov_comparison_provider import BondCovComparisonProvider
+
+
+class BondCovComparisonService(SimpleService):
+    """可转债比价表服务"""
+    
+    collection_name = "bond_cov_comparison"
+    provider_class = BondCovComparisonProvider

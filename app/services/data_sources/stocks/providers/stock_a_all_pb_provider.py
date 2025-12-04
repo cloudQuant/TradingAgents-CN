@@ -1,50 +1,35 @@
 """
 A 股等权重与中位数市净率数据提供者
+
+乐咕乐股-A 股等权重与中位数市净率
+接口: stock_a_all_pb
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockAAllPbProvider:
+class StockAAllPbProvider(SimpleProvider):
     """A 股等权重与中位数市净率数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_a_all_pb"
-        self.display_name = "A 股等权重与中位数市净率"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取A 股等权重与中位数市净率数据
-        
-        Returns:
-            DataFrame: A 股等权重与中位数市净率数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_a_all_pb(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_a_all_pb"
+    display_name = "A 股等权重与中位数市净率"
+    akshare_func = "stock_a_all_pb"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "乐咕乐股-A 股等权重与中位数市净率"
+    collection_route = "/stocks/collections/stock_a_all_pb"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "date", "type": "object", "description": "日期"},
+        {"name": "middlePB", "type": "float64", "description": "全部A股市净率中位数"},
+        {"name": "equalWeightAveragePB", "type": "float64", "description": "全部A股市净率等权平均"},
+        {"name": "close", "type": "float64", "description": "上证指数"},
+        {"name": "quantileInAllHistoryMiddlePB", "type": "float64", "description": "当前市净率中位数在历史数据上的分位数"},
+        {"name": "quantileInRecent10YearsMiddlePB", "type": "float64", "description": "当前市净率中位数在最近10年数据上的分位数"},
+        {"name": "quantileInAllHistoryEqualWeightAveragePB", "type": "float64", "description": "当前市净率等权平均在历史数据上的分位数"},
+        {"name": "quantileInRecent10YearsEqualWeightAveragePB", "type": "float64", "description": "当前市净率等权平均在最近10年数据上的分位数"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

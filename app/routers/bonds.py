@@ -23,7 +23,22 @@ from app.core.database import get_mongo_db
 from app.services.bond_data_service import BondDataService
 from app.services.bond_analysis_service import BondAnalysisService
 from app.services.collection_refresh_service import CollectionRefreshService
+from app.services.bond_refresh_service import BondRefreshService
 from app.utils.task_manager import get_task_manager
+from app.config.bond_update_config import get_collection_update_config as get_update_config
+from app.services.data_sources.bonds.collection_metadata import BOND_COLLECTION_METADATA
+from app.services.data_sources.bonds.provider_registry import get_registered_bond_providers, get_provider_class
+from app.schemas.bonds import (
+    RefreshCollectionRequest,
+    RefreshTaskResponse,
+    ClearCollectionResponse,
+    ApiResponse,
+)
+from app.exceptions.bonds import (
+    BondCollectionNotFound,
+    BondDataUpdateError,
+    BondTaskNotFound,
+)
 
 router = APIRouter(prefix="/api/bonds", tags=["bonds"])
 logger = logging.getLogger("webapi")  # 使用与其他路由一致的日志器
@@ -622,12 +637,56 @@ async def sync_bond_yield_curve(
     return {"success": True, "data": {"saved": saved, "rows": 0 if df is None else len(df)}}
 
 
+def _get_collection_definitions() -> List[Dict[str, Any]]:
+    """从动态注册获取集合定义"""
+    collections = []
+    
+    # 从元信息配置获取集合定义
+    for name, meta in BOND_COLLECTION_METADATA.items():
+        collection_info = {
+            "name": name,
+            "display_name": meta.get("display_name", name),
+            "description": meta.get("description", ""),
+            "route": meta.get("route", f"/bonds/collections/{name}"),
+            "source": meta.get("source", ""),
+            "category": meta.get("category", ""),
+            "order": meta.get("order", 999),
+        }
+        collections.append(collection_info)
+    
+    # 按order排序
+    collections.sort(key=lambda x: x.get("order", 999))
+    return collections
+
+
+def _get_provider_field_info(collection_name: str) -> List[Dict[str, Any]]:
+    """获取Provider的字段信息"""
+    try:
+        provider_cls = get_provider_class(collection_name)
+        if provider_cls:
+            field_info = getattr(provider_cls, 'field_info', [])
+            if field_info:
+                return field_info
+    except Exception as e:
+        logger.warning(f"从 provider 获取字段信息失败 {collection_name}: {e}")
+    return []
+
+
 @router.get("/collections")
 async def list_bond_collections(
     current_user: dict = Depends(get_current_user),
 ):
-    """获取所有债券相关数据集合列表及其说明"""
-    collections = [
+    """获取所有债券相关数据集合列表及其说明（使用动态注册机制）"""
+    try:
+        collections = _get_collection_definitions()
+        return {"success": True, "data": collections}
+    except Exception as e:
+        logger.error(f"获取债券集合列表失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+# 保留硬编码集合列表作为兼容（将被移除）
+_LEGACY_COLLECTIONS = [
         # 01 基础数据
         {
             "name": "bond_info_cm",
@@ -969,7 +1028,6 @@ async def list_bond_collections(
             "category": "中债指数",
         },
     ]
-    return {"success": True, "data": collections}
 
 
 @router.get("/collections/{collection_name}/update-config")
@@ -4193,3 +4251,94 @@ async def export_bond_collection_data(
     except Exception as e:
         logger.error(f"导出债券集合 {collection_name} 数据失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+
+
+# ==================== 集合管理端点（upload, sync, clear） ====================
+
+@router.post("/collections/{collection_name}/upload")
+async def upload_bond_data(
+    collection_name: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """上传债券数据文件"""
+    try:
+        if not file.filename.endswith(('.csv', '.xls', '.xlsx')):
+            return {"success": False, "error": "只支持CSV或Excel文件"}
+        
+        db = get_mongo_db()
+        service = BondDataService(db)
+        
+        # Read file content
+        content = await file.read()
+        filename = file.filename
+        
+        result = await service.import_data_from_file(collection_name, content, filename)
+        
+        return {
+            "success": True,
+            "data": result
+        }
+    except Exception as e:
+        logger.error(f"上传文件失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/collections/{collection_name}/sync")
+async def sync_bond_data(
+    collection_name: str,
+    sync_config: Dict[str, Any] = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """远程同步债券数据"""
+    try:
+        db = get_mongo_db()
+        service = BondDataService(db)
+        
+        result = await service.sync_data_from_remote(collection_name, sync_config)
+        
+        return {
+            "success": True,
+            "data": result
+        }
+    except Exception as e:
+        logger.error(f"远程同步失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@router.delete(
+    "/collections/{collection_name}/clear",
+    response_model=ClearCollectionResponse,
+    summary="清空债券数据集合",
+    description="清空指定债券集合的所有数据（危险操作，需谨慎使用）"
+)
+async def clear_bond_collection(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+) -> ClearCollectionResponse:
+    """清空债券数据集合"""
+    try:
+        # 验证集合是否存在
+        refresh_service = BondRefreshService(get_mongo_db(), current_user)
+        supported_collections = refresh_service.get_supported_collections()
+        if collection_name not in supported_collections:
+            raise BondCollectionNotFound(collection_name)
+        
+        db = get_mongo_db()
+        data_service = BondDataService(db)
+        
+        # 调用清空方法
+        deleted_count = await data_service.clear_bond_data(collection_name)
+        
+        return ClearCollectionResponse(
+            success=True,
+            data={
+                "deleted_count": deleted_count,
+                "message": f"成功清空 {deleted_count} 条数据"
+            }
+        )
+    except BondCollectionNotFound:
+        raise
+    except Exception as e:
+        logger.error(f"清空债券集合失败: {e}", exc_info=True)
+        return ClearCollectionResponse(success=False, error=str(e))

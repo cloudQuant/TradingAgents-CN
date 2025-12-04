@@ -112,6 +112,8 @@ export interface CollectionInfo {
   description: string
   route: string
   fields: string[]
+  category?: string
+  order?: number
 }
 
 export interface CollectionStatsResponse {
@@ -198,10 +200,28 @@ export const stocksApi = {
     page_size?: number
     sort_by?: string
     sort_dir?: string
-    code?: string
+    filter_field?: string
+    filter_value?: string
   } = {}) {
     return ApiClient.get<StockCollectionDataResponse>(
-      `/api/stocks/collections/${collectionName}/data`,
+      `/api/stocks/collections/${collectionName}`,
+      params,
+    )
+  },
+
+  /**
+   * 获取集合数据（兼容旧接口）
+   */
+  async getCollectionData(collectionName: string, params: {
+    page?: number
+    page_size?: number
+    sort_by?: string
+    sort_dir?: string
+    filter_field?: string
+    filter_value?: string
+  } = {}) {
+    return ApiClient.get<StockCollectionDataResponse>(
+      `/api/stocks/collections/${collectionName}`,
       params,
     )
   },
@@ -225,10 +245,21 @@ export const stocksApi = {
 
   /**
    * 查询刷新任务状态
+   * @param _collectionName 集合名称（保留用于向后兼容，实际未使用）
+   * @param taskId 任务ID
    */
-  async getRefreshStatus(collectionName: string, taskId: string) {
+  async getRefreshStatus(_collectionName: string, taskId: string) {
     return ApiClient.get<RefreshStatusResponse>(
-      `/api/stocks/collections/${collectionName}/refresh/status/${taskId}`
+      `/api/stocks/tasks/${taskId}`
+    )
+  },
+
+  /**
+   * 获取任务状态（新接口）
+   */
+  async getRefreshTaskStatus(taskId: string) {
+    return ApiClient.get<RefreshStatusResponse>(
+      `/api/stocks/tasks/${taskId}`
     )
   },
 
@@ -246,7 +277,16 @@ export const stocksApi = {
    */
   async clearCollection(collectionName: string) {
     return ApiClient.delete<{ deleted_count: number; message: string }>(
-      `/api/stocks/collections/${collectionName}/clear`
+      `/api/stocks/collections/${collectionName}`
+    )
+  },
+
+  /**
+   * 清空集合数据（新接口名称）
+   */
+  async clearCollectionData(collectionName: string) {
+    return ApiClient.delete<{ deleted_count: number; message: string }>(
+      `/api/stocks/collections/${collectionName}`
     )
   },
 

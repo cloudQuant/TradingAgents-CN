@@ -1,52 +1,27 @@
-"""
-现货与股票数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""现货与股票提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesSpotStockProvider:
-    """现货与股票数据提供者"""
+class FuturesSpotStockProvider(BaseProvider):
+    """现货与股票提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_spot_stock"
-        self.display_name = "现货与股票"
-        self.akshare_func = "futures_spot_stock"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            symbol = kwargs.get("symbol")
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            
-            logger.info(f"Fetching {self.collection_name} data, symbol={symbol}")
-            df = ak.futures_spot_stock(symbol=symbol)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_symbol'] = symbol
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_spot_stock"
+    display_name = "现货与股票"
+    akshare_func = "futures_spot_stock"
+    unique_keys = ["品种", "日期"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["查询参数_symbol", "date"]
+    collection_description = "现货与股票对比数据"
+    collection_route = "/futures/collections/futures_spot_stock"
+    collection_order = 46
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "商品名称", "type": "string", "description": "商品名称"},
-            {"name": "最新价", "type": "float", "description": "最新价"},
-            {"name": "近半年涨跌幅", "type": "string", "description": "近半年涨跌幅"},
-        ]
+    param_mapping = {"symbol": "symbol"}
+    required_params = ["symbol"]
+    add_param_columns = {"symbol": "品种"}
+    
+    field_info = [
+        {"name": "品种", "type": "string", "description": "品种名称"},
+        {"name": "日期", "type": "string", "description": "日期"},
+        {"name": "现货价格", "type": "float", "description": "现货价格"},
+        {"name": "股票价格", "type": "float", "description": "股票价格"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,8 +1,7 @@
 """中证商品指数服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_index_ccidx_provider import FuturesIndexCcidxProvider
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesIndexCcidxService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_index_ccidx", FuturesIndexCcidxProvider())
+
+class FuturesIndexCcidxService(SimpleService):
+    """中证商品指数服务"""
+    collection_name = "futures_index_ccidx"

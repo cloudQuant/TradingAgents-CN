@@ -1,50 +1,43 @@
 """
 预约披露时间-巨潮资讯数据提供者
+
+巨潮资讯-数据-预约披露的数据
+接口: stock_report_disclosure
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockReportDisclosureProvider:
+class StockReportDisclosureProvider(BaseProvider):
     """预约披露时间-巨潮资讯数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_report_disclosure"
-        self.display_name = "预约披露时间-巨潮资讯"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取预约披露时间-巨潮资讯数据
-        
-        Returns:
-            DataFrame: 预约披露时间-巨潮资讯数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_report_disclosure(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_report_disclosure"
+    display_name = "预约披露时间-巨潮资讯"
+    akshare_func = "stock_report_disclosure"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "巨潮资讯-数据-预约披露的数据"
+    collection_route = "/stocks/collections/stock_report_disclosure"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "market": "market",
+        "period": "period"
+    }
+    
+    # 必填参数
+    required_params = ['market', 'period']
+
+    # 字段信息
+    field_info = [
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "首次预约", "type": "object", "description": "-"},
+        {"name": "初次变更", "type": "object", "description": "-"},
+        {"name": "二次变更", "type": "object", "description": "-"},
+        {"name": "三次变更", "type": "object", "description": "-"},
+        {"name": "实际披露", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

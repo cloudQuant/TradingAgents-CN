@@ -1,50 +1,74 @@
 """
 历史行情数据-东财数据提供者
+
+港股-历史行情数据, 可以选择返回复权后数据, 更新频率为日频
+接口: stock_hk_hist
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockHkHistProvider:
+class StockHkHistProvider(BaseProvider):
     """历史行情数据-东财数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_hk_hist"
-        self.display_name = "历史行情数据-东财"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取历史行情数据-东财数据
-        
-        Returns:
-            DataFrame: 历史行情数据-东财数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_hk_hist(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_hk_hist"
+    display_name = "历史行情数据-东财"
+    akshare_func = "stock_hk_hist"
+    unique_keys = ['日期']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "港股-历史行情数据, 可以选择返回复权后数据, 更新频率为日频"
+    collection_route = "/stocks/collections/stock_hk_hist"
+    collection_category = "历史行情"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "period": "period",
+        "start_date": "start_date",
+        "end_date": "end_date",
+        "adjust": "adjust"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'period', 'start_date', 'end_date']
+
+    # 字段信息
+    field_info = [
+        {"name": "日期", "type": "object", "description": "-"},
+        {"name": "开盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "收盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最高", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最低", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "成交量", "type": "int64", "description": "注意单位: 股"},
+        {"name": "成交额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "振幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "换手率", "type": "float64", "description": "注意单位: %"},
+        {"name": "日期", "type": "object", "description": "-"},
+        {"name": "开盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "收盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最高", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最低", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "成交量", "type": "int64", "description": "注意单位: 股"},
+        {"name": "成交额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "振幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "换手率", "type": "float64", "description": "注意单位: %"},
+        {"name": "日期", "type": "object", "description": "-"},
+        {"name": "开盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "收盘", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最高", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "最低", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "成交量", "type": "int32", "description": "注意单位: 股"},
+        {"name": "成交额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "振幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌额", "type": "float64", "description": "注意单位: 港元"},
+        {"name": "换手率", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

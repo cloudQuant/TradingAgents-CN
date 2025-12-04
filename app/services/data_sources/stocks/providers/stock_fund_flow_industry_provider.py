@@ -1,49 +1,56 @@
 """
-Stock Fund Flow Industry数据提供者
+行业资金流数据提供者
+
+同花顺-数据中心-资金流向-行业资金流
+接口: stock_fund_flow_industry
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockFundFlowIndustryProvider:
-    """Stock Fund Flow Industry数据提供者"""
+class StockFundFlowIndustryProvider(BaseProvider):
+    """行业资金流数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_fund_flow_industry"
-        self.display_name = "Stock Fund Flow Industry"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Fund Flow Industry数据
-        
-        Returns:
-            DataFrame: Stock Fund Flow Industry数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_fund_flow_industry(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_fund_flow_industry"
+    display_name = "行业资金流"
+    akshare_func = "stock_fund_flow_industry"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "同花顺-数据中心-资金流向-行业资金流"
+    collection_route = "/stocks/collections/stock_fund_flow_industry"
+    collection_category = "资金流向"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int32", "description": "-"},
+        {"name": "行业", "type": "object", "description": "-"},
+        {"name": "行业指数", "type": "float64", "description": "-"},
+        {"name": "行业-涨跌幅", "type": "object", "description": "注意单位: %"},
+        {"name": "流入资金", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "流出资金", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "净额", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "公司家数", "type": "float64", "description": "-"},
+        {"name": "领涨股", "type": "object", "description": "-"},
+        {"name": "领涨股-涨跌幅", "type": "object", "description": "注意单位: %"},
+        {"name": "当前价", "type": "float64", "description": "-"},
+        {"name": "序号", "type": "int32", "description": "-"},
+        {"name": "行业", "type": "object", "description": "-"},
+        {"name": "公司家数", "type": "int64", "description": "-"},
+        {"name": "行业指数", "type": "float64", "description": "-"},
+        {"name": "阶段涨跌幅", "type": "object", "description": "注意单位: %"},
+        {"name": "流入资金", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "流出资金", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "净额", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

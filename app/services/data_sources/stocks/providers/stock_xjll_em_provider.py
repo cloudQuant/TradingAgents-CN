@@ -1,50 +1,47 @@
 """
 现金流量表数据提供者
+
+东方财富-数据中心-年报季报-业绩快报-现金流量表
+接口: stock_xjll_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockXjllEmProvider:
+class StockXjllEmProvider(BaseProvider):
     """现金流量表数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_xjll_em"
-        self.display_name = "现金流量表"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取现金流量表数据
-        
-        Returns:
-            DataFrame: 现金流量表数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_xjll_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_xjll_em"
+    display_name = "现金流量表"
+    akshare_func = "stock_xjll_em"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富-数据中心-年报季报-业绩快报-现金流量表"
+    collection_route = "/stocks/collections/stock_xjll_em"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "date": "date"
+    }
+    
+    # 必填参数
+    required_params = ['date']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "净现金流-净现金流", "type": "float64", "description": "注意单位: 元"},
+        {"name": "净现金流-同比增长", "type": "float64", "description": "注意单位: %"},
+        {"name": "经营性现金流-现金流量净额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "经营性现金流-净现金流占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "投资性现金流-现金流量净额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "投资性现金流-净现金流占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "融资性现金流-现金流量净额", "type": "float64", "description": "注意单位: 元"},
+        {"name": "融资性现金流-净现金流占比", "type": "float64", "description": "注意单位: %"},
+        {"name": "公告日期", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

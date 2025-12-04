@@ -1,50 +1,39 @@
 """
 赚钱效应分析数据提供者
+
+乐咕乐股网-赚钱效应分析数据
+接口: stock_market_activity_legu
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockMarketActivityLeguProvider:
+class StockMarketActivityLeguProvider(SimpleProvider):
     """赚钱效应分析数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_market_activity_legu"
-        self.display_name = "赚钱效应分析"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取赚钱效应分析数据
-        
-        Returns:
-            DataFrame: 赚钱效应分析数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_market_activity_legu(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_market_activity_legu"
+    display_name = "赚钱效应分析"
+    akshare_func = "stock_market_activity_legu"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "乐咕乐股网-赚钱效应分析数据"
+    collection_route = "/stocks/collections/stock_market_activity_legu"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "item", "type": "object", "description": "-"},
+        {"name": "value", "type": "object", "description": "-"},
+        {"name": "标题", "type": "object", "description": "-"},
+        {"name": "摘要", "type": "object", "description": "-"},
+        {"name": "发布时间", "type": "object", "description": "-"},
+        {"name": "链接", "type": "object", "description": "-"},
+        {"name": "标题", "type": "object", "description": "-"},
+        {"name": "摘要", "type": "object", "description": "-"},
+        {"name": "发布时间", "type": "object", "description": "-"},
+        {"name": "链接", "type": "object", "description": "-"},
+        {"name": "时间", "type": "object", "description": "-"},
+        {"name": "内容", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

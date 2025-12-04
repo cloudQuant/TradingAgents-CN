@@ -1,12 +1,7 @@
-"""
-郑商所期转现服务
-"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_to_spot_czce_provider import FuturesToSpotCzceProvider
+"""期转现-郑商所数据服务"""
+from app.services.data_sources.base_service import SimpleService
 
 
-class FuturesToSpotCzceService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        provider = FuturesToSpotCzceProvider()
-        super().__init__(db, "futures_to_spot_czce", provider)
+class FuturesToSpotCzceService(SimpleService):
+    """期转现-郑商所数据服务"""
+    collection_name = "futures_to_spot_czce"

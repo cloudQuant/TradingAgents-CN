@@ -1,8 +1,7 @@
-"""新加坡交易所期货服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_settlement_price_sgx_provider import FuturesSettlementPriceSgxProvider
+"""新加坡交易所期货-结算价服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesSettlementPriceSgxService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_settlement_price_sgx", FuturesSettlementPriceSgxProvider())
+
+class FuturesSettlementPriceSgxService(SimpleService):
+    """新加坡交易所期货-结算价服务"""
+    collection_name = "futures_settlement_price_sgx"

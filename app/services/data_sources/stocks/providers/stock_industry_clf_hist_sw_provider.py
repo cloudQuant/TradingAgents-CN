@@ -1,50 +1,31 @@
 """
 申万个股行业分类变动历史数据提供者
+
+申万宏源研究-行业分类-全部行业分类
+接口: stock_industry_clf_hist_sw
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockIndustryClfHistSwProvider:
+class StockIndustryClfHistSwProvider(SimpleProvider):
     """申万个股行业分类变动历史数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_industry_clf_hist_sw"
-        self.display_name = "申万个股行业分类变动历史"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取申万个股行业分类变动历史数据
-        
-        Returns:
-            DataFrame: 申万个股行业分类变动历史数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_industry_clf_hist_sw(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_industry_clf_hist_sw"
+    display_name = "申万个股行业分类变动历史"
+    akshare_func = "stock_industry_clf_hist_sw"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "申万宏源研究-行业分类-全部行业分类"
+    collection_route = "/stocks/collections/stock_industry_clf_hist_sw"
+    collection_category = "历史行情"
+
+    # 字段信息
+    field_info = [
+        {"name": "symbol", "type": "object", "description": "股票代码"},
+        {"name": "start_date", "type": "object", "description": "计入日期"},
+        {"name": "industry_code", "type": "object", "description": "申万行业代码"},
+        {"name": "update_time", "type": "object", "description": "更新日期"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

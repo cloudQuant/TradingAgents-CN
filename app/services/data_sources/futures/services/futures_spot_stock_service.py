@@ -1,8 +1,7 @@
 """现货与股票服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_spot_stock_provider import FuturesSpotStockProvider
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesSpotStockService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_spot_stock", FuturesSpotStockProvider())
+
+class FuturesSpotStockService(SimpleService):
+    """现货与股票服务"""
+    collection_name = "futures_spot_stock"

@@ -1,51 +1,28 @@
-"""
-期货合约详情-新浪提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""期货合约详情-新浪提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesContractDetailProvider:
+class FuturesContractDetailProvider(BaseProvider):
     """期货合约详情-新浪提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_contract_detail"
-        self.display_name = "期货合约详情-新浪"
-        self.akshare_func = "futures_contract_detail"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            symbol = kwargs.get("symbol")
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            
-            logger.info(f"Fetching {self.collection_name} data, symbol={symbol}")
-            df = ak.futures_contract_detail(symbol=symbol)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_symbol'] = symbol
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_contract_detail"
+    display_name = "期货合约详情-新浪"
+    akshare_func = "futures_contract_detail"
+    unique_keys = ["symbol"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["查询参数_symbol"]
+    collection_description = "期货合约详情(新浪)"
+    collection_route = "/futures/collections/futures_contract_detail"
+    collection_order = 43
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "item", "type": "string", "description": "项目"},
-            {"name": "value", "type": "string", "description": "值"},
-        ]
+    param_mapping = {"symbol": "symbol"}
+    required_params = ["symbol"]
+    add_param_columns = {"symbol": "合约代码"}
+    
+    field_info = [
+        {"name": "合约代码", "type": "string", "description": "合约代码"},
+        {"name": "合约名称", "type": "string", "description": "合约名称"},
+        {"name": "交易单位", "type": "string", "description": "交易单位"},
+        {"name": "最小变动价位", "type": "string", "description": "最小变动价位"},
+        {"name": "交割月份", "type": "string", "description": "交割月份"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

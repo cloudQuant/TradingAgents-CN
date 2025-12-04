@@ -1,8 +1,7 @@
-"""生猪成本数据服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_hog_cost_provider import FuturesHogCostProvider
+"""生猪-成本维度服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesHogCostService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_hog_cost", FuturesHogCostProvider())
+
+class FuturesHogCostService(SimpleService):
+    """生猪-成本维度服务"""
+    collection_name = "futures_hog_cost"

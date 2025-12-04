@@ -1,49 +1,51 @@
 """
-Stock Hsgt Hold Stock Em数据提供者
+个股排行数据提供者
+
+东方财富网-数据中心-沪深港通持股-个股排行
+接口: stock_hsgt_hold_stock_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockHsgtHoldStockEmProvider:
-    """Stock Hsgt Hold Stock Em数据提供者"""
+class StockHsgtHoldStockEmProvider(BaseProvider):
+    """个股排行数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_hsgt_hold_stock_em"
-        self.display_name = "Stock Hsgt Hold Stock Em"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Hsgt Hold Stock Em数据
-        
-        Returns:
-            DataFrame: Stock Hsgt Hold Stock Em数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_hsgt_hold_stock_em(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_hsgt_hold_stock_em"
+    display_name = "个股排行"
+    akshare_func = "stock_hsgt_hold_stock_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-沪深港通持股-个股排行"
+    collection_route = "/stocks/collections/stock_hsgt_hold_stock_em"
+    collection_category = "沪深港通"
+
+    # 参数映射
+    param_mapping = {
+        "market": "market",
+        "indicator": "indicator"
+    }
+    
+    # 必填参数
+    required_params = ['market', 'indicator']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int32", "description": "-"},
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "今日收盘价", "type": "float64", "description": "-"},
+        {"name": "今日涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "今日持股-股数", "type": "float64", "description": "注意单位: 万"},
+        {"name": "今日持股-市值", "type": "float64", "description": "注意单位: 万"},
+        {"name": "今日持股-占流通股比", "type": "float64", "description": "注意单位: %"},
+        {"name": "今日持股-占总股本比", "type": "float64", "description": "注意单位: %"},
+        {"name": "增持估计-股数", "type": "float64", "description": "注意单位: 万; 主要字段名根据 indicator 变化"},
+        {"name": "增持估计-市值", "type": "float64", "description": "注意单位: 万; 主要字段名根据 indicator 变化"},
+        {"name": "增持估计-市值增幅", "type": "object", "description": "注意单位: %; 主要字段名根据 indicator 变化"},
+        {"name": "增持估计-占流通股比", "type": "float64", "description": "注意单位: ‰; 主要字段名根据 indicator 变化"},
+        {"name": "增持估计-占总股本比", "type": "float64", "description": "注意单位: ‰; 主要字段名根据 indicator 变化"},
+        {"name": "所属板块", "type": "object", "description": "-"},
+        {"name": "日期", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,49 +1,38 @@
 """
-Stock Cash Flow Sheet By Quarterly Em数据提供者
+现金流量表-按单季度数据提供者
+
+东方财富-股票-财务分析-现金流量表-按单季度
+接口: stock_cash_flow_sheet_by_quarterly_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockCashFlowSheetByQuarterlyEmProvider:
-    """Stock Cash Flow Sheet By Quarterly Em数据提供者"""
+class StockCashFlowSheetByQuarterlyEmProvider(BaseProvider):
+    """现金流量表-按单季度数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_cash_flow_sheet_by_quarterly_em"
-        self.display_name = "Stock Cash Flow Sheet By Quarterly Em"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Cash Flow Sheet By Quarterly Em数据
-        
-        Returns:
-            DataFrame: Stock Cash Flow Sheet By Quarterly Em数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_cash_flow_sheet_by_quarterly_em(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_cash_flow_sheet_by_quarterly_em"
+    display_name = "现金流量表-按单季度"
+    akshare_func = "stock_cash_flow_sheet_by_quarterly_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富-股票-财务分析-现金流量表-按单季度"
+    collection_route = "/stocks/collections/stock_cash_flow_sheet_by_quarterly_em"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "-", "type": "-", "description": "315 项，不逐一列出"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

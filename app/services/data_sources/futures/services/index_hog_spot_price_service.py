@@ -1,8 +1,7 @@
 """生猪市场价格指数服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.index_hog_spot_price_provider import IndexHogSpotPriceProvider
+from app.services.data_sources.base_service import SimpleService
 
-class IndexHogSpotPriceService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "index_hog_spot_price", IndexHogSpotPriceProvider())
+
+class IndexHogSpotPriceService(SimpleService):
+    """生猪市场价格指数服务"""
+    collection_name = "index_hog_spot_price"

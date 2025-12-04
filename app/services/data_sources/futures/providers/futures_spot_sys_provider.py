@@ -1,66 +1,29 @@
-"""
-现期图数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""现期图数据提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesSpotSysProvider:
+class FuturesSpotSysProvider(BaseProvider):
     """现期图数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_spot_sys"
-        self.display_name = "现期图"
-        self.akshare_func = "futures_spot_sys"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取现期图数据
-        
-        Args:
-            symbol: 品种代码（必需）
-            indicator: 合约代码/指标（必需）
-        """
-        try:
-            symbol = kwargs.get("symbol")
-            indicator = kwargs.get("indicator") or kwargs.get("contract")
-            
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            if not indicator:
-                raise ValueError("缺少必须参数: indicator")
-            
-            logger.info(f"Fetching {self.collection_name} data, symbol={symbol}, indicator={indicator}")
-            
-            df = ak.futures_spot_sys(symbol=symbol, contract=indicator)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned for symbol={symbol}, indicator={indicator}")
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_symbol'] = symbol
-            df['查询参数_indicator'] = indicator
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_spot_sys"
+    display_name = "现期图"
+    akshare_func = "futures_spot_sys"
+    unique_keys = ["日期", "品种", "合约"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["日期", "查询参数_symbol", "查询参数_indicator"]
+    collection_description = "期货现期图数据"
+    collection_route = "/futures/collections/futures_spot_sys"
+    collection_order = 22
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "日期", "type": "string", "description": "日期"},
-            {"name": "主力基差", "type": "float", "description": "主力基差"},
-        ]
+    param_mapping = {"symbol": "symbol", "indicator": "indicator"}
+    required_params = ["symbol", "indicator"]
+    add_param_columns = {"symbol": "品种", "indicator": "合约"}
+    
+    field_info = [
+        {"name": "日期", "type": "string", "description": "日期"},
+        {"name": "品种", "type": "string", "description": "品种名称"},
+        {"name": "合约", "type": "string", "description": "合约类型"},
+        {"name": "现货价格", "type": "float", "description": "现货价格"},
+        {"name": "期货价格", "type": "float", "description": "期货价格"},
+        {"name": "基差", "type": "float", "description": "基差"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

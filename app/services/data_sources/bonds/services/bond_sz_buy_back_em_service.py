@@ -1,7 +1,14 @@
-"""深证质押式回购服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_sz_buy_back_em_provider import BondSzBuyBackEmProvider
+"""
+深证质押式回购服务（重构版）
 
-class BondSzBuyBackEmService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_sz_buy_back_em", BondSzBuyBackEmProvider(), unique_keys=["代码"])
+数据集合名称: bond_sz_buy_back_em
+"""
+from app.services.data_sources.base_service import SimpleService
+from ..providers.bond_sz_buy_back_em_provider import BondSzBuyBackEmProvider
+
+
+class BondSzBuyBackEmService(SimpleService):
+    """深证质押式回购服务"""
+    
+    collection_name = "bond_sz_buy_back_em"
+    provider_class = BondSzBuyBackEmProvider

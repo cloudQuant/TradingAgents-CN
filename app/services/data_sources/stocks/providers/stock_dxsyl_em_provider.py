@@ -1,50 +1,43 @@
 """
 打新收益率数据提供者
+
+东方财富网-数据中心-新股申购-打新收益率
+接口: stock_dxsyl_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockDxsylEmProvider:
+class StockDxsylEmProvider(SimpleProvider):
     """打新收益率数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_dxsyl_em"
-        self.display_name = "打新收益率"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取打新收益率数据
-        
-        Returns:
-            DataFrame: 打新收益率数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_dxsyl_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_dxsyl_em"
+    display_name = "打新收益率"
+    akshare_func = "stock_dxsyl_em"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-新股申购-打新收益率"
+    collection_route = "/stocks/collections/stock_dxsyl_em"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "发行价", "type": "float64", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "-"},
+        {"name": "网上发行中签率", "type": "float64", "description": "注意单位: %"},
+        {"name": "网上有效申购股数", "type": "int64", "description": "-"},
+        {"name": "网上有效申购户数", "type": "int64", "description": "注意单位: 户"},
+        {"name": "网上超额认购倍数", "type": "float64", "description": "-"},
+        {"name": "网下配售中签率", "type": "float64", "description": "注意单位: %"},
+        {"name": "网下有效申购股数", "type": "int64", "description": "-"},
+        {"name": "网下有效申购户数", "type": "int64", "description": "注意单位: 户"},
+        {"name": "网下配售认购倍数", "type": "float64", "description": "-"},
+        {"name": "总发行数量", "type": "int64", "description": "-"},
+        {"name": "开盘溢价", "type": "float64", "description": "-"},
+        {"name": "首日涨幅", "type": "float64", "description": "-"},
+        {"name": "上市日期", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

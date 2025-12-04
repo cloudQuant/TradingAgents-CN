@@ -1,50 +1,39 @@
 """
 同花顺-同花顺行业一览表数据提供者
+
+同花顺-同花顺行业一览表
+接口: stock_board_industry_summary_ths
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockBoardIndustrySummaryThsProvider:
+class StockBoardIndustrySummaryThsProvider(SimpleProvider):
     """同花顺-同花顺行业一览表数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_board_industry_summary_ths"
-        self.display_name = "同花顺-同花顺行业一览表"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取同花顺-同花顺行业一览表数据
-        
-        Returns:
-            DataFrame: 同花顺-同花顺行业一览表数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_board_industry_summary_ths(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_board_industry_summary_ths"
+    display_name = "同花顺-同花顺行业一览表"
+    akshare_func = "stock_board_industry_summary_ths"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "同花顺-同花顺行业一览表"
+    collection_route = "/stocks/collections/stock_board_industry_summary_ths"
+    collection_category = "板块数据"
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "板块", "type": "object", "description": "-"},
+        {"name": "涨跌幅", "type": "object", "description": "注意单位: %"},
+        {"name": "总成交量", "type": "float64", "description": "注意单位: 万手"},
+        {"name": "总成交额", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "净流入", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "上涨家数", "type": "float64", "description": "-"},
+        {"name": "下跌家数", "type": "float64", "description": "-"},
+        {"name": "均价", "type": "float64", "description": "-"},
+        {"name": "领涨股", "type": "float64", "description": "-"},
+        {"name": "领涨股-最新价", "type": "object", "description": "-"},
+        {"name": "领涨股-涨跌幅", "type": "object", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,50 +1,38 @@
 """
 增发数据提供者
+
+东方财富网-数据中心-新股数据-增发-全部增发
+接口: stock_qbzf_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockQbzfEmProvider:
+class StockQbzfEmProvider(SimpleProvider):
     """增发数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_qbzf_em"
-        self.display_name = "增发"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取增发数据
-        
-        Returns:
-            DataFrame: 增发数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_qbzf_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_qbzf_em"
+    display_name = "增发"
+    akshare_func = "stock_qbzf_em"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-新股数据-增发-全部增发"
+    collection_route = "/stocks/collections/stock_qbzf_em"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "增发代码", "type": "object", "description": "-"},
+        {"name": "发行方式", "type": "object", "description": "-"},
+        {"name": "发行总数", "type": "int64", "description": "注意单位: 股"},
+        {"name": "网上发行", "type": "object", "description": "注意单位: 股"},
+        {"name": "发行价格", "type": "float64", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "-"},
+        {"name": "发行日期", "type": "object", "description": "-"},
+        {"name": "增发上市日期", "type": "object", "description": "-"},
+        {"name": "锁定期", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

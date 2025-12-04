@@ -1,49 +1,34 @@
 """
-Stock History Dividend数据提供者
+历史分红数据提供者
+
+新浪财经-发行与分配-历史分红
+接口: stock_history_dividend
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockHistoryDividendProvider:
-    """Stock History Dividend数据提供者"""
+class StockHistoryDividendProvider(SimpleProvider):
+    """历史分红数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_history_dividend"
-        self.display_name = "Stock History Dividend"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock History Dividend数据
-        
-        Returns:
-            DataFrame: Stock History Dividend数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_history_dividend(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_history_dividend"
+    display_name = "历史分红"
+    akshare_func = "stock_history_dividend"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "新浪财经-发行与分配-历史分红"
+    collection_route = "/stocks/collections/stock_history_dividend"
+    collection_category = "历史行情"
+
+    # 字段信息
+    field_info = [
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "上市日期", "type": "object", "description": "-"},
+        {"name": "累计股息", "type": "float64", "description": "注意单位: %"},
+        {"name": "年均股息", "type": "float64", "description": "注意单位: %"},
+        {"name": "分红次数", "type": "float64", "description": "-"},
+        {"name": "融资总额", "type": "float64", "description": "注意单位: 亿"},
+        {"name": "融资次数", "type": "float64", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

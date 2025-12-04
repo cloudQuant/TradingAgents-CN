@@ -1,8 +1,7 @@
-"""中国金融期货交易所合约信息服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_contract_info_cffex_provider import FuturesContractInfoCffexProvider
+"""中国金融期货交易所-合约信息数据服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesContractInfoCffexService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_contract_info_cffex", FuturesContractInfoCffexProvider())
+
+class FuturesContractInfoCffexService(SimpleService):
+    """中国金融期货交易所-合约信息数据服务"""
+    collection_name = "futures_contract_info_cffex"

@@ -1,12 +1,7 @@
-"""
-广州期货交易所持仓排名服务
-"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_gfex_position_rank_provider import FuturesGfexPositionRankProvider
+"""广州期货交易所-持仓排名数据服务"""
+from app.services.data_sources.base_service import SimpleService
 
 
-class FuturesGfexPositionRankService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        provider = FuturesGfexPositionRankProvider()
-        super().__init__(db, "futures_gfex_position_rank", provider)
+class FuturesGfexPositionRankService(SimpleService):
+    """广州期货交易所-持仓排名数据服务"""
+    collection_name = "futures_gfex_position_rank"

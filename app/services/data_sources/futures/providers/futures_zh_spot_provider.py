@@ -1,56 +1,29 @@
-"""
-内盘实时行情数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""内盘-实时行情数据提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesZhSpotProvider:
-    """内盘实时行情数据提供者"""
+class FuturesZhSpotProvider(BaseProvider):
+    """内盘-实时行情数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_zh_spot"
-        self.display_name = "内盘-实时行情数据"
-        self.akshare_func = "futures_zh_spot"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            symbol = kwargs.get("symbol")
-            market = kwargs.get("market", "CF")
-            adjust = kwargs.get("adjust", "0")
-            
-            logger.info(f"Fetching {self.collection_name} data, market={market}")
-            df = ak.futures_zh_spot(subscribe_list=symbol, market=market, adjust=adjust)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_market'] = market
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_zh_spot"
+    display_name = "内盘-实时行情数据"
+    akshare_func = "futures_zh_spot"
+    unique_keys = ["symbol"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["symbol", "time"]
+    collection_description = "内盘期货实时行情数据"
+    collection_route = "/futures/collections/futures_zh_spot"
+    collection_order = 29
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "symbol", "type": "string", "description": "合约代码"},
-            {"name": "time", "type": "string", "description": "时间"},
-            {"name": "open", "type": "float", "description": "开盘价"},
-            {"name": "high", "type": "float", "description": "最高价"},
-            {"name": "low", "type": "float", "description": "最低价"},
-            {"name": "current_price", "type": "float", "description": "当前价"},
-            {"name": "volume", "type": "int", "description": "成交量"},
-        ]
+    param_mapping = {"market": "subscribe_exchange"}
+    required_params = []
+    
+    field_info = [
+        {"name": "symbol", "type": "string", "description": "合约代码"},
+        {"name": "name", "type": "string", "description": "合约名称"},
+        {"name": "open", "type": "float", "description": "开盘价"},
+        {"name": "high", "type": "float", "description": "最高价"},
+        {"name": "low", "type": "float", "description": "最低价"},
+        {"name": "close", "type": "float", "description": "收盘价"},
+        {"name": "volume", "type": "float", "description": "成交量"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

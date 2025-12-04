@@ -1,70 +1,43 @@
 """
-债券基础信息详情数据提供者
+债券基础信息-中国外汇交易中心数据提供者（重构版：继承BaseProvider）
+
+需求文档: tests/bonds/requirements/02_债券基础信息-中国外汇交易中心.md
+数据唯一标识: 债券代码
 """
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class BondInfoDetailCmProvider:
-    """债券基础信息详情数据提供者"""
+class BondInfoDetailCmProvider(BaseProvider):
+    """债券基础信息-中国外汇交易中心数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "bond_info_detail_cm"
-        self.display_name = "债券基础信息"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """获取债券基础信息详情"""
-        try:
-            bond_code = kwargs.get("bond_code") or kwargs.get("symbol")
-            if not bond_code:
-                raise ValueError("缺少必须参数: bond_code")
-            
-            logger.info(f"Fetching {self.collection_name} data for {bond_code}")
-            
-            df = ak.bond_info_detail_cm(symbol=str(bond_code))
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned for {bond_code}")
-                return pd.DataFrame()
-            
-            df['查询代码'] = bond_code
-            df['数据源'] = 'akshare'
-            df['接口名称'] = 'bond_info_detail_cm'
-            df['更新时间'] = datetime.now()
-            
-            logger.info(f"Successfully fetched data for {bond_code}")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 基本属性
+    collection_name = "bond_info_detail_cm"
+    display_name = "债券基础信息-中国外汇交易中心"
+    akshare_func = "bond_info_detail_cm"
+    unique_keys = ["债券代码"]  # 以债券代码作为唯一标识
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息（完整的债券基础信息字段）"""
-        return [
-            {"name": "债券简称", "type": "string", "description": "债券简称"},
-            {"name": "债券全称", "type": "string", "description": "债券全称"},
-            {"name": "债券类型", "type": "string", "description": "债券类型"},
-            {"name": "发行人/受托机构", "type": "string", "description": "发行人"},
-            {"name": "计息方式", "type": "string", "description": "计息方式"},
-            {"name": "计息基准", "type": "string", "description": "计息基准"},
-            {"name": "付息频率", "type": "string", "description": "付息频率"},
-            {"name": "起息日", "type": "string", "description": "起息日"},
-            {"name": "到期日", "type": "string", "description": "到期日"},
-            {"name": "票面利率(%)", "type": "float", "description": "票面利率"},
-            {"name": "参考收益率(%)", "type": "float", "description": "参考收益率"},
-            {"name": "发行价格", "type": "float", "description": "发行价格"},
-            {"name": "面值(元)", "type": "float", "description": "面值"},
-            {"name": "发行总量(亿元)", "type": "float", "description": "发行总量"},
-            {"name": "债项评级", "type": "string", "description": "债项评级"},
-            {"name": "主体评级", "type": "string", "description": "主体评级"},
-            {"name": "评级机构", "type": "string", "description": "评级机构"},
-            {"name": "主承销商", "type": "string", "description": "主承销商"},
-            {"name": "托管机构", "type": "string", "description": "托管机构"},
-            {"name": "交易市场", "type": "string", "description": "交易市场"},
-        ]
+    # 参数映射
+    param_mapping = {
+        "bond_code": "symbol",
+        "symbol": "symbol",
+        "code": "symbol",
+    }
+    required_params = ["symbol"]
+    add_param_columns = {"symbol": "债券代码"}
+    
+    # 元信息
+    collection_description = "债券详细信息，包括发行条款、评级等详细数据"
+    collection_route = "/bonds/collections/bond_info_detail_cm"
+    collection_order = 2
+    
+    # 字段信息
+    field_info = [
+        {"name": "债券代码", "type": "string", "description": "债券代码（查询参数）"},
+        {"name": "item", "type": "string", "description": "信息项"},
+        {"name": "value", "type": "string", "description": "信息值"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "更新人", "type": "string", "description": "数据更新人"},
+        {"name": "创建时间", "type": "datetime", "description": "数据创建时间"},
+        {"name": "创建人", "type": "string", "description": "数据创建人"},
+        {"name": "来源", "type": "string", "description": "来源接口"},
+    ]

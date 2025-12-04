@@ -1,49 +1,52 @@
 """
-Stock Research Report Em数据提供者
+个股研报数据提供者
+
+东方财富网-数据中心-研究报告-个股研报
+接口: stock_research_report_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockResearchReportEmProvider:
-    """Stock Research Report Em数据提供者"""
+class StockResearchReportEmProvider(BaseProvider):
+    """个股研报数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_research_report_em"
-        self.display_name = "Stock Research Report Em"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Research Report Em数据
-        
-        Returns:
-            DataFrame: Stock Research Report Em数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_research_report_em(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_research_report_em"
+    display_name = "个股研报"
+    akshare_func = "stock_research_report_em"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-研究报告-个股研报"
+    collection_route = "/stocks/collections/stock_research_report_em"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "东财评级", "type": "object", "description": "-"},
+        {"name": "机构", "type": "object", "description": "-"},
+        {"name": "近一月个股研报数", "type": "int64", "description": "-"},
+        {"name": "2024-盈利预测-收益", "type": "float64", "description": "-"},
+        {"name": "2024-盈利预测-市盈率", "type": "float64", "description": "-"},
+        {"name": "2025-盈利预测-收益", "type": "float64", "description": "-"},
+        {"name": "2025-盈利预测-市盈率", "type": "float64", "description": "-"},
+        {"name": "2026-盈利预测-收益", "type": "float64", "description": "-"},
+        {"name": "2026-盈利预测-市盈率", "type": "float64", "description": "-"},
+        {"name": "行业", "type": "object", "description": "-"},
+        {"name": "日期", "type": "object", "description": "-"},
+        {"name": "报告PDF链接", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

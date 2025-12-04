@@ -1,7 +1,14 @@
-"""可转债转股服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_cov_stock_issue_cninfo_provider import BondCovStockIssueCninfoProvider
+"""
+可转债转股服务（重构版）
 
-class BondCovStockIssueCninfoService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_cov_stock_issue_cninfo", BondCovStockIssueCninfoProvider(), unique_keys=["债券简称"])
+数据集合名称: bond_cov_stock_issue_cninfo
+"""
+from app.services.data_sources.base_service import SimpleService
+from ..providers.bond_cov_stock_issue_cninfo_provider import BondCovStockIssueCninfoProvider
+
+
+class BondCovStockIssueCninfoService(SimpleService):
+    """可转债转股服务"""
+    
+    collection_name = "bond_cov_stock_issue_cninfo"
+    provider_class = BondCovStockIssueCninfoProvider

@@ -1,7 +1,14 @@
-"""债券现券市场概览服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_cash_summary_sse_provider import BondCashSummarySseProvider
+"""
+债券现券市场概览-上交所服务（重构版）
 
-class BondCashSummarySseService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_cash_summary_sse", BondCashSummarySseProvider(), unique_keys=["查询日期", "债券现货"])
+数据集合名称: bond_cash_summary_sse
+"""
+from app.services.data_sources.base_service import BaseService
+from ..providers.bond_cash_summary_sse_provider import BondCashSummarySseProvider
+
+
+class BondCashSummarySseService(BaseService):
+    """债券现券市场概览-上交所服务"""
+    
+    collection_name = "bond_cash_summary_sse"
+    provider_class = BondCashSummarySseProvider

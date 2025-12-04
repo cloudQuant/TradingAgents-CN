@@ -1,50 +1,49 @@
 """
 行业市盈率数据提供者
+
+巨潮资讯-数据中心-行业分析-行业市盈率
+接口: stock_industry_pe_ratio_cninfo
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockIndustryPeRatioCninfoProvider:
+class StockIndustryPeRatioCninfoProvider(BaseProvider):
     """行业市盈率数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_industry_pe_ratio_cninfo"
-        self.display_name = "行业市盈率"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取行业市盈率数据
-        
-        Returns:
-            DataFrame: 行业市盈率数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_industry_pe_ratio_cninfo(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_industry_pe_ratio_cninfo"
+    display_name = "行业市盈率"
+    akshare_func = "stock_industry_pe_ratio_cninfo"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "巨潮资讯-数据中心-行业分析-行业市盈率"
+    collection_route = "/stocks/collections/stock_industry_pe_ratio_cninfo"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "date": "date"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'date']
+
+    # 字段信息
+    field_info = [
+        {"name": "变动日期", "type": "object", "description": "-"},
+        {"name": "行业分类", "type": "object", "description": "-"},
+        {"name": "行业层级", "type": "int64", "description": "-"},
+        {"name": "行业编码", "type": "object", "description": "-"},
+        {"name": "公司数量", "type": "float64", "description": "-"},
+        {"name": "纳入计算公司数量", "type": "float64", "description": "-"},
+        {"name": "总市值-静态", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "净利润-静态", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "静态市盈率-加权平均", "type": "float64", "description": "-"},
+        {"name": "静态市盈率-中位数", "type": "float64", "description": "-"},
+        {"name": "静态市盈率-算术平均", "type": "float64", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

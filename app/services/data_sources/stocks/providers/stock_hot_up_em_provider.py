@@ -1,50 +1,33 @@
 """
 飙升榜-A股数据提供者
+
+东方财富-个股人气榜-飙升榜
+接口: stock_hot_up_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockHotUpEmProvider:
+class StockHotUpEmProvider(SimpleProvider):
     """飙升榜-A股数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_hot_up_em"
-        self.display_name = "飙升榜-A股"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取飙升榜-A股数据
-        
-        Returns:
-            DataFrame: 飙升榜-A股数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_hot_up_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_hot_up_em"
+    display_name = "飙升榜-A股"
+    akshare_func = "stock_hot_up_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富-个股人气榜-飙升榜"
+    collection_route = "/stocks/collections/stock_hot_up_em"
+    collection_category = "热门排行"
+
+    # 字段信息
+    field_info = [
+        {"name": "排名较昨日变动", "type": "int64", "description": "-"},
+        {"name": "当前排名", "type": "int64", "description": "-"},
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "-"},
+        {"name": "涨跌额", "type": "float64", "description": "-"},
+        {"name": "涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,50 +1,41 @@
 """
 盘口异动数据提供者
+
+东方财富-行情中心-盘口异动数据
+接口: stock_changes_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockChangesEmProvider:
+class StockChangesEmProvider(BaseProvider):
     """盘口异动数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_changes_em"
-        self.display_name = "盘口异动"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取盘口异动数据
-        
-        Returns:
-            DataFrame: 盘口异动数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_changes_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_changes_em"
+    display_name = "盘口异动"
+    akshare_func = "stock_changes_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富-行情中心-盘口异动数据"
+    collection_route = "/stocks/collections/stock_changes_em"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "时间", "type": "object", "description": "-"},
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "板块", "type": "object", "description": "-"},
+        {"name": "相关信息", "type": "object", "description": "注意: 不同的 symbol 的单位不同"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

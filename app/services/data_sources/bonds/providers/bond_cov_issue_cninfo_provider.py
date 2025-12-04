@@ -1,71 +1,25 @@
 """
-可转债发行数据提供者
+可转债发行数据提供者（重构版）
+
+数据集合名称: bond_cov_issue_cninfo
+数据唯一标识: 债券代码
 """
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class BondCovIssueCninfoProvider:
+class BondCovIssueCninfoProvider(SimpleProvider):
     """可转债发行数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "bond_cov_issue_cninfo"
-        self.display_name = "可转债发行"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """获取可转债发行数据"""
-        try:
-            start_date = kwargs.get("start_date", "")
-            end_date = kwargs.get("end_date", "")
-            
-            logger.info(f"Fetching {self.collection_name} data")
-            
-            df = ak.bond_cov_issue_cninfo(start_date=start_date, end_date=end_date)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['数据源'] = 'akshare'
-            df['接口名称'] = 'bond_cov_issue_cninfo'
-            df['更新时间'] = datetime.now()
-            
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "bond_cov_issue_cninfo"
+    display_name = "可转债发行"
+    akshare_func = "bond_cov_issue_cninfo"
+    unique_keys = ['债券代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "债券代码", "type": "string", "description": "债券代码"},
-            {"name": "债券简称", "type": "string", "description": "债券简称"},
-            {"name": "公告日期", "type": "string", "description": "公告日期"},
-            {"name": "发行起始日", "type": "string", "description": "发行起始日"},
-            {"name": "发行终止日", "type": "string", "description": "发行终止日"},
-            {"name": "计划发行总量", "type": "float", "description": "计划发行总量(万元)"},
-            {"name": "实际发行总量", "type": "float", "description": "实际发行总量(万元)"},
-            {"name": "发行面值", "type": "int", "description": "发行面值(元)"},
-            {"name": "发行价格", "type": "float", "description": "发行价格(元)"},
-            {"name": "发行方式", "type": "string", "description": "发行方式"},
-            {"name": "发行对象", "type": "string", "description": "发行对象"},
-            {"name": "发行范围", "type": "string", "description": "发行范围"},
-            {"name": "承销方式", "type": "string", "description": "承销方式"},
-            {"name": "募资用途说明", "type": "string", "description": "募资用途说明"},
-            {"name": "初始转股价格", "type": "float", "description": "初始转股价格(元)"},
-            {"name": "转股开始日期", "type": "string", "description": "转股开始日期"},
-            {"name": "转股终止日期", "type": "string", "description": "转股终止日期"},
-            {"name": "网上申购日期", "type": "string", "description": "网上申购日期"},
-            {"name": "网上申购代码", "type": "string", "description": "网上申购代码"},
-            {"name": "网上申购简称", "type": "string", "description": "网上申购简称"},
-            {"name": "网上申购数量上限", "type": "float", "description": "网上申购数量上限(万元)"},
-            {"name": "网上申购数量下限", "type": "float", "description": "网上申购数量下限(万元)"},
-            {"name": "转股代码", "type": "string", "description": "转股代码"},
-            {"name": "交易市场", "type": "string", "description": "交易市场"},
-            {"name": "债券名称", "type": "string", "description": "债券名称"},
-        ]
+    collection_description = "可转债发行数据"
+    collection_route = "/bonds/collections/bond_cov_issue_cninfo"
+    collection_order = 31
+    
+    field_info = [
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+        {"name": "来源", "type": "string", "description": "来源接口"},
+    ]

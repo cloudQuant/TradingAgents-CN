@@ -42,6 +42,7 @@ from app.routers import futures as futures_router
 from app.routers import options as options_router
 from app.routers import currencies as currencies_router
 from app.routers import cryptos as cryptos_router
+from app.routers import stock_collections as stock_collections_router
 
 from app.services.basics_sync_service import get_basics_sync_service
 from app.services.multi_source_basics_sync_service import MultiSourceBasicsSyncService
@@ -1042,6 +1043,7 @@ app.include_router(screening.router, prefix="/api/screening", tags=["screening"]
 app.include_router(queue.router, prefix="/api/queue", tags=["queue"])
 app.include_router(favorites.router, prefix="/api", tags=["favorites"])
 app.include_router(stocks_router.router, prefix="/api", tags=["stocks"])
+app.include_router(stock_collections_router.router)  # 新的股票数据集合API
 app.include_router(multi_market_stocks_router.router, prefix="/api", tags=["multi-market"])
 app.include_router(stock_data_router.router, tags=["stock-data"])
 app.include_router(stock_sync_router.router, tags=["stock-sync"])

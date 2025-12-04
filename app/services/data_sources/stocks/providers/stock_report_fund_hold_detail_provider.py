@@ -1,50 +1,45 @@
 """
 基金持股明细数据提供者
+
+东方财富网-数据中心-主力数据-基金持仓-基金持仓明细表
+接口: stock_report_fund_hold_detail
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockReportFundHoldDetailProvider:
+class StockReportFundHoldDetailProvider(BaseProvider):
     """基金持股明细数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_report_fund_hold_detail"
-        self.display_name = "基金持股明细"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取基金持股明细数据
-        
-        Returns:
-            DataFrame: 基金持股明细数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_report_fund_hold_detail(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_report_fund_hold_detail"
+    display_name = "基金持股明细"
+    akshare_func = "stock_report_fund_hold_detail"
+    unique_keys = ['股票代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-主力数据-基金持仓-基金持仓明细表"
+    collection_route = "/stocks/collections/stock_report_fund_hold_detail"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "date": "date"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'date']
+
+    # 字段信息
+    field_info = [
+        {"name": "序号", "type": "int64", "description": "-"},
+        {"name": "股票代码", "type": "object", "description": "-"},
+        {"name": "股票简称", "type": "object", "description": "-"},
+        {"name": "持股数", "type": "int64", "description": "注意单位: 股"},
+        {"name": "持股市值", "type": "float64", "description": "注意单位: 元"},
+        {"name": "占总股本比例", "type": "float64", "description": "注意单位: %"},
+        {"name": "占流通股本比例", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,53 +1,27 @@
-"""
-中证商品指数数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""中证商品指数提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesIndexCcidxProvider:
-    """中证商品指数数据提供者"""
+class FuturesIndexCcidxProvider(BaseProvider):
+    """中证商品指数提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_index_ccidx"
-        self.display_name = "中证商品指数"
-        self.akshare_func = "futures_index_ccidx"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            symbol = kwargs.get("symbol")
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            
-            logger.info(f"Fetching {self.collection_name} data, symbol={symbol}")
-            df = ak.futures_index_ccidx(symbol=symbol)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_symbol'] = symbol
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_index_ccidx"
+    display_name = "中证商品指数"
+    akshare_func = "futures_index_ccidx"
+    unique_keys = ["symbol", "日期"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["查询参数_symbol", "date"]
+    collection_description = "中证商品指数数据"
+    collection_route = "/futures/collections/futures_index_ccidx"
+    collection_order = 45
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "日期", "type": "string", "description": "日期"},
-            {"name": "指数代码", "type": "string", "description": "指数代码"},
-            {"name": "收盘点位", "type": "float", "description": "收盘点位"},
-            {"name": "结算点位", "type": "float", "description": "结算点位"},
-        ]
+    param_mapping = {"symbol": "symbol"}
+    required_params = ["symbol"]
+    add_param_columns = {"symbol": "指数名称"}
+    
+    field_info = [
+        {"name": "指数名称", "type": "string", "description": "指数名称"},
+        {"name": "日期", "type": "string", "description": "日期"},
+        {"name": "指数值", "type": "float", "description": "指数值"},
+        {"name": "涨跌幅", "type": "float", "description": "涨跌幅"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

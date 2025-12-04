@@ -1,8 +1,7 @@
-"""外盘实时行情数据服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_foreign_commodity_realtime_provider import FuturesForeignCommodityRealtimeProvider
+"""外盘-实时行情数据服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesForeignCommodityRealtimeService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_foreign_commodity_realtime", FuturesForeignCommodityRealtimeProvider())
+
+class FuturesForeignCommodityRealtimeService(SimpleService):
+    """外盘-实时行情数据服务"""
+    collection_name = "futures_foreign_commodity_realtime"

@@ -1,50 +1,31 @@
 """
 上海证券交易所数据提供者
+
+上海证券交易所-股票数据总貌
+接口: stock_sse_summary
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockSseSummaryProvider:
+class StockSseSummaryProvider(SimpleProvider):
     """上海证券交易所数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_sse_summary"
-        self.display_name = "上海证券交易所"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取上海证券交易所数据
-        
-        Returns:
-            DataFrame: 上海证券交易所数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_sse_summary(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_sse_summary"
+    display_name = "上海证券交易所"
+    akshare_func = "stock_sse_summary"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "上海证券交易所-股票数据总貌"
+    collection_route = "/stocks/collections/stock_sse_summary"
+    collection_category = "默认"
+
+    # 字段信息
+    field_info = [
+        {"name": "项目", "type": "object", "description": "-"},
+        {"name": "股票", "type": "object", "description": "-"},
+        {"name": "科创板", "type": "object", "description": "-"},
+        {"name": "主板", "type": "object", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,7 +1,15 @@
-"""可转债实时数据-集思录服务"""
-from app.services.data_sources.bonds.services.base_bond_service import BaseBondService
-from app.services.data_sources.bonds.providers.bond_cb_jsl_provider import BondCbJslProvider
+"""
+可转债实时数据-集思录服务（重构版）
 
-class BondCbJslService(BaseBondService):
-    def __init__(self, db):
-        super().__init__(db, "bond_cb_jsl", BondCbJslProvider(), unique_keys=["转债代码"])
+需求文档: tests/bonds/requirements/22_可转债实时数据-集思录.md
+数据唯一标识: 代码
+"""
+from app.services.data_sources.base_service import SimpleService
+from ..providers.bond_cb_jsl_provider import BondCbJslProvider
+
+
+class BondCbJslService(SimpleService):
+    """可转债实时数据-集思录服务"""
+    
+    collection_name = "bond_cb_jsl"
+    provider_class = BondCbJslProvider

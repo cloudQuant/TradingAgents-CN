@@ -1,50 +1,39 @@
 """
 实时行情数据-腾讯数据提供者
+
+A+H 股数据是从腾讯财经获取的数据, 延迟 15 分钟更新
+接口: stock_zh_ah_spot
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockZhAhSpotProvider:
+class StockZhAhSpotProvider(SimpleProvider):
     """实时行情数据-腾讯数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_zh_ah_spot"
-        self.display_name = "实时行情数据-腾讯"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取实时行情数据-腾讯数据
-        
-        Returns:
-            DataFrame: 实时行情数据-腾讯数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_zh_ah_spot(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_zh_ah_spot"
+    display_name = "实时行情数据-腾讯"
+    akshare_func = "stock_zh_ah_spot"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "A+H 股数据是从腾讯财经获取的数据, 延迟 15 分钟更新"
+    collection_route = "/stocks/collections/stock_zh_ah_spot"
+    collection_category = "实时行情"
+
+    # 字段信息
+    field_info = [
+        {"name": "代码", "type": "object", "description": "-"},
+        {"name": "最新价", "type": "float64", "description": "-"},
+        {"name": "涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "涨跌额", "type": "float64", "description": "-"},
+        {"name": "买入", "type": "float64", "description": "-"},
+        {"name": "卖出", "type": "float64", "description": "-"},
+        {"name": "成交量", "type": "float64", "description": "-"},
+        {"name": "成交额", "type": "float64", "description": "-"},
+        {"name": "今开", "type": "float64", "description": "-"},
+        {"name": "昨收", "type": "float64", "description": "-"},
+        {"name": "最高", "type": "float64", "description": "-"},
+        {"name": "最低", "type": "float64", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

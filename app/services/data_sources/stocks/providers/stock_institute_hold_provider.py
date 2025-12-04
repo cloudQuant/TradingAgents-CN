@@ -1,50 +1,45 @@
 """
 机构持股一览表数据提供者
+
+新浪财经-机构持股-机构持股一览表
+接口: stock_institute_hold
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockInstituteHoldProvider:
+class StockInstituteHoldProvider(BaseProvider):
     """机构持股一览表数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_institute_hold"
-        self.display_name = "机构持股一览表"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取机构持股一览表数据
-        
-        Returns:
-            DataFrame: 机构持股一览表数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_institute_hold(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_institute_hold"
+    display_name = "机构持股一览表"
+    akshare_func = "stock_institute_hold"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "新浪财经-机构持股-机构持股一览表"
+    collection_route = "/stocks/collections/stock_institute_hold"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol"
+    }
+    
+    # 必填参数
+    required_params = ['symbol']
+
+    # 字段信息
+    field_info = [
+        {"name": "证券代码", "type": "object", "description": "-"},
+        {"name": "证券简称", "type": "object", "description": "-"},
+        {"name": "机构数", "type": "int64", "description": "-"},
+        {"name": "机构数变化", "type": "int64", "description": "-"},
+        {"name": "持股比例", "type": "float64", "description": "注意单位: %"},
+        {"name": "持股比例增幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "占流通股比例", "type": "float64", "description": "注意单位: %"},
+        {"name": "占流通股比例增幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

@@ -1,8 +1,7 @@
-"""内盘历史行情数据-东财服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_hist_em_provider import FuturesHistEmProvider
+"""内盘-历史行情数据-东财服务"""
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesHistEmService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_hist_em", FuturesHistEmProvider())
+
+class FuturesHistEmService(SimpleService):
+    """内盘-历史行情数据-东财服务"""
+    collection_name = "futures_hist_em"

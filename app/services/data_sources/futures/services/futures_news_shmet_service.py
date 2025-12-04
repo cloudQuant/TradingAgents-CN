@@ -1,8 +1,7 @@
 """期货资讯服务"""
-from motor.motor_asyncio import AsyncIOMotorClient
-from .base_futures_service import BaseFuturesService
-from ..providers.futures_news_shmet_provider import FuturesNewsShmetProvider
+from app.services.data_sources.base_service import SimpleService
 
-class FuturesNewsShmetService(BaseFuturesService):
-    def __init__(self, db: AsyncIOMotorClient):
-        super().__init__(db, "futures_news_shmet", FuturesNewsShmetProvider())
+
+class FuturesNewsShmetService(SimpleService):
+    """期货资讯服务"""
+    collection_name = "futures_news_shmet"

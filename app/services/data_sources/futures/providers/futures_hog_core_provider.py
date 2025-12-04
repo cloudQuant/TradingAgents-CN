@@ -1,51 +1,27 @@
-"""
-生猪核心数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""生猪-核心数据提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesHogCoreProvider:
-    """生猪核心数据提供者"""
+class FuturesHogCoreProvider(BaseProvider):
+    """生猪-核心数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_hog_core"
-        self.display_name = "核心数据"
-        self.akshare_func = "futures_hog_core"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            symbol = kwargs.get("symbol")
-            if not symbol:
-                raise ValueError("缺少必须参数: symbol")
-            
-            logger.info(f"Fetching {self.collection_name} data, symbol={symbol}")
-            df = ak.futures_hog_core(symbol=symbol)
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_symbol'] = symbol
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_hog_core"
+    display_name = "生猪-核心数据"
+    akshare_func = "futures_hog_core"
+    unique_keys = ["区域", "日期"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["查询参数_symbol", "日期"]
+    collection_description = "生猪核心数据"
+    collection_route = "/futures/collections/futures_hog_core"
+    collection_order = 48
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "date", "type": "string", "description": "日期"},
-            {"name": "value", "type": "float", "description": "值"},
-        ]
+    param_mapping = {"symbol": "symbol"}
+    required_params = ["symbol"]
+    add_param_columns = {"symbol": "区域"}
+    
+    field_info = [
+        {"name": "区域", "type": "string", "description": "区域代码"},
+        {"name": "日期", "type": "string", "description": "日期"},
+        {"name": "价格", "type": "float", "description": "价格"},
+        {"name": "涨跌", "type": "float", "description": "涨跌"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

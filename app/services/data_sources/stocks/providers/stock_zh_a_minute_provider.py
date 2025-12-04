@@ -1,50 +1,45 @@
 """
 分时数据-新浪数据提供者
+
+新浪财经-沪深京 A 股股票或者指数的分时数据，目前可以获取 1, 5, 15, 30, 60 分钟的数据频率, 可以指定是否复权
+接口: stock_zh_a_minute
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockZhAMinuteProvider:
+class StockZhAMinuteProvider(BaseProvider):
     """分时数据-新浪数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_zh_a_minute"
-        self.display_name = "分时数据-新浪"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取分时数据-新浪数据
-        
-        Returns:
-            DataFrame: 分时数据-新浪数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_zh_a_minute(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_zh_a_minute"
+    display_name = "分时数据-新浪"
+    akshare_func = "stock_zh_a_minute"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "新浪财经-沪深京 A 股股票或者指数的分时数据，目前可以获取 1, 5, 15, 30, 60 分钟的数据频率, 可以指定是否复权"
+    collection_route = "/stocks/collections/stock_zh_a_minute"
+    collection_category = "默认"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "period": "period",
+        "adjust": "adjust"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'period']
+
+    # 字段信息
+    field_info = [
+        {"name": "day", "type": "object", "description": "-"},
+        {"name": "open", "type": "float64", "description": "-"},
+        {"name": "high", "type": "float64", "description": "-"},
+        {"name": "low", "type": "float64", "description": "-"},
+        {"name": "close", "type": "float64", "description": "-"},
+        {"name": "volume", "type": "float64", "description": "-"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

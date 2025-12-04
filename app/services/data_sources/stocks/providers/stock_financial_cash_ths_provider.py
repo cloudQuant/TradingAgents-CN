@@ -1,49 +1,39 @@
 """
-Stock Financial Cash Ths数据提供者
+现金流量表数据提供者
+
+同花顺-财务指标-现金流量表
+接口: stock_financial_cash_ths
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class StockFinancialCashThsProvider:
-    """Stock Financial Cash Ths数据提供者"""
+class StockFinancialCashThsProvider(BaseProvider):
+    """现金流量表数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_financial_cash_ths"
-        self.display_name = "Stock Financial Cash Ths"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取Stock Financial Cash Ths数据
-        
-        Returns:
-            DataFrame: Stock Financial Cash Ths数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_financial_cash_ths(**kwargs)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_financial_cash_ths"
+    display_name = "现金流量表"
+    akshare_func = "stock_financial_cash_ths"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "同花顺-财务指标-现金流量表"
+    collection_route = "/stocks/collections/stock_financial_cash_ths"
+    collection_category = "财务数据"
+
+    # 参数映射
+    param_mapping = {
+        "symbol": "symbol",
+        "code": "symbol",
+        "stock_code": "symbol",
+        "indicator": "indicator"
+    }
+    
+    # 必填参数
+    required_params = ['symbol', 'indicator']
+
+    # 字段信息
+    field_info = [
+        {"name": "-", "type": "-", "description": "75 项，不逐一列出"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

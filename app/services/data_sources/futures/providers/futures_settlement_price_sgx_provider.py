@@ -1,58 +1,25 @@
-"""
-新加坡交易所期货数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""新加坡交易所期货-结算价提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesSettlementPriceSgxProvider:
-    """新加坡交易所期货数据提供者"""
+class FuturesSettlementPriceSgxProvider(BaseProvider):
+    """新加坡交易所期货-结算价提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_settlement_price_sgx"
-        self.display_name = "新加坡交易所期货"
-        self.akshare_func = "futures_settlement_price_sgx"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        try:
-            date = kwargs.get("date")
-            logger.info(f"Fetching {self.collection_name} data, date={date}")
-            
-            if date:
-                df = ak.futures_settlement_price_sgx(date=date)
-            else:
-                df = ak.futures_settlement_price_sgx()
-            
-            if df is None or df.empty:
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            if date:
-                df['查询参数_date'] = date
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_settlement_price_sgx"
+    display_name = "新加坡交易所期货-结算价"
+    akshare_func = "futures_settlement_price_sgx"
+    unique_keys = ["日期", "品种"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["合约"]
+    collection_description = "新加坡交易所期货结算价"
+    collection_route = "/futures/collections/futures_settlement_price_sgx"
+    collection_order = 41
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "DATE", "type": "string", "description": "日期"},
-            {"name": "COM", "type": "string", "description": "商品"},
-            {"name": "OPEN", "type": "float", "description": "开盘价"},
-            {"name": "HIGH", "type": "float", "description": "最高价"},
-            {"name": "LOW", "type": "float", "description": "最低价"},
-            {"name": "CLOSE", "type": "float", "description": "收盘价"},
-            {"name": "SETTLE", "type": "float", "description": "结算价"},
-        ]
+    param_mapping = {"date": "date"}
+    required_params = []
+    
+    field_info = [
+        {"name": "日期", "type": "string", "description": "日期"},
+        {"name": "品种", "type": "string", "description": "品种名称"},
+        {"name": "结算价", "type": "float", "description": "结算价"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

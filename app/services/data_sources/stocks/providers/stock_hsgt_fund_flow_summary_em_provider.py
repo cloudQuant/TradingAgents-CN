@@ -1,50 +1,40 @@
 """
 沪深港通资金流向数据提供者
+
+东方财富网-数据中心-资金流向-沪深港通资金流向
+接口: stock_hsgt_fund_flow_summary_em
 """
-import akshare as ak
-import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from app.services.data_sources.base_provider import SimpleProvider
 
 
-class StockHsgtFundFlowSummaryEmProvider:
+class StockHsgtFundFlowSummaryEmProvider(SimpleProvider):
     """沪深港通资金流向数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "stock_hsgt_fund_flow_summary_em"
-        self.display_name = "沪深港通资金流向"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取沪深港通资金流向数据
-        
-        Returns:
-            DataFrame: 沪深港通资金流向数据
-        """
-        try:
-            logger.info(f"Fetching {self.collection_name} data")
-            df = ak.stock_hsgt_fund_flow_summary_em(**kwargs)
-            
-            if df.empty:
-                logger.warning(f"No data returned")
-                return pd.DataFrame()
-            
-            # 添加元数据
-            df['scraped_at'] = datetime.now()
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    # 必填属性
+    collection_name = "stock_hsgt_fund_flow_summary_em"
+    display_name = "沪深港通资金流向"
+    akshare_func = "stock_hsgt_fund_flow_summary_em"
+    unique_keys = ['代码']
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        """获取字段信息"""
-        # 这里需要根据实际API返回的字段来定义
-        return [
-            {"name": "scraped_at", "type": "datetime", "description": "抓取时间"},
-        ]
+    # 可选属性
+    collection_description = "东方财富网-数据中心-资金流向-沪深港通资金流向"
+    collection_route = "/stocks/collections/stock_hsgt_fund_flow_summary_em"
+    collection_category = "资金流向"
+
+    # 字段信息
+    field_info = [
+        {"name": "交易日", "type": "object", "description": "-"},
+        {"name": "类型", "type": "object", "description": "-"},
+        {"name": "板块", "type": "object", "description": "-"},
+        {"name": "资金方向", "type": "object", "description": "-"},
+        {"name": "交易状态", "type": "int64", "description": "3 为收盘"},
+        {"name": "成交净买额", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "资金净流入", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "当日资金余额", "type": "float64", "description": "注意单位: 亿元"},
+        {"name": "上涨数", "type": "int64", "description": "-"},
+        {"name": "持平数", "type": "int64", "description": "-"},
+        {"name": "下跌数", "type": "int64", "description": "-"},
+        {"name": "相关指数", "type": "object", "description": "-"},
+        {"name": "指数涨跌幅", "type": "float64", "description": "注意单位: %"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

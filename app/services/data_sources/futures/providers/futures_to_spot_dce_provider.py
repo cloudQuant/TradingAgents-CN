@@ -1,62 +1,26 @@
-"""
-大连商品交易所期转现统计数据提供者
-"""
-import akshare as ak
-import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+"""期转现-大商所数据提供者"""
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class FuturesToSpotDceProvider:
-    """大连商品交易所期转现统计数据提供者"""
+class FuturesToSpotDceProvider(BaseProvider):
+    """期转现-大商所数据提供者"""
     
-    def __init__(self):
-        self.collection_name = "futures_to_spot_dce"
-        self.display_name = "期转现-大商所"
-        self.akshare_func = "futures_to_spot_dce"
-        
-    def fetch_data(self, **kwargs) -> pd.DataFrame:
-        """
-        获取大连商品交易所期转现统计数据
-        
-        Args:
-            date: 交易年月（必需），格式YYYYMM
-        """
-        try:
-            date = kwargs.get("date")
-            
-            if not date:
-                raise ValueError("缺少必须参数: date")
-            
-            logger.info(f"Fetching {self.collection_name} data, date={date}")
-            
-            df = ak.futures_to_spot_dce(date=date)
-            
-            if df is None or df.empty:
-                logger.warning(f"No data returned for date={date}")
-                return pd.DataFrame()
-            
-            df['更新时间'] = datetime.now()
-            df['数据源'] = 'akshare'
-            df['接口名称'] = self.akshare_func
-            df['查询参数_date'] = date
-            
-            logger.info(f"Successfully fetched {len(df)} records")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error fetching {self.collection_name} data: {e}")
-            raise
+    collection_name = "futures_to_spot_dce"
+    display_name = "期转现-大商所"
+    akshare_func = "futures_to_spot_dce"
+    unique_keys = ["年月", "品种"]
     
-    def get_unique_keys(self) -> List[str]:
-        return ["合约代码", "期转现发生日期"]
+    collection_description = "大连商品交易所期转现数据"
+    collection_route = "/futures/collections/futures_to_spot_dce"
+    collection_order = 12
     
-    def get_field_info(self) -> List[Dict[str, Any]]:
-        return [
-            {"name": "合约代码", "type": "string", "description": "合约代码"},
-            {"name": "期转现发生日期", "type": "string", "description": "期转现发生日期"},
-            {"name": "期转现数量", "type": "int", "description": "期转现数量"},
-        ]
+    param_mapping = {"date": "date"}
+    required_params = ["date"]
+    add_param_columns = {"date": "年月"}
+    
+    field_info = [
+        {"name": "年月", "type": "string", "description": "年月"},
+        {"name": "品种", "type": "string", "description": "品种名称"},
+        {"name": "数量", "type": "float", "description": "数量"},
+        {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
+    ]

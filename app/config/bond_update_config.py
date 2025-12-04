@@ -226,15 +226,121 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     # ==================== 33-34 中债指数 ====================
     "bond_new_composite_index_cbond": {
         "display_name": "中债新综合指数",
-        "update_description": "从中国债券信息网获取中债新综合指数",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取中债新综合指数数据", "params": []}
+        "update_description": "从中国债券信息网获取中债新综合指数历史数据",
+        "single_update": {
+            "enabled": True,
+            "description": "按指标和期限查询中债新综合指数历史数据",
+            "params": [
+                {
+                    "name": "indicator",
+                    "label": "指标类型",
+                    "type": "select",
+                    "default": "财富",
+                    "required": True,
+                    "options": [
+                        {"label": "全价", "value": "全价"},
+                        {"label": "净价", "value": "净价"},
+                        {"label": "财富", "value": "财富"},
+                        {"label": "平均市值法久期", "value": "平均市值法久期"},
+                        {"label": "平均现金流法久期", "value": "平均现金流法久期"},
+                        {"label": "平均市值法凸性", "value": "平均市值法凸性"},
+                        {"label": "平均现金流法凸性", "value": "平均现金流法凸性"},
+                        {"label": "平均现金流法到期收益率", "value": "平均现金流法到期收益率"},
+                        {"label": "平均市值法到期收益率", "value": "平均市值法到期收益率"},
+                        {"label": "平均基点价值", "value": "平均基点价值"},
+                        {"label": "平均待偿期", "value": "平均待偿期"},
+                        {"label": "平均派息率", "value": "平均派息率"},
+                        {"label": "指数上日总市值", "value": "指数上日总市值"},
+                        {"label": "财富指数涨跌幅", "value": "财富指数涨跌幅"},
+                        {"label": "全价指数涨跌幅", "value": "全价指数涨跌幅"},
+                        {"label": "净价指数涨跌幅", "value": "净价指数涨跌幅"},
+                        {"label": "现券结算量", "value": "现券结算量"}
+                    ]
+                },
+                {
+                    "name": "period",
+                    "label": "期限",
+                    "type": "select",
+                    "default": "总值",
+                    "required": True,
+                    "options": [
+                        {"label": "总值", "value": "总值"},
+                        {"label": "1年以下", "value": "1年以下"},
+                        {"label": "1-3年", "value": "1-3年"},
+                        {"label": "3-5年", "value": "3-5年"},
+                        {"label": "5-7年", "value": "5-7年"},
+                        {"label": "7-10年", "value": "7-10年"},
+                        {"label": "10年以上", "value": "10年以上"}
+                    ]
+                }
+            ]
+        },
+        "batch_update": {
+            "enabled": True,
+            "description": "批量获取多个指标和期限的中债新综合指数数据",
+            "params": [
+                {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
+            ]
+        }
     },
     "bond_composite_index_cbond": {
         "display_name": "中债综合指数",
-        "update_description": "从中国债券信息网获取中债综合指数",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取中债综合指数数据", "params": []}
+        "update_description": "从中国债券信息网获取中债综合指数历史数据",
+        "single_update": {
+            "enabled": True,
+            "description": "按指标和期限查询中债综合指数历史数据",
+            "params": [
+                {
+                    "name": "indicator",
+                    "label": "指标类型",
+                    "type": "select",
+                    "default": "财富",
+                    "required": True,
+                    "options": [
+                        {"label": "全价", "value": "全价"},
+                        {"label": "净价", "value": "净价"},
+                        {"label": "财富", "value": "财富"},
+                        {"label": "平均市值法久期", "value": "平均市值法久期"},
+                        {"label": "平均现金流法久期", "value": "平均现金流法久期"},
+                        {"label": "平均市值法凸性", "value": "平均市值法凸性"},
+                        {"label": "平均现金流法凸性", "value": "平均现金流法凸性"},
+                        {"label": "平均现金流法到期收益率", "value": "平均现金流法到期收益率"},
+                        {"label": "平均市值法到期收益率", "value": "平均市值法到期收益率"},
+                        {"label": "平均基点价值", "value": "平均基点价值"},
+                        {"label": "平均待偿期", "value": "平均待偿期"},
+                        {"label": "平均派息率", "value": "平均派息率"},
+                        {"label": "指数上日总市值", "value": "指数上日总市值"},
+                        {"label": "财富指数涨跌幅", "value": "财富指数涨跌幅"},
+                        {"label": "全价指数涨跌幅", "value": "全价指数涨跌幅"},
+                        {"label": "净价指数涨跌幅", "value": "净价指数涨跌幅"},
+                        {"label": "现券结算量", "value": "现券结算量"}
+                    ]
+                },
+                {
+                    "name": "period",
+                    "label": "期限",
+                    "type": "select",
+                    "default": "总值",
+                    "required": True,
+                    "options": [
+                        {"label": "总值", "value": "总值"},
+                        {"label": "1年以下", "value": "1年以下"},
+                        {"label": "1-3年", "value": "1-3年"},
+                        {"label": "3-5年", "value": "3-5年"},
+                        {"label": "5-7年", "value": "5-7年"},
+                        {"label": "7-10年", "value": "7-10年"},
+                        {"label": "10年以上", "value": "10年以上"}
+                    ]
+                }
+            ]
+        },
+        "batch_update": {
+            "enabled": True,
+            "description": "批量获取多个指标和期限的中债综合指数数据",
+            "params": [
+                {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
+            ]
+        }
     },
 }
 
