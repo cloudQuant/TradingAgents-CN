@@ -13,6 +13,11 @@ export { default as RemoteSyncDialog } from './RemoteSyncDialog.vue'
 
 // Composable 导出
 export { useFundCollection } from './useFundCollection'
+export { useBondCollection } from './useBondCollection'
+export { useStockCollection } from './useStockCollection'
+export { useFuturesCollection } from './useFuturesCollection'
+export { useOptionsCollection } from './useOptionsCollection'
+export { useCurrenciesCollection } from './useCurrenciesCollection'
 
 // 类型导出
 export type { FieldDefinition } from './CollectionDataTable.vue'

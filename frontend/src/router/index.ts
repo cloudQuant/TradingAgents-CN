@@ -81,7 +81,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collections/:collectionName',
         name: 'BondCollection',
-        component: () => import('@/views/Bonds/Collection.vue'),
+        component: () => import('@/views/Bonds/collections/index.vue'),
         meta: {
           title: '债券数据集合详情',
           requiresAuth: true
@@ -182,7 +182,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collections/:collectionName',
         name: 'FuturesCollection',
-        component: () => import('@/views/Futures/Collection.vue'),
+        component: () => import('@/views/Futures/collections/index.vue'),
         meta: {
           title: '期货数据集合详情',
           requiresAuth: true,
@@ -238,7 +238,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collections/:collectionName',
         name: 'OptionsCollectionDetail',
-        component: () => import('@/views/Options/Collection.vue'),
+        component: () => import('@/views/Options/collections/index.vue'),
         meta: {
           title: '期权数据集合详情',
           requiresAuth: true,
@@ -270,7 +270,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: 'overview', name: 'CurrenciesHome', component: () => import('@/views/Currencies/index.vue'), meta: { title: '外汇概览', requiresAuth: true } },
       { path: 'collections', name: 'CurrenciesCollections', component: () => import('@/views/Currencies/Collections.vue'), meta: { title: '外汇数据集合', requiresAuth: true } },
-      { path: 'collections/:collectionName', name: 'CurrenciesCollectionDetail', component: () => import('@/views/Currencies/Collection.vue'), meta: { title: '外汇数据集合详情', requiresAuth: true, hideInMenu: true } },
+      { path: 'collections/:collectionName', name: 'CurrenciesCollectionDetail', component: () => import('@/views/Currencies/collections/index.vue'), meta: { title: '外汇数据集合详情', requiresAuth: true, hideInMenu: true } },
       { path: 'analysis', name: 'CurrenciesAnalysis', component: () => import('@/views/Currencies/CurrenciesAnalysis.vue'), meta: { title: '外汇分析', requiresAuth: true } },
       { path: '', name: 'CurrenciesDefault', redirect: { name: 'CurrenciesHome' } }
     ]
@@ -408,7 +408,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collections/:collectionName',
         name: 'StocksCollectionDetail',
-        component: () => import('@/views/Stocks/Collection.vue'),
+        component: () => import('@/views/Stocks/Collections/index.vue'),
         meta: {
           title: '股票数据集合详情',
           requiresAuth: true,

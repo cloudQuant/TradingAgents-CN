@@ -33,9 +33,16 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     # ==================== 03-04 沪深债券行情 ====================
     "bond_zh_hs_spot": {
         "display_name": "沪深债券实时行情",
-        "update_description": "从新浪财经获取沪深债券实时行情数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有沪深债券实时行情", "params": []}
+        "update_description": "从新浪财经获取沪深债券实时行情数据，支持分页获取",
+        "single_update": {
+            "enabled": True,
+            "description": "按页码范围获取沪深债券实时行情",
+            "params": [
+                {"name": "start_page", "label": "起始页码", "type": "number", "default": 1, "min": 1},
+                {"name": "end_page", "label": "结束页码", "type": "number", "default": 324, "min": 1}
+            ]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_zh_hs_daily": {
         "display_name": "沪深债券历史行情",
@@ -356,7 +363,7 @@ def get_collection_update_config(collection_name: str) -> Dict[str, Any]:
     return {
         "collection_name": collection_name,
         "display_name": collection_name,
-        "update_description": "该集合暂不支持自动更新",
+        "update_description": "",
         "single_update": {"enabled": False, "description": "", "params": []},
         "batch_update": {"enabled": True, "description": "一次性获取所有数据", "params": []}
     }

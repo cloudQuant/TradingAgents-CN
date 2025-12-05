@@ -190,5 +190,29 @@ export const currenciesApi = {
       }
     )
     return response as unknown as Blob
+  },
+
+  // 获取集合统计信息
+  async getCollectionStats(collectionName: string): Promise<ApiResponse<any>> {
+    return ApiClient.get(`/api/currencies/collections/${collectionName}/stats`)
+  },
+
+  // 上传数据文件
+  async uploadData(collectionName: string, file: File): Promise<ApiResponse<any>> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return ApiClient.post(`/api/currencies/collections/${collectionName}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  // 远程同步数据
+  async syncData(collectionName: string, config: any): Promise<ApiResponse<any>> {
+    return ApiClient.post(`/api/currencies/collections/${collectionName}/sync`, config)
+  },
+
+  // 清空集合数据
+  async clearCollectionData(collectionName: string): Promise<ApiResponse<any>> {
+    return ApiClient.delete(`/api/currencies/collections/${collectionName}`)
   }
 }

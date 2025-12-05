@@ -1259,6 +1259,30 @@ async def get_collection_data(
             
             fields_info = ordered_fields
             logger.info(f"✅ [集合数据] bond_info_cm显示{len(fields_info)}个标准字段")
+
+        # 对于其他集合，如果Provider定义了 field_info，则按其顺序重新排列字段
+        if collection_name != "bond_info_cm" and fields_info:
+            try:
+                provider_field_info = _get_provider_field_info(collection_name)
+                if provider_field_info:
+                    provider_order = [f.get("name") for f in provider_field_info if f.get("name")]
+                    field_dict = {f["name"]: f for f in fields_info}
+                    ordered_fields = []
+
+                    # 先按 Provider.field_info 中的顺序添加已存在字段
+                    for field_name in provider_order:
+                        field = field_dict.pop(field_name, None)
+                        if field is not None:
+                            ordered_fields.append(field)
+
+                    # 再追加剩余字段，保持原有相对顺序
+                    if field_dict:
+                        remaining_fields = [f for f in fields_info if f["name"] in field_dict]
+                        ordered_fields.extend(remaining_fields)
+
+                    fields_info = ordered_fields
+            except Exception as e:
+                logger.warning(f"⚠️ [集合数据] 按Provider字段顺序重排失败 {collection_name}: {e}")
         
         return {
             "success": True,

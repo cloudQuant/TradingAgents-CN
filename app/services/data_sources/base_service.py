@@ -164,12 +164,9 @@ class BaseService(ABC):
                 'page', 'limit', 'skip', 'filters', 'sort', 'order',
                 'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
                 'force', 'clear_first', 'overwrite', 'mode', 'concurrency',
-                # 可选业务参数（值为None时应过滤）
-                'fund_code', 'symbol', 'year', 'date', 'period', 'adjust',
-                'start_year', 'end_year', 'delay', 'code'
             }
             
-            # 移除前端特有参数和值为None的可选业务参数
+            # 移除前端特有参数和值为None的参数
             provider_kwargs = {
                 k: v for k, v in kwargs.items() 
                 if k not in frontend_only_params and v is not None

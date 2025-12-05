@@ -104,6 +104,49 @@ export const bondsApi = {
     return ApiClient.get(`/api/bonds/collections/${encodeURIComponent(collectionName)}/stats`)
   },
 
+  /**
+   * 获取集合更新配置
+   */
+  async getCollectionUpdateConfig(collectionName: string): Promise<ApiResponse<{
+    collection_name: string
+    display_name: string
+    update_description?: string
+    single_update: {
+      enabled: boolean
+      description?: string
+      params: Array<{
+        name: string
+        label: string
+        type: 'text' | 'number' | 'select'
+        placeholder?: string
+        required?: boolean
+        default?: any
+        min?: number
+        max?: number
+        step?: number
+        options?: Array<{ label: string; value: any }>
+      }>
+    }
+    batch_update: {
+      enabled: boolean
+      description?: string
+      params: Array<{
+        name: string
+        label: string
+        type: 'text' | 'number' | 'select'
+        placeholder?: string
+        required?: boolean
+        default?: any
+        min?: number
+        max?: number
+        step?: number
+        options?: Array<{ label: string; value: any }>
+      }>
+    }
+  }>> {
+    return ApiClient.get(`/api/bonds/collections/${encodeURIComponent(collectionName)}/update-config`)
+  },
+
   async getBondInfoIssuanceYearly(): Promise<ApiResponse<{
     items: Array<{ year: string; count: number }>;
     total_years: number
@@ -154,16 +197,13 @@ export const bondsApi = {
   // 刷新集合数据（返回task_id）
   async refreshCollectionData(
     collectionName: string,
-    params?: {
-      start_date?: string
-      end_date?: string
-      date?: string
-    }
+    params?: Record<string, any>
   ): Promise<ApiResponse<{
     task_id: string
     message: string
   }>> {
-    const response = await ApiClient.post(`/api/bonds/collections/${encodeURIComponent(collectionName)}/refresh`, undefined, { params })
+    // 参数作为请求体发送，而不是查询参数
+    const response = await ApiClient.post(`/api/bonds/collections/${encodeURIComponent(collectionName)}/refresh`, params || {})
     return response
   },
 

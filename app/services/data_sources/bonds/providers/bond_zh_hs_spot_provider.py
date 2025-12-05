@@ -1,13 +1,14 @@
 """
-沪深债券实时行情数据提供者（重构版：继承SimpleProvider）
+沪深债券实时行情数据提供者（重构版：继承BaseProvider，支持分页参数）
 
 需求文档: tests/bonds/requirements/03_沪深债券实时行情.md
 数据唯一标识: 代码
+接口参数: start_page, end_page（分页获取实时行情）
 """
-from app.services.data_sources.base_provider import SimpleProvider
+from app.services.data_sources.base_provider import BaseProvider
 
 
-class BondZhHsSpotProvider(SimpleProvider):
+class BondZhHsSpotProvider(BaseProvider):
     """沪深债券实时行情数据提供者"""
     
     # 基本属性
@@ -20,6 +21,15 @@ class BondZhHsSpotProvider(SimpleProvider):
     collection_description = "沪深债券实时行情数据，包括最新价、涨跌幅、成交量等"
     collection_route = "/bonds/collections/bond_zh_hs_spot"
     collection_order = 3
+    
+    # 参数映射：前端参数名 -> akshare参数名
+    param_mapping = {
+        "start_page": "start_page",
+        "end_page": "end_page",
+    }
+    
+    # 可选参数（都有默认值）
+    required_params = []
     
     # 字段信息
     field_info = [

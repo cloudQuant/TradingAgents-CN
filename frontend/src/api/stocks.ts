@@ -104,6 +104,7 @@ export interface StockCollectionDataResponse<T = any> {
   total: number
   page: number
   page_size: number
+  fields?: Array<{ name: string; type: string; example?: string | null }>
 }
 
 export interface CollectionInfo {

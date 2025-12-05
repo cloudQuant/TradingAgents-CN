@@ -349,7 +349,7 @@ def get_collection_update_config(collection_name: str) -> Dict[str, Any]:
     return {
         "collection_name": collection_name,
         "display_name": collection_name,
-        "update_description": "该集合暂不支持自动更新",
+        "update_description": "",
         "single_update": {
             "enabled": False,
             "description": "",
