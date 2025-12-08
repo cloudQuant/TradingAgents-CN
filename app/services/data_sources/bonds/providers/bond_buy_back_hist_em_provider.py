@@ -12,7 +12,7 @@ class BondBuyBackHistEmProvider(BaseProvider):
     
     collection_name = "bond_buy_back_hist_em"
     display_name = "质押式回购历史数据"
-    akshare_func = "bond_repo_zh_tick"
+    akshare_func = "bond_buy_back_hist_em"
     unique_keys = ['代码', '日期']
     
     collection_description = "质押式回购历史数据数据"

@@ -66,8 +66,8 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     "bond_zh_cov": {
         "display_name": "可转债数据一览表",
         "update_description": "从东方财富网获取可转债综合数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有可转债数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有可转债数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     # ==================== 08-09 市场概览 ====================
     "bond_cash_summary_sse": {
@@ -87,26 +87,26 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "display_name": "银行间市场债券发行",
         "update_description": "从银行间市场交易商协会获取债券发行数据",
         "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "批量获取银行间市场债券发行数据", "params": [{"name": "page_count", "label": "页数", "type": "number", "default": 10, "min": 1, "max": 100}]}
+        "batch_update": {"enabled": True, "description": "批量获取银行间市场债券发行数据", "params": [{"name": "page_count", "label": "页数", "type": "number", "default": 10, "min": 1}]}
     },
     "bond_spot_quote": {
         "display_name": "现券市场做市报价",
         "update_description": "从中国外汇交易中心获取现券市场做市报价",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有做市报价数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有做市报价数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_spot_deal": {
         "display_name": "现券市场成交行情",
         "update_description": "从中国外汇交易中心获取现券市场成交行情",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有成交行情数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有成交行情数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     # ==================== 13-14 可转债分时 ====================
     "bond_zh_hs_cov_min": {
         "display_name": "可转债分时行情",
         "update_description": "从东方财富网获取可转债分时行情数据",
-        "single_update": {"enabled": True, "description": "获取单个可转债的分时数据", "params": [{"name": "symbol", "label": "可转债代码", "type": "text", "required": True}, {"name": "period", "label": "周期", "type": "select", "default": "1", "options": [{"label": "1分钟", "value": "1"}, {"label": "5分钟", "value": "5"}, {"label": "15分钟", "value": "15"}]}]},
-        "batch_update": {"enabled": True, "description": "批量更新可转债分时数据", "params": [{"name": "period", "label": "周期", "type": "select", "default": "1", "options": [{"label": "1分钟", "value": "1"}, {"label": "5分钟", "value": "5"}]}, {"name": "concurrency", "label": "并发数", "type": "number", "default": 3}]}
+        "single_update": {"enabled": True, "description": "获取单个可转债的分时数据", "params": [{"name": "symbol", "label": "可转债代码", "type": "text", "required": True}, {"name": "period", "label": "周期", "type": "select", "default": "5", "options": [{"label": "1分钟", "value": "1"}, {"label": "5分钟", "value": "5"}, {"label": "15分钟", "value": "15"}]}]},
+        "batch_update": {"enabled": True, "description": "批量更新可转债分时数据", "params": [{"name": "period", "label": "周期", "type": "select", "default": "5", "options": [{"label": "1分钟", "value": "1"}, {"label": "5分钟", "value": "5"}]}, {"name": "concurrency", "label": "并发数", "type": "number", "default": 3}]}
     },
     "bond_zh_hs_cov_pre_min": {
         "display_name": "可转债盘前分时",
@@ -119,22 +119,21 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "display_name": "可转债详情-东财",
         "update_description": "从东方财富网获取可转债详情",
         "single_update": {"enabled": True, "description": "获取单个可转债的详细信息", "params": [
-            {"name": "symbol", "label": "可转债代码", "type": "text", "placeholder": "如123121", "required": True},
-            {"name": "indicator", "label": "指标类型", "type": "select", "default": "基本信息", "options": [{"label": "基本信息", "value": "基本信息"}, {"label": "中签号", "value": "中签号"}, {"label": "筹资用途", "value": "筹资用途"}, {"label": "重要日期", "value": "重要日期"}]}
+            {"name": "symbol", "label": "可转债代码", "type": "text", "placeholder": "如123121", "required": True}
         ]},
         "batch_update": {"enabled": True, "description": "批量更新可转债详情", "params": [{"name": "concurrency", "label": "并发数", "type": "number", "default": 3}]}
     },
     "bond_zh_cov_info_ths": {
         "display_name": "可转债详情-同花顺",
         "update_description": "从同花顺获取可转债详情（无需参数，返回所有数据）",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有可转债详情数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有可转债详情数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_cov_comparison": {
         "display_name": "可转债比价表",
         "update_description": "从东方财富网获取可转债与正股比价数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有可转债比价数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有可转债比价数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_zh_cov_value_analysis": {
         "display_name": "可转债价值分析",
@@ -146,14 +145,14 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     "bond_sh_buy_back_em": {
         "display_name": "上证质押式回购",
         "update_description": "从东方财富网获取上证质押式回购实时行情",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取上证质押式回购数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取上证质押式回购数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_sz_buy_back_em": {
         "display_name": "深证质押式回购",
         "update_description": "从东方财富网获取深证质押式回购实时行情",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取深证质押式回购数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取深证质押式回购数据", "params": []},
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_buy_back_hist_em": {
         "display_name": "质押式回购历史数据",
@@ -164,21 +163,48 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     # ==================== 22-25 集思录数据 ====================
     "bond_cb_jsl": {
         "display_name": "可转债实时数据-集思录",
-        "update_description": "从集思录获取可转债实时数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取集思录可转债数据", "params": [{"name": "cookie", "label": "Cookie", "type": "text", "placeholder": "可选"}]}
+        "update_description": "从集思录获取可转债实时数据（使用集思录账号或 Cookie）",
+        "single_update": {
+            "enabled": True,
+            "description": "使用集思录账号获取可转债实时数据（默认从 .env 读取 JISILU_USER/JISILU_PASSWORD）",
+            "params": [
+                {
+                    "name": "user",
+                    "label": "集思录用户名",
+                    "type": "text",
+                    "required": False,
+                    "placeholder": "留空则使用 .env 中的 JISILU_USER"
+                },
+                {
+                    "name": "password",
+                    "label": "集思录密码",
+                    "type": "text",
+                    "required": False,
+                    "placeholder": "留空则使用 .env 中的 JISILU_PASSWORD"
+                }
+            ]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_cb_redeem_jsl": {
         "display_name": "可转债强赎-集思录",
         "update_description": "从集思录获取可转债强赎信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取可转债强赎数据", "params": []}
+        "single_update": {
+            "enabled": True,
+            "description": "一次性获取所有可转债强赎数据（无需参数）",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_cb_index_jsl": {
         "display_name": "可转债等权指数-集思录",
         "update_description": "从集思录获取可转债等权指数",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取可转债等权指数数据", "params": []}
+        "single_update": {
+            "enabled": True,
+            "description": "一次性获取所有可转债等权指数历史数据（无需参数）",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_cb_adj_logs_jsl": {
         "display_name": "转股价调整记录-集思录",
@@ -190,27 +216,52 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     "bond_china_close_return": {
         "display_name": "收益率曲线历史数据",
         "update_description": "从中国外汇交易中心获取债券收益率曲线历史数据",
-        "single_update": {"enabled": True, "description": "按日期范围查询收益率曲线", "params": [{"name": "start_date", "label": "开始日期", "type": "text"}, {"name": "end_date", "label": "结束日期", "type": "text"}]},
-        "batch_update": {"enabled": True, "description": "批量获取收益率曲线数据", "params": [{"name": "start_date", "label": "开始日期", "type": "text"}, {"name": "end_date", "label": "结束日期", "type": "text"}]}
+        "single_update": {
+            "enabled": True,
+            "description": "按日期和曲线名称查询单日收益率曲线",
+            "params": [
+                {"name": "date", "label": "日期", "type": "text", "placeholder": "例如 2024-01-01 或 20240101", "required": True},
+                {"name": "symbol", "label": "曲线名称", "type": "text", "placeholder": "如 国债 或 政策性金融债(进出口行)", "required": True}
+            ]
+        },
+        "batch_update": {
+            "enabled": True,
+            "description": "批量获取收益率曲线历史数据（支持全量/增量，日期范围由服务自动处理）",
+            "params": [
+                {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
+            ]
+        }
     },
     "bond_zh_us_rate": {
         "display_name": "中美国债收益率",
-        "update_description": "从东方财富网获取中美国债收益率对比数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取中美国债收益率数据", "params": []}
+        "update_description": "从东方财富网获取中美国债收益率历史数据（自动增量更新）",
+        "single_update": {
+            "enabled": True,
+            "description": "自动从数据库获取最新日期进行增量更新，首次更新从 1990-12-19 开始",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     # ==================== 28-32 债券发行 ====================
     "bond_treasure_issue_cninfo": {
         "display_name": "国债发行",
-        "update_description": "从巨潮资讯获取国债发行信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取国债发行数据", "params": [{"name": "start_date", "label": "开始日期", "type": "text"}, {"name": "end_date", "label": "结束日期", "type": "text"}]}
+        "update_description": "从巨潮资讯获取国债发行信息（自动增量更新）",
+        "single_update": {
+            "enabled": True,
+            "description": "自动从数据库获取最新发行起始日进行增量更新，首次更新从 2000-01-01 开始",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_local_government_issue_cninfo": {
         "display_name": "地方债发行",
-        "update_description": "从巨潮资讯获取地方债发行信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取地方债发行数据", "params": [{"name": "start_date", "label": "开始日期", "type": "text"}, {"name": "end_date", "label": "结束日期", "type": "text"}]}
+        "update_description": "从巨潮资讯获取地方债发行信息（自动增量更新）",
+        "single_update": {
+            "enabled": True,
+            "description": "自动从数据库获取最新发行起始日进行增量更新，首次更新从 2000-01-01 开始",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     "bond_corporate_issue_cninfo": {
         "display_name": "企业债发行",
@@ -226,9 +277,13 @@ BOND_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
     },
     "bond_cov_stock_issue_cninfo": {
         "display_name": "可转债转股",
-        "update_description": "从巨潮资讯获取可转债转股信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取可转债转股数据", "params": [{"name": "start_date", "label": "开始日期", "type": "text"}, {"name": "end_date", "label": "结束日期", "type": "text"}]}
+        "update_description": "从巨潮资讯获取可转债转股信息（无参数，一次性获取全部数据）",
+        "single_update": {
+            "enabled": True,
+            "description": "一次性获取所有可转债转股数据",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
     },
     # ==================== 33-34 中债指数 ====================
     "bond_new_composite_index_cbond": {

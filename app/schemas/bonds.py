@@ -94,6 +94,8 @@ class RefreshCollectionRequest(BaseModel):
     end_date: Optional[str] = Field(None, description="结束日期")
     concurrency: Optional[int] = Field(None, ge=1, le=10, description="并发数")
     cookie: Optional[str] = Field(None, description="Cookie（集思录数据）")
+    user: Optional[str] = Field(None, description="集思录用户名（如未提供则尝试使用环境变量 JISILU_USER）")
+    password: Optional[str] = Field(None, description="集思录密码（如未提供则尝试使用环境变量 JISILU_PASSWORD）")
     
     @validator('bond_code', 'symbol')
     def validate_code(cls, v):

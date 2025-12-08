@@ -12,3 +12,7 @@ class BondCbAdjLogsJslService(BaseService):
     
     collection_name = "bond_cb_adj_logs_jsl"
     provider_class = BondCbAdjLogsJslProvider
+
+    batch_source_collection = "bond_zh_cov"
+    batch_source_field = "债券代码"
+    batch_concurrency = 3

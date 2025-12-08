@@ -260,7 +260,7 @@ class FundDataService:
 
     async def clear_fund_data(self, collection_name: str) -> int:
         """
-        清空指定基金数据集合
+        清空指定基金数据集合并删除索引
         
         Args:
             collection_name: 集合名称（如 fund_name_em）
@@ -271,9 +271,30 @@ class FundDataService:
         try:
             # 使用 get_collection 访问集合，与 get_fund_collection_data API 保持一致
             collection = self.db.get_collection(collection_name)
+            
+            # 1. 删除所有数据
             result = await collection.delete_many({})
-            logger.info(f"成功清空集合 {collection_name}: {result.deleted_count} 条记录")
-            return result.deleted_count
+            deleted_count = result.deleted_count
+            
+            # 2. 删除所有索引（除了 _id 索引，MongoDB 不允许删除它）
+            dropped_indexes = 0
+            try:
+                indexes = await collection.list_indexes().to_list(length=None)
+                for idx in indexes:
+                    idx_name = idx.get('name')
+                    if idx_name and idx_name != '_id_':
+                        await collection.drop_index(idx_name)
+                        dropped_indexes += 1
+                        logger.info(f"删除索引 {collection_name}.{idx_name}")
+            except Exception as idx_err:
+                logger.warning(f"删除索引时出现警告 {collection_name}: {idx_err}")
+            
+            message = f"清空 {deleted_count} 条记录"
+            if dropped_indexes > 0:
+                message += f"，删除 {dropped_indexes} 个索引"
+            logger.info(f"成功清空集合 {collection_name}: {message}")
+            
+            return deleted_count
         except Exception as e:
             logger.error(f"清空集合 {collection_name} 失败: {e}", exc_info=True)
             raise

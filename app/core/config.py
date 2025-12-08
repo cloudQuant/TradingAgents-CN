@@ -129,6 +129,10 @@ class Settings(BaseSettings):
     STOCK_DATA_API_URL: str = Field(default="")
     STOCK_DATA_API_KEY: str = Field(default="")
 
+    # 集思录账号配置（用于 bond_cb_jsl 等接口）
+    JISILU_USER: str = Field(default="", description="集思录用户名或手机号")
+    JISILU_PASSWORD: str = Field(default="", description="集思录密码")
+
     # SSE 配置
     SSE_POLL_TIMEOUT_SECONDS: float = Field(default=1.0)
     SSE_HEARTBEAT_INTERVAL_SECONDS: int = Field(default=10)

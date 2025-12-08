@@ -13,3 +13,13 @@ class BondZhHsCovDailyService(BaseService):
     
     collection_name = "bond_zh_hs_cov_daily"
     provider_class = BondZhHsCovDailyProvider
+
+    # 批量更新：从实时行情集合中按 symbol（带交易所前缀，如 sh110044、sz128039）驱动
+    batch_source_collection = "bond_zh_hs_cov_spot"
+    batch_source_field = "symbol"
+
+    def get_batch_params(self, symbol):
+        """根据可转债 symbol 构造 Provider 调用参数"""
+        if symbol:
+            return {"symbol": symbol}
+        return {}

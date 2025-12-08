@@ -221,7 +221,7 @@ class OptionRefreshService:
             }
     
     async def clear_collection(self, collection_name: str) -> Dict[str, Any]:
-        """清空指定集合的数据"""
+        """清空指定集合的数据并删除索引"""
         service = self._get_service(collection_name)
         
         if service:
@@ -230,11 +230,32 @@ class OptionRefreshService:
         # 回退到直接操作数据库
         try:
             collection = self.db[collection_name]
+            
+            # 1. 删除所有数据
             result = await collection.delete_many({})
+            deleted_count = result.deleted_count
+            
+            # 2. 删除所有索引（除了 _id 索引）
+            dropped_indexes = 0
+            try:
+                indexes = await collection.list_indexes().to_list(length=None)
+                for idx in indexes:
+                    idx_name = idx.get('name')
+                    if idx_name and idx_name != '_id_':
+                        await collection.drop_index(idx_name)
+                        dropped_indexes += 1
+            except Exception as idx_err:
+                logger.warning(f"[{collection_name}] 删除索引时出现警告: {idx_err}")
+            
+            message = f"已删除 {deleted_count} 条数据"
+            if dropped_indexes > 0:
+                message += f"，删除 {dropped_indexes} 个索引"
+            
             return {
                 "success": True,
-                "deleted_count": result.deleted_count,
-                "message": f"已删除 {result.deleted_count} 条数据"
+                "deleted_count": deleted_count,
+                "dropped_indexes": dropped_indexes,
+                "message": message
             }
         except Exception as e:
             return {

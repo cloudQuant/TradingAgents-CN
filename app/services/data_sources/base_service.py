@@ -135,13 +135,38 @@ class BaseService(ABC):
         }
     
     async def clear_data(self) -> Dict[str, Any]:
-        """清空集合数据"""
+        """清空集合数据并删除索引"""
         try:
+            # 1. 删除所有数据
             result = await self.collection.delete_many({})
+            deleted_count = result.deleted_count
+            
+            # 2. 删除所有索引（除了 _id 索引，MongoDB 不允许删除它）
+            dropped_indexes = 0
+            try:
+                # 获取所有索引
+                indexes = await self.collection.list_indexes().to_list(length=None)
+                for idx in indexes:
+                    idx_name = idx.get('name')
+                    # 跳过默认的 _id 索引
+                    if idx_name and idx_name != '_id_':
+                        await self.collection.drop_index(idx_name)
+                        dropped_indexes += 1
+                        self.logger.info(f"[{self.collection_name}] 删除索引: {idx_name}")
+            except Exception as idx_err:
+                self.logger.warning(f"[{self.collection_name}] 删除索引时出现警告: {idx_err}")
+            
+            message = f"已删除 {deleted_count} 条数据"
+            if dropped_indexes > 0:
+                message += f"，删除 {dropped_indexes} 个索引"
+            
+            self.logger.info(f"[{self.collection_name}] {message}")
+            
             return {
                 "success": True,
-                "deleted_count": result.deleted_count,
-                "message": f"已删除 {result.deleted_count} 条数据"
+                "deleted_count": deleted_count,
+                "dropped_indexes": dropped_indexes,
+                "message": message
             }
         except Exception as e:
             self.logger.error(f"[{self.collection_name}] 清空数据失败: {e}")
@@ -172,8 +197,11 @@ class BaseService(ABC):
                 if k not in frontend_only_params and v is not None
             }
             
-            # 调用 provider 获取数据
-            df = self.provider.fetch_data(**provider_kwargs)
+            # 在线程池中调用同步的 provider（避免 Playwright 等同步库在 asyncio 中报错）
+            df = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: self.provider.fetch_data(**provider_kwargs)
+            )
             
             if df is None or df.empty:
                 self.logger.warning(f"[{self.collection_name}] provider 返回空数据")

@@ -20,6 +20,13 @@ class BondDebtNafmiiProvider(SimpleProvider):
     collection_order = 10
     
     field_info = [
+        {"name": "债券名称", "type": "string", "description": "债券名称"},
+        {"name": "品种", "type": "string", "description": "债务融资工具品种"},
+        {"name": "注册或备案", "type": "string", "description": "注册或备案类型"},
+        {"name": "金额", "type": "number", "description": "发行金额，单位：亿元"},
+        {"name": "注册通知书文号", "type": "string", "description": "注册通知书文号（唯一标识）"},
+        {"name": "更新日期", "type": "date", "description": "信息更新日期"},
+        {"name": "项目状态", "type": "string", "description": "项目状态"},
         {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
         {"name": "来源", "type": "string", "description": "来源接口"},
     ]

@@ -1,10 +1,16 @@
-"""
-可转债实时数据-集思录数据提供者（重构版）
+"""可转债实时数据-集思录数据提供者（重构版）
 
 需求文档: tests/bonds/requirements/22_可转债实时数据-集思录.md
 数据唯一标识: 代码
+
+说明:
+- 优先使用请求参数中的 ``cookie``，否则使用 ``user/password``
+- ``user/password`` 默认从 .env 中的 ``JISILU_USER`` / ``JISILU_PASSWORD`` 读取
 """
+import pandas as pd
+
 from app.services.data_sources.base_provider import SimpleProvider
+from app.core.config import get_settings
 
 
 class BondCbJslProvider(SimpleProvider):
@@ -38,3 +44,48 @@ class BondCbJslProvider(SimpleProvider):
         {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
         {"name": "来源", "type": "string", "description": "来源接口"},
     ]
+
+    def fetch_data(self, **kwargs) -> pd.DataFrame:
+        """获取集思录可转债实时数据
+
+        参数优先级:
+        1. 如果提供 ``cookie``，则使用 cookie 调用 ak.bond_cb_jsl(cookie=...)
+        2. 否则，如果提供 ``user``/``password``，或 .env 中配置了 JISILU_USER/JISILU_PASSWORD，
+           则调用 ak.bond_cb_jsl(user=..., password=...)
+        3. 如果两者都没有，抛出友好的错误提示。
+        """
+
+        settings = get_settings()
+
+        cookie = kwargs.get("cookie")
+        # 请求参数优先，其次使用环境变量
+        user = (kwargs.get("user") or settings.JISILU_USER or "").strip()
+        password = (kwargs.get("password") or settings.JISILU_PASSWORD or "").strip()
+
+        ak_kwargs = {}
+        if cookie:
+            ak_kwargs["cookie"] = cookie
+            auth_mode = "cookie"
+        elif user and password:
+            ak_kwargs["user"] = user
+            ak_kwargs["password"] = password
+            auth_mode = "user/password"
+        else:
+            raise ValueError(
+                "缺少集思录认证信息，请在 .env 中配置 JISILU_USER/JISILU_PASSWORD，"
+                "或在更新参数中提供 user/password，或提供 cookie 参数。"
+            )
+
+        self.logger.info(
+            f"Fetching {self.collection_name} data from Jisilu with auth_mode={auth_mode}"
+        )
+
+        df = self._call_akshare(self.akshare_func, **ak_kwargs)
+        if df is None or df.empty:
+            self.logger.warning(f"No data returned for {self.collection_name}")
+            return pd.DataFrame()
+
+        # 添加时间戳等元数据
+        df = self._add_metadata(df)
+        self.logger.info(f"Successfully fetched {len(df)} records for {self.collection_name}")
+        return df
