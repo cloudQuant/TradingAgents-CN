@@ -3270,9 +3270,11 @@ async def refresh_stock_collection(
 ):
     """刷新股票数据集合"""
     try:
-        task_id = str(uuid.uuid4())
         task_manager = get_task_manager()
-        task_manager.create_task(task_id, f"刷新{collection_name}")
+        task_id = task_manager.create_task(
+            task_type=f"refresh_{collection_name}",
+            description=f"刷新股票集合: {collection_name}"
+        )
 
         # 异步执行刷新任务
         refresh_service = StockRefreshService()

@@ -259,9 +259,7 @@ async def refresh_options_collection(
             return {"success": False, "error": f"不支持刷新集合 {collection_name}"}
         
         # 创建任务
-        task_id = str(uuid.uuid4())
-        await task_manager.create_task(
-            task_id=task_id,
+        task_id = task_manager.create_task(
             task_type="option_refresh",
             description=f"刷新期权数据: {config['display_name']}"
         )

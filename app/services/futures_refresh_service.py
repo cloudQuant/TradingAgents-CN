@@ -116,14 +116,6 @@ class FuturesRefreshService:
             "futures_news_shmet": FuturesNewsShmetService(self.db),
         }
     
-    # 前端特有的参数，不应传递给 akshare 函数
-    FRONTEND_ONLY_PARAMS = {
-        'batch', 'batch_update', 'batch_size', 'concurrency', 'delay', 'update_type',
-        'page', 'limit', 'skip', 'filters', 'sort', 'order',
-        'task_id', 'callback', 'async', 'timeout', '_t', '_timestamp',
-        'force', 'clear_first', 'overwrite', 'mode'
-    }
-    
     async def refresh_collection(
         self,
         collection_name: str,
@@ -133,65 +125,84 @@ class FuturesRefreshService:
         """
         刷新指定的期货数据集合
         
+        与 FundRefreshService.refresh_collection 保持一致的实现
+        
         Args:
             collection_name: 集合名称
             task_id: 任务ID
-            params: 参数
+            params: 参数（包含 update_type, update_mode 等）
             
         Returns:
             刷新结果
         """
+        params = params or {}
+        
+        # 检查服务是否存在
+        if collection_name not in self.services:
+            self.task_manager.fail_task(task_id, f"未找到集合 {collection_name} 的服务")
+            raise ValueError(f"未找到集合 {collection_name} 的服务")
+        
+        service = self.services[collection_name]
+        
         try:
-            self.task_manager.start_task(task_id)
-            self.task_manager.update_progress(task_id, 0, 100, f"开始刷新 {collection_name}...")
+            update_type = params.get("update_type", "single")  # 默认单条更新
+            update_mode = params.get("update_mode", "incremental")  # 默认增量更新
             
-            # 检查服务是否存在
-            if collection_name not in self.services:
-                raise ValueError(f"未找到集合 {collection_name} 的服务")
+            logger.info(f"[{collection_name}] 刷新参数: update_type={update_type}, update_mode={update_mode}, params={params}")
             
-            service = self.services[collection_name]
-            
-            # 更新进度
-            self.task_manager.update_progress(task_id, 10, 100, f"正在获取 {collection_name} 数据...")
-            
-            # 判断是批量更新还是单条更新
-            is_batch = (
-                params.get("batch") or 
-                params.get("batch_update") or 
-                params.get("update_type") == "batch"
-            ) if params else False
-            
-            # 过滤掉前端特有的参数
-            api_params = {}
-            if params:
-                api_params = {
-                    k: v for k, v in params.items() 
-                    if k not in self.FRONTEND_ONLY_PARAMS
-                }
-                if is_batch and "concurrency" in params:
-                    api_params["concurrency"] = params["concurrency"]
-                logger.info(f"[参数过滤] 原始参数: {params}, 过滤后: {api_params}, 批量更新: {is_batch}")
-            
-            # 调用服务刷新数据
-            if is_batch and hasattr(service, "update_batch_data"):
-                logger.info(f"[{collection_name}] 调用批量更新方法 update_batch_data")
-                result = await service.update_batch_data(task_id=task_id, **api_params)
-            else:
-                logger.info(f"[{collection_name}] 调用单条更新方法 update_single_data")
-                result = await service.update_single_data(**api_params)
+            if update_type == "single":
+                # 单条更新
+                self.task_manager.start_task(task_id)
+                self.task_manager.update_progress(task_id, 0, 100, "开始单条更新...")
                 
-                # 单条更新需要在这里处理任务状态
-                if result.get("success"):
-                    self.task_manager.update_progress(
-                        task_id, 100, 100, 
-                        f"成功刷新 {collection_name}，插入 {result.get('inserted', 0)} 条数据"
+                try:
+                    result = await service.update_single_data(**params)
+                    logger.info(f"单条更新完成 {collection_name}: {result}")
+                    
+                    # 更新任务状态为成功
+                    message = result.get("message", "单条更新完成")
+                    inserted = result.get("inserted", 0)
+                    if inserted > 0:
+                        message = f"成功更新 {inserted} 条数据"
+                    
+                    self.task_manager.complete_task(
+                        task_id,
+                        result={"saved": inserted, "message": message},
+                        message=message
                     )
-                    self.task_manager.complete_task(task_id)
+                    return result
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.error(f"单条更新失败 {collection_name}: {error_msg}", exc_info=True)
+                    self.task_manager.fail_task(task_id, error_msg)
+                    raise
+            else:
+                # 批量更新
+                self.task_manager.start_task(task_id)
+                
+                # 如果是全量更新，先清除数据
+                if update_mode == "full":
+                    self.task_manager.update_progress(task_id, 0, 100, "开始全量更新：正在清除现有数据...")
+                    try:
+                        clear_result = await service.clear_data()
+                        if clear_result.get("success"):
+                            deleted_count = clear_result.get("deleted_count", 0)
+                            logger.info(f"[{collection_name}] 全量更新：已清除 {deleted_count} 条数据")
+                            self.task_manager.update_progress(task_id, 5, 100, f"已清除 {deleted_count} 条数据，开始更新...")
+                        else:
+                            logger.warning(f"[{collection_name}] 全量更新：清除数据失败，继续更新")
+                            self.task_manager.update_progress(task_id, 5, 100, "清除数据失败，继续更新...")
+                    except Exception as e:
+                        logger.error(f"[{collection_name}] 全量更新：清除数据异常: {e}", exc_info=True)
+                        self.task_manager.update_progress(task_id, 5, 100, "清除数据异常，继续更新...")
                 else:
-                    self.task_manager.fail_task(task_id, result.get("message", "刷新失败"))
-            
-            return result
-            
+                    self.task_manager.update_progress(task_id, 0, 100, "开始增量更新...")
+                
+                # 执行批量更新
+                result = await service.update_batch_data(task_id=task_id, **params)
+                logger.info(f"批量更新完成 {collection_name}: {result}")
+                return result
+                
         except Exception as e:
             logger.error(f"刷新 {collection_name} 失败: {e}", exc_info=True)
             self.task_manager.fail_task(task_id, str(e))

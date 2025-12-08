@@ -318,9 +318,7 @@ async def refresh_stock_collection(
             return {"success": False, "error": f"服务不存在: {collection_name}"}
         
         # 创建任务
-        task_id = str(uuid.uuid4())
-        task_manager.create_task(
-            task_id,
+        task_id = task_manager.create_task(
             task_type="refresh_stock_collection",
             description=f"刷新股票集合: {collection_name}",
         )

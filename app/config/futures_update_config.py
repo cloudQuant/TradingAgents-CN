@@ -7,42 +7,42 @@ from typing import Dict, Any
 
 # 期货集合更新配置
 FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
-    # 无参数的集合
+    # 无参数的集合 - 只需要更新功能，不需要批量更新
     "futures_fees_info": {
         "display_name": "期货交易费用参照表",
         "update_description": "从openctp获取期货交易费用数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有期货交易费用数据", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有期货交易费用数据（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     "futures_contract_info_dce": {
         "display_name": "大连商品交易所合约信息",
         "update_description": "获取大连商品交易所合约信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有合约信息", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有合约信息（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     "futures_contract_info_gfex": {
         "display_name": "广州期货交易所合约信息",
         "update_description": "获取广州期货交易所合约信息",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有合约信息", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有合约信息（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     "futures_hq_subscribe_exchange_symbol": {
         "display_name": "外盘品种代码表",
         "update_description": "获取外盘期货品种代码",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有外盘品种代码", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有外盘品种代码（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     "futures_global_spot_em": {
         "display_name": "外盘实时行情数据-东财",
         "update_description": "获取外盘期货实时行情",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取所有外盘实时行情", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取所有外盘实时行情（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     "index_hog_spot_price": {
         "display_name": "生猪市场价格指数",
         "update_description": "获取生猪市场价格指数数据",
-        "single_update": {"enabled": False, "description": "", "params": []},
-        "batch_update": {"enabled": True, "description": "一次性获取生猪价格指数", "params": []}
+        "single_update": {"enabled": True, "description": "一次性获取生猪价格指数（无参数）", "params": []},
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
     },
     
     # 需要交易所选择参数的集合
@@ -63,16 +63,24 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "batch_update": {"enabled": True, "description": "获取所有交易所手续费数据", "params": []}
     },
     
-    # 需要日期参数的集合
+    # 需要日期参数的集合 - 支持增量更新
     "futures_rule": {
         "display_name": "期货规则-交易日历表",
         "update_description": "获取期货交易规则数据",
         "single_update": {
             "enabled": True,
             "description": "获取指定日期的交易规则",
-            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式，如20241125", "required": False}]
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD 格式，留空则获取最新数据", "required": False}]
         },
-        "batch_update": {"enabled": True, "description": "获取最新交易规则数据", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从集合中最新日期开始到今天的所有工作日",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "YYYY-MM-DD，留空则从最新日期或 2010-01-01 开始", "required": False},
+                {"name": "end_date", "label": "结束日期", "type": "text", "placeholder": "YYYY-MM-DD，留空则为今天", "required": False},
+                {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
+            ]
+        }
     },
     "futures_dce_position_rank": {
         "display_name": "大连商品交易所持仓排名",
@@ -82,7 +90,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的持仓排名",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_gfex_position_rank": {
         "display_name": "广州期货交易所持仓排名",
@@ -92,7 +106,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的持仓排名",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_warehouse_receipt_czce": {
         "display_name": "仓单日报-郑州商品交易所",
@@ -102,7 +122,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的仓单日报",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_warehouse_receipt_dce": {
         "display_name": "仓单日报-大连商品交易所",
@@ -112,7 +138,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的仓单日报",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_shfe_warehouse_receipt": {
         "display_name": "仓单日报-上海期货交易所",
@@ -122,7 +154,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的仓单日报",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_gfex_warehouse_receipt": {
         "display_name": "仓单日报-广州期货交易所",
@@ -132,7 +170,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定日期的仓单日报",
             "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "留空则从最大日期开始", "required": False}
+            ]
+        }
     },
     "futures_to_spot_dce": {
         "display_name": "期转现-大商所",
@@ -224,7 +268,13 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             "description": "获取指定品种的库存数据",
             "params": [{"name": "symbol", "label": "品种代码", "type": "text", "placeholder": "如：A", "required": True}]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "从 futures_fees_info 获取品种代码进行批量更新",
+            "params": [
+                {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
+            ]
+        }
     },
     "futures_spot_sys": {
         "display_name": "现期图",
@@ -314,11 +364,20 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
                  "options": [{"label": "大连", "value": "DCE"}, {"label": "郑州", "value": "CZCE"},
                             {"label": "上海", "value": "SHFE"}, {"label": "中金", "value": "CFFEX"},
                             {"label": "能源", "value": "INE"}, {"label": "广期", "value": "GFEX"}]},
-                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "YYYYMMDD", "required": True},
-                {"name": "end_date", "label": "结束日期", "type": "text", "placeholder": "YYYYMMDD", "required": True}
+                {"name": "start_date", "label": "开始日期", "type": "text", "placeholder": "YYYYMMDD，留空则从数据库最大日期开始", "required": False},
+                {"name": "end_date", "label": "结束日期", "type": "text", "placeholder": "YYYYMMDD，留空则使用今天", "required": False}
             ]
         },
-        "batch_update": {"enabled": False, "description": "", "params": []}
+        "batch_update": {
+            "enabled": True,
+            "description": "增量更新：按交易所从数据库最大日期开始更新到今天",
+            "params": [
+                {"name": "market", "label": "交易所", "type": "select", "default": "ALL",
+                 "options": [{"label": "所有交易所", "value": "ALL"}, {"label": "大连", "value": "DCE"}, {"label": "郑州", "value": "CZCE"},
+                            {"label": "上海", "value": "SHFE"}, {"label": "中金", "value": "CFFEX"},
+                            {"label": "能源", "value": "INE"}, {"label": "广期", "value": "GFEX"}]}
+            ]
+        }
     },
     "futures_foreign_commodity_realtime": {
         "display_name": "外盘实时行情数据",
@@ -365,10 +424,10 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "update_description": "获取新加坡交易所期货结算价",
         "single_update": {
             "enabled": True,
-            "description": "获取结算价格",
-            "params": [{"name": "date", "label": "日期", "type": "text", "placeholder": "YYYYMMDD格式（可选）", "required": False}]
+            "description": "获取指定日期或最新结算价格",
+            "params": [{"name": "date", "label": "日期", "type": "text", "placeholder": "YYYYMMDD格式，留空获取最新数据", "required": False}]
         },
-        "batch_update": {"enabled": True, "description": "获取最新结算价", "params": []}
+        "batch_update": {"enabled": False, "description": "无参数或单日期接口，不需要批量更新", "params": []}
     },
     "futures_main_sina": {
         "display_name": "期货连续合约",
