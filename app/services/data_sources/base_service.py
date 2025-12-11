@@ -111,12 +111,18 @@ class BaseService(ABC):
         self,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[Dict] = None
+        filters: Optional[Dict] = None,
+        sort_by: Optional[str] = None,
+        sort_dir: str = "desc"
     ) -> Dict[str, Any]:
         """获取数据列表"""
         query = filters or {}
         
-        cursor = self.collection.find(query).skip(skip).limit(limit).sort(self.time_field, -1)
+        # 确定排序字段和方向
+        sort_field = sort_by or self.time_field
+        sort_order = -1 if sort_dir == "desc" else 1
+        
+        cursor = self.collection.find(query).skip(skip).limit(limit).sort(sort_field, sort_order)
         data = await cursor.to_list(length=limit)
         
         total = await self.collection.count_documents(query)

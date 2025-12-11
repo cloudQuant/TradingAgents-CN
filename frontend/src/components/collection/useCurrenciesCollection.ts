@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { currenciesApi } from '@/api/currencies'
 import { handleFundError, handleDangerousOperation } from '@/utils/fundErrorHandler'
+import { useCurrenciesStore } from '@/stores/currencies'
 
 interface FieldDefinition {
   name: string
@@ -40,6 +41,8 @@ interface RemoteSyncConfig {
 export function useCurrenciesCollection() {
   const route = useRoute()
   const collectionName = computed(() => route.params.collectionName as string)
+
+  const currenciesStore = useCurrenciesStore()
 
   const loading = ref(false)
   const items = ref<Record<string, any>[]>([])
@@ -176,6 +179,17 @@ export function useCurrenciesCollection() {
         if (res.data.batch_update?.params) {
           for (const param of res.data.batch_update.params) {
             if (param.default !== undefined) batchUpdateParams.value[param.name] = param.default
+          }
+        }
+
+        // 使用全局配置中的默认 API Key 预填参数
+        const defaultApiKey = currenciesStore.defaultApiKey
+        if (defaultApiKey) {
+          if (res.data.single_update?.params?.some((p: any) => p.name === 'api_key') && !singleUpdateParams.value.api_key) {
+            singleUpdateParams.value.api_key = defaultApiKey
+          }
+          if (res.data.batch_update?.params?.some((p: any) => p.name === 'api_key') && !batchUpdateParams.value.api_key) {
+            batchUpdateParams.value.api_key = defaultApiKey
           }
         }
       }

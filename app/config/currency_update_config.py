@@ -41,8 +41,16 @@ CURRENCY_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         },
         "batch_update": {
             "enabled": True,
-            "description": "批量同步 USD 和 CNY 两个基础货币的所有汇率",
+            "description": "批量同步指定基础货币的所有汇率",
             "params": [
+                {
+                    "name": "base",
+                    "label": "基础货币",
+                    "type": "text",
+                    "placeholder": "如 USD",
+                    "default": "USD",
+                    "required": False
+                },
                 {
                     "name": "api_key",
                     "label": "API Key",
@@ -93,7 +101,7 @@ CURRENCY_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         },
         "batch_update": {
             "enabled": True,
-            "description": "批量同步指定日期的所有货币历史汇率",
+            "description": "从开始日期到当前日期，按日批量同步历史汇率",
             "params": [
                 {
                     "name": "base",
@@ -104,8 +112,8 @@ CURRENCY_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
                     "required": False
                 },
                 {
-                    "name": "date",
-                    "label": "日期",
+                    "name": "start_date",
+                    "label": "开始日期",
                     "type": "text",
                     "placeholder": "YYYY-MM-DD",
                     "required": True
@@ -118,20 +126,12 @@ CURRENCY_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
                     "required": True
                 },
                 {
-                    "name": "max_codes",
-                    "label": "最大货币数",
+                    "name": "concurrency",
+                    "label": "并发数",
                     "type": "number",
-                    "default": 100,
+                    "default": 3,
                     "min": 1,
-                    "max": 500
-                },
-                {
-                    "name": "batch_size",
-                    "label": "每批数量",
-                    "type": "number",
-                    "default": 20,
-                    "min": 1,
-                    "max": 100
+                    "max": 5
                 }
             ]
         }
@@ -182,55 +182,7 @@ CURRENCY_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
             ]
         },
         "batch_update": {
-            "enabled": True,
-            "description": "批量同步指定时间范围的所有货币汇率",
-            "params": [
-                {
-                    "name": "base",
-                    "label": "基础货币",
-                    "type": "text",
-                    "placeholder": "如 USD",
-                    "default": "USD",
-                    "required": False
-                },
-                {
-                    "name": "start_date",
-                    "label": "开始日期",
-                    "type": "text",
-                    "placeholder": "YYYY-MM-DD",
-                    "required": True
-                },
-                {
-                    "name": "end_date",
-                    "label": "结束日期",
-                    "type": "text",
-                    "placeholder": "YYYY-MM-DD",
-                    "required": True
-                },
-                {
-                    "name": "api_key",
-                    "label": "API Key",
-                    "type": "text",
-                    "placeholder": "CurrencyScoop API Key",
-                    "required": True
-                },
-                {
-                    "name": "max_codes",
-                    "label": "最大货币数",
-                    "type": "number",
-                    "default": 100,
-                    "min": 1,
-                    "max": 500
-                },
-                {
-                    "name": "batch_size",
-                    "label": "每批数量",
-                    "type": "number",
-                    "default": 20,
-                    "min": 1,
-                    "max": 100
-                }
-            ]
+            "enabled": False
         }
     },
     "currency_currencies": {

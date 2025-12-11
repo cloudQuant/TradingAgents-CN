@@ -96,6 +96,8 @@ CURRENCY_UPDATE_CONFIG = {
                  "placeholder": "如: CNY"},
                 {"name": "amount", "label": "金额", "type": "string", "required": True,
                  "default": "10000", "placeholder": "如: 10000"},
+                {"name": "timestamp", "label": "时间戳", "type": "string", "required": True,
+                 "placeholder": "如: 2025-12-11"},
                 {"name": "api_key", "label": "API密钥", "type": "password", "required": True,
                  "placeholder": "请输入currencyscoop API密钥"},
             ],

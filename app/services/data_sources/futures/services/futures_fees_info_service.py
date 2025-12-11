@@ -14,4 +14,4 @@ class FuturesFeesInfoService(SimpleService):
     provider_class = FuturesFeesInfoProvider
     
     time_field = "更新时间"
-    unique_keys = ["交易所", "合约代码"]
+    unique_keys = ["日期", "合约代码"]

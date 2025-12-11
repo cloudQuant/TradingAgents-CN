@@ -61,30 +61,6 @@
           </el-card>
         </template>
 
-        <template v-if="updateConfig?.batch_update?.enabled">
-          <el-card shadow="never" style="margin-bottom: 16px;">
-            <template #header><span style="font-weight: 600;">批量更新</span></template>
-            <div v-if="updateConfig.batch_update.description" style="color: #909399; font-size: 12px; margin-bottom: 12px;">{{ updateConfig.batch_update.description }}</div>
-            <el-form-item label="更新方式" style="margin-bottom: 16px;">
-              <el-radio-group v-model="updateMode">
-                <el-radio label="incremental">增量更新</el-radio>
-                <el-radio label="full">全量更新</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-row :gutter="16" v-if="updateConfig.batch_update.params?.length">
-              <el-col v-for="param in updateConfig.batch_update.params" :key="param.name" :span="updateConfig.batch_update.params.length === 1 ? 24 : 12">
-                <el-form-item :label="param.label" :required="param.required">
-                  <el-input v-if="param.type === 'text'" v-model="batchUpdateParams[param.name]" :placeholder="param.placeholder" clearable />
-                  <el-input-number v-else-if="param.type === 'number'" v-model="batchUpdateParams[param.name]" :min="param.min" :max="param.max" :step="param.step" style="width: 100%" />
-                  <el-select v-else-if="param.type === 'select'" v-model="batchUpdateParams[param.name]" style="width: 100%">
-                    <el-option v-for="(opt, idx) in param.options" :key="idx" :label="opt.label" :value="opt.value" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-button type="primary" @click="handleBatchUpdate" :loading="batchUpdating" :disabled="!canBatchUpdate || singleUpdating || batchUpdating" style="width: 100%;">批量更新</el-button>
-          </el-card>
-        </template>
 
         <div v-if="singleUpdating || batchUpdating" style="margin-top: 16px;">
           <el-progress :percentage="progressPercentage" :status="progressStatus" :stroke-width="15" />
@@ -119,7 +95,11 @@ const {
 
 const currenciesStore = useCurrenciesStore()
 
-onMounted(() => { currenciesStore.loadCollections(); loadData() })
+onMounted(async () => {
+  await currenciesStore.loadConfig()
+  await currenciesStore.loadCollections()
+  await loadData()
+})
 onUnmounted(() => { cleanup() })
 </script>
 

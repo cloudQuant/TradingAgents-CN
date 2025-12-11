@@ -129,14 +129,16 @@ class CurrencyRefreshService:
         collection_name: str,
         skip: int = 0,
         limit: int = 100,
-        filters: Dict = None
+        filters: Dict = None,
+        sort_by: str = None,
+        sort_dir: str = "desc"
     ) -> Dict[str, Any]:
         """获取集合数据"""
         if collection_name not in self.services:
             raise ValueError(f"未找到集合 {collection_name} 的服务")
         
         service = self.services[collection_name]
-        return await service.get_data(skip=skip, limit=limit, filters=filters)
+        return await service.get_data(skip=skip, limit=limit, filters=filters, sort_by=sort_by, sort_dir=sort_dir)
     
     async def clear_collection(self, collection_name: str) -> Dict[str, Any]:
         """清空集合数据"""

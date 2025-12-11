@@ -17,23 +17,8 @@ export const currenciesApi = {
     return ApiClient.get('/api/currencies/collections')
   },
   async getCollectionData(collectionName: string, params?: any): Promise<ApiResponse<any>> {
-    // Generic endpoint if implemented, or specific ones
-    if (collectionName === 'currency_latest') {
-      return this.getCurrencyLatestList(params)
-    }
-    if (collectionName === 'currency_history') {
-      return this.getCurrencyHistoryList(params)
-    }
-    if (collectionName === 'currency_time_series') {
-      return this.getCurrencyTimeSeriesList(params)
-    }
-    if (collectionName === 'currency_currencies') {
-      return this.getCurrencyCurrenciesList(params)
-    }
-    if (collectionName === 'currency_convert') {
-      return this.getCollectionDataUnified(collectionName, params)
-    }
-    return ApiClient.get(`/api/currencies/collections/${collectionName}`, params)
+    // 集合页面统一走 /collections/{name}/data 接口
+    return this.getCollectionDataUnified(collectionName, params)
   },
   async searchCurrencies(keyword: string): Promise<ApiResponse<any>> {
     return ApiClient.get('/api/currencies/search', { keyword })
