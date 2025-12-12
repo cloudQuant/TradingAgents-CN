@@ -368,10 +368,11 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         },
         "batch_update": {
             "enabled": True,
-            "description": "从 futures_fees_info 获取品种代码进行批量更新",
+            "description": "使用 ak.futures_inventory_em_varieties() 获取品种列表进行批量更新",
             "params": [
                 {"name": "concurrency", "label": "并发数", "type": "number", "default": 3, "min": 1, "max": 10}
-            ]
+            ],
+            "show_update_mode": False
         }
     },
     "futures_spot_sys": {

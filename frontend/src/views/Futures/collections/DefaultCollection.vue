@@ -65,7 +65,7 @@
           <el-card shadow="never" style="margin-bottom: 16px;">
             <template #header><span style="font-weight: 600;">批量更新</span></template>
             <div v-if="updateConfig.batch_update.description" style="color: #909399; font-size: 12px; margin-bottom: 12px;">{{ updateConfig.batch_update.description }}</div>
-            <el-form-item label="更新方式" style="margin-bottom: 16px;">
+            <el-form-item v-if="updateConfig.batch_update.show_update_mode !== false" label="更新方式" style="margin-bottom: 16px;">
               <el-radio-group v-model="updateMode">
                 <el-radio label="incremental">增量更新</el-radio>
                 <el-radio label="full">全量更新</el-radio>
