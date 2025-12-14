@@ -1,10 +1,10 @@
 @echo off
-REM TradingAgents-CN 简化启动脚本 (Windows)
+REM 云子量化 简化启动脚本 (Windows)
 REM 用于日常快速启动应用
 
 echo.
 echo ========================================
-echo   TradingAgents-CN 快速启动
+echo   云子量化 快速启动
 echo ========================================
 echo.
 

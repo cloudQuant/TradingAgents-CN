@@ -14,7 +14,7 @@ class StockBidAskEmProvider(BaseProvider):
     collection_name = "stock_bid_ask_em"
     display_name = "行情报价"
     akshare_func = "stock_bid_ask_em"
-    unique_keys = ['代码']
+    unique_keys = ['item']
     
     # 可选属性
     collection_description = "东方财富-行情报价"

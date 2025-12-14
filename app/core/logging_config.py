@@ -52,6 +52,43 @@ class SimpleJsonFormatter(logging.Formatter):
         return json.dumps(obj, ensure_ascii=False)
 
 
+class CleanFormatter(logging.Formatter):
+    """优化的日志格式化器，确保输出整洁美观"""
+    
+    def __init__(self, fmt=None, datefmt=None, max_message_length=200):
+        super().__init__(fmt, datefmt)
+        self.max_message_length = max_message_length
+    
+    def format(self, record: logging.LogRecord) -> str:
+        # 确保trace_id存在
+        if not hasattr(record, 'trace_id'):
+            record.trace_id = "-"
+        
+        # 创建记录副本以避免修改原始记录
+        record_copy = logging.makeLogRecord(record.__dict__)
+        
+        # 截断过长的消息
+        original_msg = record_copy.getMessage()
+        if len(original_msg) > self.max_message_length:
+            record_copy.msg = original_msg[:self.max_message_length] + "..."
+            record_copy.args = ()
+        
+        # 标准化logger名称长度 - 保留重要部分
+        if len(record_copy.name) > 25:
+            # 优先保留最后的模块名
+            parts = record_copy.name.split('.')
+            if len(parts) > 1:
+                # 保留最后两个部分
+                record_copy.name = '.'.join(parts[-2:])
+                if len(record_copy.name) > 25:
+                    record_copy.name = record_copy.name[-25:]
+            else:
+                record_copy.name = record_copy.name[-25:]
+        
+        # 使用副本进行格式化
+        return super().format(record_copy)
+
+
 def _parse_size(size_str: str) -> int:
     """解析大小字符串（如 '10MB'）为字节数"""
     if isinstance(size_str, int):
@@ -66,21 +103,30 @@ def _parse_size(size_str: str) -> int:
 def setup_logging(log_level: str = "INFO"):
     """
     设置应用日志配置：
-    1) 优先尝试从 config/logging.toml 读取并转化为 dictConfig
-    2) 失败或不存在时，回退到内置默认配置
+    优先使用清洁的日志配置，确保格式统一美观
     """
+    # 检查是否使用清洁日志模式
+    use_clean_logging = os.environ.get("USE_CLEAN_LOGGING", "true").lower() in {"1", "true", "yes"}
+    
+    if use_clean_logging:
+        try:
+            from app.core.clean_logging import setup_clean_logging
+            return setup_clean_logging(log_level)
+        except Exception as e:
+            print(f"⚠️ 清洁日志配置失败，回退到标准配置: {e}")
+    
     # 1) 若存在 TOML 配置且可解析，则优先使用
     try:
         cfg_path = resolve_logging_cfg_path()
-        print(f"🔍 [setup_logging] 日志配置文件路径: {cfg_path}")
-        print(f"🔍 [setup_logging] 配置文件存在: {cfg_path.exists()}")
-        print(f"🔍 [setup_logging] TOML加载器可用: {toml_loader is not None}")
+        # 减少启动时的调试输出，只在出错时显示
+        debug_mode = os.environ.get("LOGGING_DEBUG", "").lower() in {"1", "true", "yes"}
 
         if cfg_path.exists() and toml_loader is not None:
             with cfg_path.open("rb") as f:
                 toml_data = toml_loader.load(f)
 
-            print(f"🔍 [setup_logging] 成功加载TOML配置")
+            if debug_mode:
+                print(f"🔍 [setup_logging] 成功加载TOML配置")
 
             # 读取基础字段
             logging_root = toml_data.get("logging", {})
@@ -120,10 +166,11 @@ def setup_logging(log_level: str = "INFO"):
             webapi_handler_cfg = handlers_cfg.get("webapi", {})
             worker_handler_cfg = handlers_cfg.get("worker", {})
 
-            print(f"🔍 [setup_logging] handlers配置: {list(handlers_cfg.keys())}")
-            print(f"🔍 [setup_logging] main_handler_cfg: {main_handler_cfg}")
-            print(f"🔍 [setup_logging] webapi_handler_cfg: {webapi_handler_cfg}")
-            print(f"🔍 [setup_logging] worker_handler_cfg: {worker_handler_cfg}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] handlers配置: {list(handlers_cfg.keys())}")
+                print(f"🔍 [setup_logging] main_handler_cfg: {main_handler_cfg}")
+                print(f"🔍 [setup_logging] webapi_handler_cfg: {webapi_handler_cfg}")
+                print(f"🔍 [setup_logging] worker_handler_cfg: {worker_handler_cfg}")
 
             # 主日志文件（tradingagents.log）
             main_log = main_handler_cfg.get("filename", str(Path(file_dir) / "tradingagents.log"))
@@ -132,12 +179,13 @@ def setup_logging(log_level: str = "INFO"):
             main_max_bytes = _parse_size(main_handler_cfg.get("max_size", "100MB"))
             main_backup_count = int(main_handler_cfg.get("backup_count", 5))
 
-            print(f"🔍 [setup_logging] 主日志文件配置:")
-            print(f"  - 文件路径: {main_log}")
-            print(f"  - 是否启用: {main_enabled}")
-            print(f"  - 日志级别: {main_level}")
-            print(f"  - 最大大小: {main_max_bytes} bytes")
-            print(f"  - 备份数量: {main_backup_count}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] 主日志文件配置:")
+                print(f"  - 文件路径: {main_log}")
+                print(f"  - 是否启用: {main_enabled}")
+                print(f"  - 日志级别: {main_level}")
+                print(f"  - 最大大小: {main_max_bytes} bytes")
+                print(f"  - 备份数量: {main_backup_count}")
 
             # WebAPI日志文件
             webapi_log = webapi_handler_cfg.get("filename", str(Path(file_dir) / "webapi.log"))
@@ -146,7 +194,8 @@ def setup_logging(log_level: str = "INFO"):
             webapi_max_bytes = _parse_size(webapi_handler_cfg.get("max_size", "100MB"))
             webapi_backup_count = int(webapi_handler_cfg.get("backup_count", 5))
 
-            print(f"🔍 [setup_logging] WebAPI日志文件: {webapi_log}, 启用: {webapi_enabled}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] WebAPI日志文件: {webapi_log}, 启用: {webapi_enabled}")
 
             # Worker日志文件
             worker_log = worker_handler_cfg.get("filename", str(Path(file_dir) / "worker.log"))
@@ -155,7 +204,8 @@ def setup_logging(log_level: str = "INFO"):
             worker_max_bytes = _parse_size(worker_handler_cfg.get("max_size", "100MB"))
             worker_backup_count = int(worker_handler_cfg.get("backup_count", 5))
 
-            print(f"🔍 [setup_logging] Worker日志文件: {worker_log}, 启用: {worker_enabled}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] Worker日志文件: {worker_log}, 启用: {worker_enabled}")
 
             # 错误日志文件
             error_handler_cfg = handlers_cfg.get("error", {})
@@ -179,19 +229,21 @@ def setup_logging(log_level: str = "INFO"):
                     "class": "logging.StreamHandler",
                     "formatter": "json_console_fmt" if use_json_console else "console_fmt",
                     "level": level,
-                    "filters": ["request_context"],
+                    "filters": ["request_context", "noise_filter", "level_filter"],
                     "stream": sys.stdout,
                 },
             }
 
-            print(f"🔍 [setup_logging] 开始构建handlers配置")
+            if debug_mode:
+                print(f"🔍 [setup_logging] 开始构建handlers配置")
 
             # 🔥 选择日志处理器类（Windows 使用 ConcurrentRotatingFileHandler）
             handler_class = "concurrent_log_handler.ConcurrentRotatingFileHandler" if _USE_CONCURRENT_HANDLER else "logging.handlers.RotatingFileHandler"
 
             # 主日志文件（tradingagents.log）
             if main_enabled:
-                print(f"✅ [setup_logging] 添加 main_file handler: {main_log} (使用 {handler_class})")
+                if debug_mode:
+                    print(f"✅ [setup_logging] 添加 main_file handler: {main_log} (使用 {handler_class})")
                 handlers_config["main_file"] = {
                     "class": handler_class,
                     "formatter": "json_file_fmt" if use_json_file else "file_fmt",
@@ -202,7 +254,7 @@ def setup_logging(log_level: str = "INFO"):
                     "encoding": "utf-8",
                     "filters": ["request_context"],
                 }
-            else:
+            elif debug_mode:
                 print(f"⚠️ [setup_logging] main_file handler 未启用")
 
             # WebAPI日志文件
@@ -251,7 +303,8 @@ def setup_logging(log_level: str = "INFO"):
             if error_enabled:
                 main_handlers.append("error_file")
 
-            print(f"🔍 [setup_logging] main_handlers: {main_handlers}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] main_handlers: {main_handlers}")
 
             webapi_handlers = ["console"]
             if webapi_enabled:
@@ -261,7 +314,8 @@ def setup_logging(log_level: str = "INFO"):
             if error_enabled:
                 webapi_handlers.append("error_file")
 
-            print(f"🔍 [setup_logging] webapi_handlers: {webapi_handlers}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] webapi_handlers: {webapi_handlers}")
 
             worker_handlers = ["console"]
             if worker_enabled:
@@ -271,22 +325,29 @@ def setup_logging(log_level: str = "INFO"):
             if error_enabled:
                 worker_handlers.append("error_file")
 
-            print(f"🔍 [setup_logging] worker_handlers: {worker_handlers}")
+            if debug_mode:
+                print(f"🔍 [setup_logging] worker_handlers: {worker_handlers}")
 
             logging_config = {
                 "version": 1,
                 "disable_existing_loggers": False,
                 "filters": {
-                    "request_context": {"()": "app.core.logging_context.LoggingContextFilter"}
+                    "request_context": {"()": "app.core.logging_context.LoggingContextFilter"},
+                    "noise_filter": {"()": "app.core.log_filter.NoiseFilter"},
+                    "level_filter": {"()": "app.core.log_filter.LevelBasedFilter"},
                 },
                 "formatters": {
                     "console_fmt": {
-                        "format": fmt_console,
+                        "()": "app.core.logging_config.CleanFormatter",
+                        "fmt": fmt_console,
                         "datefmt": "%Y-%m-%d %H:%M:%S",
+                        "max_message_length": 150,
                     },
                     "file_fmt": {
-                        "format": fmt_file,
+                        "()": "app.core.logging_config.CleanFormatter",
+                        "fmt": fmt_file,
                         "datefmt": "%Y-%m-%d %H:%M:%S",
+                        "max_message_length": 500,
                     },
                     "json_console_fmt": {
                         "()": "app.core.logging_config.SimpleJsonFormatter"
@@ -331,17 +392,19 @@ def setup_logging(log_level: str = "INFO"):
                 "root": {"level": level, "handlers": main_handlers},
             }
 
-            print(f"🔍 [setup_logging] 最终handlers配置: {list(handlers_config.keys())}")
-            print(f"🔍 [setup_logging] 开始应用 dictConfig")
+            if debug_mode:
+                print(f"🔍 [setup_logging] 最终handlers配置: {list(handlers_config.keys())}")
+                print(f"🔍 [setup_logging] 开始应用 dictConfig")
 
             logging.config.dictConfig(logging_config)
 
-            print(f"✅ [setup_logging] dictConfig 应用成功")
+            if debug_mode:
+                print(f"✅ [setup_logging] dictConfig 应用成功")
 
             logging.getLogger("webapi").info(f"Logging configured from {cfg_path}")
 
             # 测试主日志文件是否可写
-            if main_enabled:
+            if main_enabled and debug_mode:
                 test_logger = logging.getLogger("tradingagents")
                 test_logger.info(f"🔍 测试主日志文件写入: {main_log}")
                 print(f"🔍 [setup_logging] 已向 tradingagents logger 写入测试日志")
@@ -361,15 +424,23 @@ def setup_logging(log_level: str = "INFO"):
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
-        "filters": {"request_context": {"()": "app.core.logging_context.LoggingContextFilter"}},
+        "filters": {
+            "request_context": {"()": "app.core.logging_context.LoggingContextFilter"},
+            "noise_filter": {"()": "app.core.log_filter.NoiseFilter"},
+            "level_filter": {"()": "app.core.log_filter.LevelBasedFilter"},
+        },
         "formatters": {
             "default": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s trace=%(trace_id)s",
+                "()": "app.core.logging_config.CleanFormatter",
+                "fmt": "%(asctime)s | %(name)-25s | %(levelname)-7s | %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
+                "max_message_length": 150,
             },
             "detailed": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s trace=%(trace_id)s",
+                "()": "app.core.logging_config.CleanFormatter",
+                "fmt": "%(asctime)s | %(name)-25s | %(levelname)-7s | %(funcName)-20s | %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
+                "max_message_length": 300,
             },
         },
         "handlers": {
@@ -377,7 +448,7 @@ def setup_logging(log_level: str = "INFO"):
                 "class": "logging.StreamHandler",
                 "formatter": "default",
                 "level": log_level,
-                "filters": ["request_context"],
+                "filters": ["request_context", "noise_filter", "level_filter"],
                 "stream": sys.stdout,
             },
             "file": {

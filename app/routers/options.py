@@ -16,7 +16,7 @@ from app.core.database import get_mongo_db
 from app.utils.task_manager import get_task_manager
 from app.services.option_data_service import OptionDataService
 from app.services.option_refresh_service import OptionRefreshService
-from app.config.option_update_config import OPTION_UPDATE_CONFIGS, get_collection_config
+from app.config.option_update_config import OPTION_UPDATE_CONFIGS, get_collection_config, get_collection_update_config
 
 router = APIRouter(prefix="/api/options", tags=["options"])
 logger = logging.getLogger("webapi")
@@ -206,6 +206,23 @@ async def get_options_collection_data(
         return {"success": False, "error": str(e)}
 
 
+@router.get("/collections/{collection_name}/update-config")
+async def get_options_collection_update_config(
+    collection_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """获取指定期权集合的更新配置（用于前端API更新对话框）"""
+    try:
+        config = get_collection_update_config(collection_name)
+        return {
+            "success": True,
+            "data": config
+        }
+    except Exception as e:
+        logger.error(f"获取期权集合更新配置失败: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
 @router.get("/collections/{collection_name}/data")
 async def get_options_collection_data_alias(
     collection_name: str,
@@ -277,7 +294,7 @@ async def refresh_options_collection(
                 return result
             except Exception as e:
                 logger.error(f"刷新任务执行失败: {e}")
-                await task_manager.update_task(task_id, status="failed", message=str(e))
+                task_manager.fail_task(task_id, str(e))
         
         background_tasks.add_task(do_refresh)
         

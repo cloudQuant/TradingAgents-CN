@@ -7,16 +7,16 @@ class OptionCzceHistProvider(BaseProvider):
     
     collection_name = "option_czce_hist"
     display_name = "郑商所期权历史行情"
-    akshare_func = "option_czce_hist"
+    akshare_func = "option_hist_yearly_czce"
     unique_keys = ["合约代码", "日期"]
     
     collection_description = "郑州商品交易所的商品期权历史行情数据"
     collection_route = "/options/collections/option_czce_hist"
     collection_order = 42
     
-    param_mapping = {"symbol": "symbol"}
-    required_params = ["symbol"]
-    add_param_columns = {"symbol": "合约代码"}
+    param_mapping = {"symbol": "symbol", "year": "year"}
+    required_params = ["symbol", "year"]
+    add_param_columns = {"symbol": "品种代码", "year": "年份"}
     
     field_info = [
         {"name": "合约代码", "type": "string", "description": "合约代码"},

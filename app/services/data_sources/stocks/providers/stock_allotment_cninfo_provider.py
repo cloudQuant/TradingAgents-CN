@@ -14,7 +14,7 @@ class StockAllotmentCninfoProvider(BaseProvider):
     collection_name = "stock_allotment_cninfo"
     display_name = "配股实施方案-巨潮资讯"
     akshare_func = "stock_allotment_cninfo"
-    unique_keys = ['代码']
+    unique_keys = ['证券代码']
     
     # 可选属性
     collection_description = "巨潮资讯-个股-配股实施方案"

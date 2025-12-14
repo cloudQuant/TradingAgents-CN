@@ -14,7 +14,7 @@ class StockAAllPbProvider(SimpleProvider):
     collection_name = "stock_a_all_pb"
     display_name = "A 股等权重与中位数市净率"
     akshare_func = "stock_a_all_pb"
-    unique_keys = ['代码']
+    unique_keys = ['date']
     
     # 可选属性
     collection_description = "乐咕乐股-A 股等权重与中位数市净率"

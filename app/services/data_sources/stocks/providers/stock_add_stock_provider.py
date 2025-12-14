@@ -14,7 +14,7 @@ class StockAddStockProvider(BaseProvider):
     collection_name = "stock_add_stock"
     display_name = "股票增发"
     akshare_func = "stock_add_stock"
-    unique_keys = ['代码']
+    unique_keys = ['公告日期']
     
     # 可选属性
     collection_description = "新浪财经-发行与分配-增发"

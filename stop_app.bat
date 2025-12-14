@@ -1,8 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 chcp 65001 >nul
+set NO_PAUSE=0
+if /i "%~1"=="--no-pause" set NO_PAUSE=1
 echo ========================================
-echo TradingAgents-CN 停止脚本
+echo 云子量化 停止脚本
 echo ========================================
 echo.
 
@@ -12,49 +14,39 @@ cd /d "%SCRIPT_DIR%"
 
 REM 停止前端服务（3000 端口）
 echo [1/2] 停止前端服务 (端口 3000)...
-set FRONTEND_FOUND=0
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr :3000 ^| findstr LISTENING') do (
-    set PID=%%a
-    echo 发现前端进程，PID: %%a
-    taskkill /F /PID %%a >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo ✅ 前端服务已停止
-    ) else (
-        echo ⚠️  停止前端服务失败
-    )
-    set FRONTEND_FOUND=1
-    goto :frontend_stopped
-)
-if !FRONTEND_FOUND! equ 0 (
-    echo ✅ 前端服务未运行
-)
-:frontend_stopped
+call :kill_by_port 3000 前端
 
 REM 停止后端服务（8000 端口）
 echo.
 echo [2/2] 停止后端服务 (端口 8000)...
-set BACKEND_FOUND=0
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000 ^| findstr LISTENING') do (
-    set PID=%%a
-    echo 发现后端进程，PID: %%a
-    taskkill /F /PID %%a >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo ✅ 后端服务已停止
-    ) else (
-        echo ⚠️  停止后端服务失败
-    )
-    set BACKEND_FOUND=1
-    goto :backend_stopped
-)
-if !BACKEND_FOUND! equ 0 (
-    echo ✅ 后端服务未运行
-)
-:backend_stopped
+call :kill_by_port 8000 后端
 
 echo.
 echo ========================================
 echo ✅ 所有服务已停止
 echo ========================================
 echo.
-pause
+if %NO_PAUSE%==0 pause
+
+exit /b 0
+
+:kill_by_port
+set PORT=%~1
+set SERVICE=%~2
+set FOUND=0
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%PORT% ^| findstr LISTENING') do (
+    set PID=%%a
+    echo 发现%SERVICE%进程，PID: %%a
+    taskkill /F /PID %%a >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo ✅ %SERVICE%进程已停止
+    ) else (
+        echo ⚠️  停止%SERVICE%进程失败
+    )
+    set FOUND=1
+)
+if !FOUND! equ 0 (
+    echo ✅ %SERVICE%服务未运行
+)
+exit /b 0
 

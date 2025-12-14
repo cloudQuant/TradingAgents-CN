@@ -14,7 +14,7 @@ class StockABelowNetAssetStatisticsProvider(BaseProvider):
     collection_name = "stock_a_below_net_asset_statistics"
     display_name = "破净股统计"
     akshare_func = "stock_a_below_net_asset_statistics"
-    unique_keys = ['代码']
+    unique_keys = ['date']
     
     # 可选属性
     collection_description = "乐咕乐股-A 股破净股统计数据"

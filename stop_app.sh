@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TradingAgents-CN 停止脚本
+# 云子量化 停止脚本
 
 # 颜色定义
 RED='\033[0;31m'
@@ -9,7 +9,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "========================================"
-echo "TradingAgents-CN 停止脚本"
+echo "云子量化 停止脚本"
 echo "========================================"
 echo ""
 
@@ -76,24 +76,6 @@ kill_by_port 8000
 echo ""
 echo "========================================"
 echo -e "${GREEN}✅ 所有服务已停止${NC}"
-echo "========================================"
-echo ""
-
-# 删除日志文件
-echo "[清理] 删除日志文件..."
-log_files=("error.log" "frontend.log" "backend.log")
-for log_file in "${log_files[@]}"; do
-    if [ -f "$log_file" ]; then
-        rm -f "$log_file"
-        echo -e "${GREEN}✅ 已删除: $log_file${NC}"
-    else
-        echo -e "${YELLOW}⚠️  文件不存在: $log_file${NC}"
-    fi
-done
-
-echo ""
-echo "========================================"
-echo -e "${GREEN}✅ 清理完成${NC}"
 echo "========================================"
 echo ""
 

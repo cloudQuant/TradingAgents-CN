@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TradingAgents-CN 启动脚本
+# 云子量化 启动脚本
 
 set -e  # 遇到错误立即退出
 
@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "========================================"
-echo "TradingAgents-CN 启动脚本"
+echo "云子量化 启动脚本"
 echo "========================================"
 echo ""
 
@@ -92,6 +92,11 @@ fi
 # 等待后端启动
 echo "等待后端服务启动..."
 sleep 5
+
+if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+    echo -e "${RED}❌ 后端服务启动失败或已退出，请查看 backend.log${NC}"
+    exit 1
+fi
 
 # 启动前端服务
 echo ""

@@ -33,7 +33,7 @@ from pymongo import MongoClient, ASCENDING
 # 确保可以从项目根目录导入 app 包
 # ---------------------------------------------------------------------------
 CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]  # .../TradingAgents-CN
+PROJECT_ROOT = CURRENT_FILE.parents[2]  # .../云子量化
 if str(PROJECT_ROOT) not in sys.path:
   sys.path.insert(0, str(PROJECT_ROOT))
 

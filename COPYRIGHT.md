@@ -1,5 +1,5 @@
-# TradingAgents-CN 版权信息
-# TradingAgents-CN Copyright Information
+# 云子量化 版权信息
+# 云子量化 Copyright Information
 
 ## 📋 版权声明 / Copyright Notice
 
@@ -32,7 +32,7 @@
 
 **版权所有者 / Copyright Owner**: hsliuping  
 **邮箱 / Email**: hsliup@163.com  
-**GitHub**: https://github.com/hsliuping/TradingAgents-CN  
+**GitHub**: https://github.com/hsliuping/云子量化  
 **QQ群 / QQ Group**: 782124367  
 
 ## 💼 商业许可 / Commercial Licensing

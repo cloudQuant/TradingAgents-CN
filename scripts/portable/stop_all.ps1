@@ -1,8 +1,8 @@
 <#
-TradingAgents-CN Stop All Services Script
+云子量化 Stop All Services Script
 
 Features:
-1. Stop all TradingAgents-CN related processes
+1. Stop all 云子量化 related processes
 2. Support graceful stop via PID file
 3. Support force stop all related processes
 4. Clean up temporary files and PID files
@@ -153,7 +153,7 @@ function Stop-NginxGracefully {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  TradingAgents-CN Stop All Services" -ForegroundColor Cyan
+Write-Host "  云子量化 Stop All Services" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

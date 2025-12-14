@@ -14,7 +14,7 @@ class StockBalanceSheetByYearlyEmProvider(BaseProvider):
     collection_name = "stock_balance_sheet_by_yearly_em"
     display_name = "资产负债表-按年度"
     akshare_func = "stock_balance_sheet_by_yearly_em"
-    unique_keys = ['代码']
+    unique_keys = ['SECUCODE']
     
     # 可选属性
     collection_description = "东方财富-股票-财务分析-资产负债表-按年度"

@@ -1,4 +1,4 @@
-# TradingAgents-CN Portable - Start All Services
+# 云子量化 Portable - Start All Services
 # This script starts MongoDB, Redis, Backend, and Nginx
 
 [CmdletBinding()]
@@ -10,7 +10,7 @@ $ErrorActionPreference = "Continue"
 $root = $PSScriptRoot
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "TradingAgents-CN Portable - Start All" -ForegroundColor Cyan
+Write-Host "云子量化 Portable - Start All" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

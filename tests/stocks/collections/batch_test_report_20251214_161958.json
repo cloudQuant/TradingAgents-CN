@@ -1,0 +1,92 @@
+[
+  {
+    "name": "stock_sse_summary",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_szse_summary",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_szse_area_summary",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_szse_sector_summary",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_sse_deal_daily",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_individual_info_em",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_individual_basic_info_xq",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_bid_ask_em",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_zh_a_spot_em",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  },
+  {
+    "name": "stock_sh_a_spot_em",
+    "status": "tested",
+    "has_data": false,
+    "has_update_button": true,
+    "has_dialog": false,
+    "update_success": true,
+    "error": null
+  }
+]

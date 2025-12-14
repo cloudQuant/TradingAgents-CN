@@ -14,7 +14,7 @@ class StockSseSummaryProvider(SimpleProvider):
     collection_name = "stock_sse_summary"
     display_name = "上海证券交易所"
     akshare_func = "stock_sse_summary"
-    unique_keys = ['代码']
+    unique_keys = ['项目']  # 修复：使用实际存在的字段作为唯一键
     
     # 可选属性
     collection_description = "上海证券交易所-股票数据总貌"
@@ -23,9 +23,9 @@ class StockSseSummaryProvider(SimpleProvider):
 
     # 字段信息
     field_info = [
-        {"name": "项目", "type": "object", "description": "-"},
-        {"name": "股票", "type": "object", "description": "-"},
-        {"name": "科创板", "type": "object", "description": "-"},
-        {"name": "主板", "type": "object", "description": "-"},
+        {"name": "项目", "type": "object", "description": "统计项目名称"},
+        {"name": "股票", "type": "object", "description": "股票数据"},
+        {"name": "科创板", "type": "object", "description": "科创板数据"},
+        {"name": "主板", "type": "object", "description": "主板数据"},
         {"name": "更新时间", "type": "datetime", "description": "数据更新时间"},
     ]

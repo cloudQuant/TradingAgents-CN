@@ -23,14 +23,14 @@ playwright install chromium
 
 2. 启动后端服务：
 ```bash
-cd F:\source_code\TradingAgents-CN
+cd F:\source_code\云子量化
 # 启动 FastAPI 后端（默认 http://localhost:8000）
 python -m uvicorn app.main:app --reload
 ```
 
 3. 启动前端服务：
 ```bash
-cd F:\source_code\TradingAgents-CN\frontend
+cd F:\source_code\云子量化\frontend
 # 启动 Vue 前端（默认 http://localhost:3000）
 npm run dev
 ```
@@ -39,7 +39,7 @@ npm run dev
 
 ```bash
 # 进入项目根目录
-cd F:\source_code\TradingAgents-CN
+cd F:\source_code\云子量化
 
 # 运行所有测试
 pytest tests\funds\collections\test_collections_requirements_coverage.py -v
@@ -248,4 +248,4 @@ playwright install chromium
 ---
 
 **创建时间**: 2025-11-24  
-**维护者**: TradingAgents-CN Team
+**维护者**: 云子量化 Team

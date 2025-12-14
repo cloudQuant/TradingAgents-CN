@@ -14,7 +14,7 @@ class StockAHighLowStatisticsProvider(BaseProvider):
     collection_name = "stock_a_high_low_statistics"
     display_name = "创新高和新低的股票数量"
     akshare_func = "stock_a_high_low_statistics"
-    unique_keys = ['代码']
+    unique_keys = ['date']
     
     # 可选属性
     collection_description = "不同市场的创新高和新低的股票数量"

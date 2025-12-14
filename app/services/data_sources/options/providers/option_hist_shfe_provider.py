@@ -14,8 +14,8 @@ class OptionHistShfeProvider(BaseProvider):
     collection_route = "/options/collections/option_hist_shfe"
     collection_order = 37
     
-    param_mapping = {"symbol": "symbol", "date": "date"}
-    required_params = ["symbol", "date"]
+    param_mapping = {"symbol": "symbol", "date": "trade_date"}
+    required_params = ["symbol", "trade_date"]
     add_param_columns = {"symbol": "品种", "date": "日期"}
     
     field_info = [

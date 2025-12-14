@@ -5,7 +5,7 @@
 ### 1. 验证功能
 运行验证脚本确保功能正常：
 ```bash
-cd /Users/yunjinqi/Documents/TradingAgents-CN
+cd /Users/yunjinqi/Documents/云子量化
 python tests/funds/verify_fund_purchase_status.py
 ```
 
@@ -13,14 +13,14 @@ python tests/funds/verify_fund_purchase_status.py
 
 **后端服务**:
 ```bash
-cd /Users/yunjinqi/Documents/TradingAgents-CN
+cd /Users/yunjinqi/Documents/云子量化
 python main.py
 # 服务将在 http://localhost:8000 启动
 ```
 
 **前端服务**:
 ```bash
-cd /Users/yunjinqi/Documents/TradingAgents-CN/frontend
+cd /Users/yunjinqi/Documents/云子量化/frontend
 npm run dev
 # 服务将在 http://localhost:5173 启动
 ```

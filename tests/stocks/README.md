@@ -27,21 +27,21 @@ tests/stocks/
 ### 方式1：使用批处理脚本（推荐）
 
 ```bash
-cd f:\source_code\TradingAgents-CN\tests\stocks
+cd f:\source_code\云子量化\tests\stocks
 .\run_tests.bat
 ```
 
 ### 方式2：直接使用pytest
 
 ```bash
-cd f:\source_code\TradingAgents-CN\tests\stocks
+cd f:\source_code\云子量化\tests\stocks
 pytest collections\test_collections_page.py -v
 ```
 
 ### 方式3：运行所有测试
 
 ```bash
-cd f:\source_code\TradingAgents-CN\tests\stocks
+cd f:\source_code\云子量化\tests\stocks
 pytest -v
 ```
 
@@ -52,7 +52,7 @@ pytest -v
 确保后端服务在端口8000运行：
 
 ```bash
-cd f:\source_code\TradingAgents-CN
+cd f:\source_code\云子量化
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 

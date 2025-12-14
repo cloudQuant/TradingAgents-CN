@@ -262,6 +262,53 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/indexs',
+    name: 'Indexs',
+    component: () => import('@/layouts/BasicLayout.vue'),
+    redirect: '/indexs/overview',
+    meta: {
+      title: '指数投研',
+      icon: 'TrendCharts',
+      requiresAuth: true,
+      transition: 'slide-up'
+    },
+    children: [
+      {
+        path: 'overview',
+        name: 'IndexsHome',
+        component: () => import('@/views/Indexs/index.vue'),
+        meta: {
+          title: '指数概览',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections',
+        name: 'IndexsCollections',
+        component: () => import('@/views/Indexs/Collections.vue'),
+        meta: {
+          title: '指数数据集合',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'collections/:collectionName',
+        name: 'IndexsCollectionDetail',
+        component: () => import('@/views/Indexs/collections/index.vue'),
+        meta: {
+          title: '指数数据集合详情',
+          requiresAuth: true,
+          hideInMenu: true
+        }
+      },
+      {
+        path: '',
+        name: 'IndexsDefault',
+        redirect: { name: 'IndexsHome' }
+      }
+    ]
+  },
+  {
     path: '/currencies',
     name: 'Currencies',
     component: () => import('@/layouts/BasicLayout.vue'),
@@ -700,7 +747,7 @@ router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
   const title = to.meta.title as string
   if (title) {
-    document.title = `${title} - TradingAgents-CN`
+    document.title = `${title} - 云子量化`
   }
 
   console.log('🚦 路由守卫检查:', {

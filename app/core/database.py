@@ -11,7 +11,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from redis.asyncio import Redis, ConnectionPool
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
-from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import ConnectionError as RedisConnectionError, AuthenticationError as RedisAuthenticationError
 from .config import settings
 
 logger = logging.getLogger(__name__)
@@ -73,33 +73,60 @@ class DatabaseManager:
 
     async def init_redis(self):
         """初始化Redis连接"""
-        try:
-            logger.info("🔄 正在初始化Redis连接...")
+        logger.info("🔄 正在初始化Redis连接...")
 
-            # 创建Redis连接池
-            self.redis_pool = ConnectionPool.from_url(
-                settings.REDIS_URL,
+        def _build_pool(url: str) -> ConnectionPool:
+            return ConnectionPool.from_url(
+                url,
                 max_connections=settings.REDIS_MAX_CONNECTIONS,
                 retry_on_timeout=settings.REDIS_RETRY_ON_TIMEOUT,
                 decode_responses=True,
-                socket_connect_timeout=5,  # 5秒连接超时
-                socket_timeout=10,  # 10秒套接字超时
+                socket_connect_timeout=5,
+                socket_timeout=10,
             )
 
-            # 创建Redis客户端
+        try:
+            self.redis_pool = _build_pool(settings.REDIS_URL)
             self.redis_client = Redis(connection_pool=self.redis_pool)
-
-            # 测试连接
             await self.redis_client.ping()
             self._redis_healthy = True
-
             logger.info("✅ Redis连接成功建立")
             logger.info(f"🔗 连接池大小: {settings.REDIS_MAX_CONNECTIONS}")
+            return
+        except RedisAuthenticationError as e:
+            msg = str(e).lower()
+            if "without any password configured" in msg:
+                try:
+                    try:
+                        if self.redis_client:
+                            await self.redis_client.close()
+                    except Exception:
+                        pass
+                    try:
+                        if self.redis_pool:
+                            await self.redis_pool.disconnect()
+                    except Exception:
+                        pass
 
+                    no_auth_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+                    self.redis_pool = _build_pool(no_auth_url)
+                    self.redis_client = Redis(connection_pool=self.redis_pool)
+                    await self.redis_client.ping()
+                    self._redis_healthy = True
+                    logger.info("✅ Redis连接成功建立")
+                    logger.info(f"🔗 连接池大小: {settings.REDIS_MAX_CONNECTIONS}")
+                    return
+                except Exception as retry_err:
+                    logger.error(f"❌ Redis无密码重试连接失败: {retry_err}")
+            else:
+                logger.error(f"❌ Redis认证失败: {e}")
         except Exception as e:
             logger.error(f"❌ Redis连接失败: {e}")
-            self._redis_healthy = False
-            raise
+
+        self._redis_healthy = False
+        self.redis_client = None
+        self.redis_pool = None
+        logger.warning("⚠️ Redis未初始化，相关功能可能不可用")
 
     async def close_connections(self):
         """关闭所有数据库连接"""
@@ -200,6 +227,9 @@ async def init_database():
         await db_manager.init_redis()
         redis_client = db_manager.redis_client
         redis_pool = db_manager.redis_pool
+
+        if redis_client is None:
+            logger.warning("⚠️ Redis未初始化，相关功能可能不可用")
 
         logger.info("🎉 所有数据库连接初始化完成")
 

@@ -16,7 +16,7 @@ $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $portableDir = Join-Path $root "release\TradingAgentsCN-portable"
 
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "  Build TradingAgents-CN Portable Package" -ForegroundColor Cyan
+Write-Host "  Build 云子量化 Portable Package" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
 

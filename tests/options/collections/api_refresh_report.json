@@ -1,0 +1,350 @@
+{
+  "timestamp": "2025-12-14T18:21:53.528322",
+  "total": 38,
+  "success": 6,
+  "fail": 32,
+  "results": [
+    {
+      "name": "option_contract_info_ctp",
+      "display": "openctp期权合约信息",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 20028,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_current_day_sse",
+      "display": "上交所当日合约",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 650,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_current_day_szse",
+      "display": "深交所当日合约",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 766,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_cffex_sz50_list_sina",
+      "display": "中金所上证50指数合约列表",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 6,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_cffex_hs300_list_sina",
+      "display": "中金所沪深300指数合约列表",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 6,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_cffex_zz1000_list_sina",
+      "display": "中金所中证1000指数合约列表",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 6,
+      "data_success": true,
+      "test_passed": true
+    },
+    {
+      "name": "option_current_em",
+      "display": "东财期权实时行情",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_value_analysis_em",
+      "display": "东财期权价值分析",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_risk_analysis_em",
+      "display": "东财期权风险分析",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_premium_analysis_em",
+      "display": "东财期权溢价分析",
+      "refresh_success": true,
+      "refresh_error": "",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_finance_board",
+      "display": "金融期权行情数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_risk_indicator_sse",
+      "display": "上交所期权风险指标",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_daily_stats_sse",
+      "display": "上交所每日统计",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_daily_stats_szse",
+      "display": "深交所日度概况",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_sz50_spot_sina",
+      "display": "中金所上证50指数实时行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_hs300_spot_sina",
+      "display": "中金所沪深300指数实时行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_zz1000_spot_sina",
+      "display": "中金所中证1000指数实时行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_sz50_daily_sina",
+      "display": "中金所上证50指数日频行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_hs300_daily_sina",
+      "display": "中金所沪深300指数日频行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_cffex_zz1000_daily_sina",
+      "display": "中金所中证1000指数日频行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_list_sina",
+      "display": "上交所50ETF合约到期月份列表",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_expire_day_sina",
+      "display": "剩余到期时间",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_codes_sina",
+      "display": "看涨看跌合约代码",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_underlying_spot_price_sina",
+      "display": "期权标的物实时数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_greeks_sina",
+      "display": "期权希腊字母信息表",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_sse_daily_sina",
+      "display": "期权日数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_lhb_em",
+      "display": "期权龙虎榜",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_commodity_contract_sina",
+      "display": "商品期权当前合约",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_commodity_contract_table_sina",
+      "display": "商品期权T型报价表",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_commodity_hist_sina",
+      "display": "商品期权历史行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_comm_info",
+      "display": "商品期权手续费",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_margin",
+      "display": "期权保证金",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_hist_shfe",
+      "display": "上期所期权数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_hist_dce",
+      "display": "大商所期权数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_hist_czce",
+      "display": "郑商所期权数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_hist_gfex",
+      "display": "广期所期权数据",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_vol_gfex",
+      "display": "广期所隐含波动率",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    },
+    {
+      "name": "option_czce_hist",
+      "display": "郑商所期权历史行情",
+      "refresh_success": false,
+      "refresh_error": "HTTP 401",
+      "data_count": 0,
+      "data_success": false,
+      "test_passed": false
+    }
+  ]
+}

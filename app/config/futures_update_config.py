@@ -628,6 +628,78 @@ FUTURES_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         },
         "batch_update": {"enabled": True, "description": "获取最新资讯", "params": []}
     },
+    
+    # 交割统计类
+    "futures_delivery_dce": {
+        "display_name": "交割统计-大商所",
+        "update_description": "获取大连商品交易所交割统计数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定日期的交割统计",
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
+    "futures_delivery_czce": {
+        "display_name": "交割统计-郑商所",
+        "update_description": "获取郑州商品交易所交割统计数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定日期的交割统计",
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
+    "futures_delivery_shfe": {
+        "display_name": "交割统计-上期所",
+        "update_description": "获取上海期货交易所交割统计数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定日期的交割统计",
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
+    "futures_delivery_match_dce": {
+        "display_name": "交割配对-大商所",
+        "update_description": "获取大连商品交易所交割配对数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定日期的交割配对",
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
+    "futures_delivery_match_czce": {
+        "display_name": "交割配对-郑商所",
+        "update_description": "获取郑州商品交易所交割配对数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定日期的交割配对",
+            "params": [{"name": "date", "label": "交易日期", "type": "text", "placeholder": "YYYYMMDD格式", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
+    "futures_stock_shfe_js": {
+        "display_name": "上海期货交易所-库存数据",
+        "update_description": "获取上海期货交易所库存数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取最新库存数据（无参数）",
+            "params": []
+        },
+        "batch_update": {"enabled": False, "description": "无参数接口，不需要批量更新", "params": []}
+    },
+    "futures_hold_pos_sina": {
+        "display_name": "成交持仓-新浪",
+        "update_description": "获取新浪期货成交持仓数据",
+        "single_update": {
+            "enabled": True,
+            "description": "获取指定合约的成交持仓",
+            "params": [{"name": "symbol", "label": "合约代码", "type": "text", "placeholder": "如：IF2501", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "", "params": []}
+    },
 }
 
 

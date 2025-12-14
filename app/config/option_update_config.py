@@ -284,6 +284,15 @@ OPTION_UPDATE_CONFIGS: Dict[str, Dict[str, Any]] = {
         },
         "batch_update": {"enabled": True, "description": "批量更新", "params": []}
     },
+    "option_sse_spot_price_sina": {
+        "display_name": "期权实时数据",
+        "update_description": "获取新浪期权实时数据",
+        "single_update": {
+            "enabled": True, "description": "更新指定合约",
+            "params": [{"name": "symbol", "label": "合约代码", "type": "text", "placeholder": "如 10008573", "required": True}]
+        },
+        "batch_update": {"enabled": False, "description": "实时数据不支持批量更新", "params": []}
+    },
     "option_sse_underlying_spot_price_sina": {
         "display_name": "期权标的物实时数据",
         "update_description": "获取期权标的物实时数据",
@@ -430,3 +439,38 @@ def get_collection_config(collection_name: str) -> Optional[Dict[str, Any]]:
 def get_all_collection_names() -> List[str]:
     """获取所有集合名称"""
     return list(OPTION_UPDATE_CONFIGS.keys())
+
+
+def get_collection_update_config(collection_name: str) -> Dict[str, Any]:
+    """获取指定集合的更新配置（用于前端API更新对话框）"""
+    if collection_name in OPTION_UPDATE_CONFIGS:
+        config = OPTION_UPDATE_CONFIGS[collection_name].copy()
+        config["collection_name"] = collection_name
+        return config
+    
+    # 默认配置：只有批量更新，包含并发数参数
+    return {
+        "collection_name": collection_name,
+        "display_name": collection_name,
+        "update_description": "",
+        "single_update": {
+            "enabled": False,
+            "description": "",
+            "params": []
+        },
+        "batch_update": {
+            "enabled": True,
+            "description": "一次性获取所有数据",
+            "params": [
+                {
+                    "name": "concurrency",
+                    "label": "并发数",
+                    "type": "number",
+                    "default": 3,
+                    "min": 1,
+                    "max": 10,
+                    "step": 1
+                }
+            ]
+        }
+    }

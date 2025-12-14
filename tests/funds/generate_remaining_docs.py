@@ -166,7 +166,7 @@ def generate_doc(info):
     """生成单个需求文档"""
     content = TEMPLATE.format(**info)
     filename = f"{info['num']:02d}_{info['name']}.md"
-    filepath = f"/Users/yunjinqi/Documents/TradingAgents-CN/tests/funds/{filename}"
+    filepath = f"/Users/yunjinqi/Documents/云子量化/tests/funds/{filename}"
     
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(content)

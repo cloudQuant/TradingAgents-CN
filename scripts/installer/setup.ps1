@@ -1,5 +1,5 @@
 <#
-TradingAgents-CN Windows Portable Setup
+云子量化 Windows Portable Setup
 This script initializes a portable environment (.env, directories) for Windows.
 Encoding-safe version: ASCII-only output, no emoji or non-ASCII symbols.
 #>
@@ -46,7 +46,7 @@ function Set-EnvLine {
     Add-Content -Path $File -Value "$Key=$Value" -Encoding ASCII
 }
 
-Write-Host "TradingAgents-CN Windows Setup"
+Write-Host "云子量化 Windows Setup"
 Write-Host "Initializing environment and configuration..."
 
 $root = (Get-Location).Path

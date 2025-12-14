@@ -18,7 +18,7 @@
 ### 1. 运行测试
 
 ```bash
-cd F:\source_code\TradingAgents-CN
+cd F:\source_code\云子量化
 
 # 运行测试
 python tests\funds\test_collections_completeness.py
@@ -236,4 +236,4 @@ def run_all_tests():
 
 **最后更新**: 2025-11-23  
 **测试版本**: v1.0  
-**维护者**: TradingAgents-CN Team
+**维护者**: 云子量化 Team

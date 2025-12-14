@@ -14,7 +14,7 @@ class StockACongestionLgProvider(SimpleProvider):
     collection_name = "stock_a_congestion_lg"
     display_name = "大盘拥挤度"
     akshare_func = "stock_a_congestion_lg"
-    unique_keys = ['代码']
+    unique_keys = ['date']
     
     # 可选属性
     collection_description = "乐咕乐股-大盘拥挤度"

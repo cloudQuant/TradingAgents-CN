@@ -11,6 +11,15 @@
       <template #title>仪表板</template>
     </el-menu-item>
 
+    <el-sub-menu index="/indexs">
+      <template #title>
+        <el-icon><TrendCharts /></el-icon>
+        <span>指数</span>
+      </template>
+      <el-menu-item index="/indexs/overview">概览</el-menu-item>
+      <el-menu-item index="/indexs/collections">数据集合</el-menu-item>
+    </el-sub-menu>
+
     <el-sub-menu index="/stocks">
       <template #title>
         <el-icon><Histogram /></el-icon>
@@ -171,7 +180,8 @@ import {
   Star,
   CreditCard,
   Setting,
-  InfoFilled
+  InfoFilled,
+  TrendCharts
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -184,6 +194,7 @@ const activeMenu = computed(() => {
   // This ensures sub-pages (like /stocks/collections/detail) keep the parent menu active
   const menuIndices = [
     '/dashboard',
+    '/indexs/overview', '/indexs/collections',
     '/stocks/overview', '/stocks/collections', '/analysis/single', '/analysis/batch', '/reports',
     '/bonds/overview', '/bonds/collections', '/bonds/analysis', '/bonds/yield-curve',
     '/funds/overview', '/funds/collections', '/funds/analysis',

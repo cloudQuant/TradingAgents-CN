@@ -25,6 +25,13 @@ from app.services.data_sources.futures.services.futures_gfex_warehouse_receipt_s
 from app.services.data_sources.futures.services.futures_to_spot_dce_service import FuturesToSpotDceService
 from app.services.data_sources.futures.services.futures_to_spot_czce_service import FuturesToSpotCzceService
 from app.services.data_sources.futures.services.futures_to_spot_shfe_service import FuturesToSpotShfeService
+from app.services.data_sources.futures.services.futures_delivery_dce_service import FuturesDeliveryDceService
+from app.services.data_sources.futures.services.futures_delivery_czce_service import FuturesDeliveryCzceService
+from app.services.data_sources.futures.services.futures_delivery_shfe_service import FuturesDeliveryShfeService
+from app.services.data_sources.futures.services.futures_delivery_match_dce_service import FuturesDeliveryMatchDceService
+from app.services.data_sources.futures.services.futures_delivery_match_czce_service import FuturesDeliveryMatchCzceService
+from app.services.data_sources.futures.services.futures_stock_shfe_js_service import FuturesStockShfeJsService
+from app.services.data_sources.futures.services.futures_hold_pos_sina_service import FuturesHoldPosSinaService
 from app.services.data_sources.futures.services.futures_spot_sys_service import FuturesSpotSysService
 from app.services.data_sources.futures.services.futures_contract_info_shfe_service import FuturesContractInfoShfeService
 from app.services.data_sources.futures.services.futures_contract_info_ine_service import FuturesContractInfoIneService
@@ -83,6 +90,13 @@ class FuturesRefreshService:
             "futures_to_spot_dce": FuturesToSpotDceService(self.db),
             "futures_to_spot_czce": FuturesToSpotCzceService(self.db),
             "futures_to_spot_shfe": FuturesToSpotShfeService(self.db),
+            "futures_delivery_dce": FuturesDeliveryDceService(self.db),
+            "futures_delivery_czce": FuturesDeliveryCzceService(self.db),
+            "futures_delivery_shfe": FuturesDeliveryShfeService(self.db),
+            "futures_delivery_match_dce": FuturesDeliveryMatchDceService(self.db),
+            "futures_delivery_match_czce": FuturesDeliveryMatchCzceService(self.db),
+            "futures_stock_shfe_js": FuturesStockShfeJsService(self.db),
+            "futures_hold_pos_sina": FuturesHoldPosSinaService(self.db),
             "futures_spot_sys": FuturesSpotSysService(self.db),
             "futures_contract_info_shfe": FuturesContractInfoShfeService(self.db),
             "futures_contract_info_ine": FuturesContractInfoIneService(self.db),

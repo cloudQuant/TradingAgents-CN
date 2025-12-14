@@ -1,7 +1,7 @@
 #!/bin/bash
-# TradingAgents-CN Web应用启动脚本
+# 云子量化 Web应用启动脚本
 
-echo "🚀 启动TradingAgents-CN Web应用..."
+echo "🚀 启动云子量化 Web应用..."
 echo
 
 # 激活虚拟环境

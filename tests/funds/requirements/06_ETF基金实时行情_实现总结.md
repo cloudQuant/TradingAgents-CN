@@ -286,13 +286,13 @@ pytest tests/funds/test_fund_etf_spot.py::TestFundETFSpotE2E -v
 
 1. **启动后端服务**
    ```bash
-   cd /Users/yunjinqi/Documents/TradingAgents-CN
+   cd /Users/yunjinqi/Documents/云子量化
    python main.py
    ```
 
 2. **启动前端服务**
    ```bash
-   cd /Users/yunjinqi/Documents/TradingAgents-CN/frontend
+   cd /Users/yunjinqi/Documents/云子量化/frontend
    npm run dev
    ```
 

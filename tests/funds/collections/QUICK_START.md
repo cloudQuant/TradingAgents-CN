@@ -13,11 +13,11 @@ playwright install chromium
 
 ```bash
 # Terminal 1 - 启动后端
-cd F:\source_code\TradingAgents-CN
+cd F:\source_code\云子量化
 python -m uvicorn app.main:app --reload
 
 # Terminal 2 - 启动前端  
-cd F:\source_code\TradingAgents-CN\frontend
+cd F:\source_code\云子量化\frontend
 npm run dev
 ```
 
@@ -25,7 +25,7 @@ npm run dev
 
 ```bash
 # Terminal 3 - 运行测试
-cd F:\source_code\TradingAgents-CN
+cd F:\source_code\云子量化
 pytest tests\funds\collections\test_collections_requirements_coverage.py -v
 ```
 

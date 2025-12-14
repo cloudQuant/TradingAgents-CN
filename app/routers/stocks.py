@@ -3442,7 +3442,7 @@ async def get_news_report_time_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取财报发行数据"""
-    from app.services.stock.news_report_time_baidu_service import NewsReportTimeBaiduService
+    from app.services.data_sources.stocks.services.news_report_time_baidu_service import NewsReportTimeBaiduService
     service = NewsReportTimeBaiduService(db)
     return await service.get_data(skip=skip, limit=limit)
 
@@ -3452,7 +3452,7 @@ async def get_news_report_time_baidu_overview(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取财报发行数据概览"""
-    from app.services.stock.news_report_time_baidu_service import NewsReportTimeBaiduService
+    from app.services.data_sources.stocks.services.news_report_time_baidu_service import NewsReportTimeBaiduService
     service = NewsReportTimeBaiduService(db)
     return await service.get_overview()
 
@@ -3462,7 +3462,7 @@ async def refresh_news_report_time_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """刷新财报发行数据"""
-    from app.services.stock.news_report_time_baidu_service import NewsReportTimeBaiduService
+    from app.services.data_sources.stocks.services.news_report_time_baidu_service import NewsReportTimeBaiduService
     service = NewsReportTimeBaiduService(db)
     return await service.refresh_data()
 
@@ -3472,7 +3472,7 @@ async def clear_news_report_time_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """清空财报发行数据"""
-    from app.services.stock.news_report_time_baidu_service import NewsReportTimeBaiduService
+    from app.services.data_sources.stocks.services.news_report_time_baidu_service import NewsReportTimeBaiduService
     service = NewsReportTimeBaiduService(db)
     return await service.clear_data()
 
@@ -3486,7 +3486,7 @@ async def get_news_trade_notify_dividend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取分红派息数据"""
-    from app.services.stock.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
     service = NewsTradeNotifyDividendBaiduService(db)
     return await service.get_data(skip=skip, limit=limit)
 
@@ -3496,7 +3496,7 @@ async def get_news_trade_notify_dividend_baidu_overview(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取分红派息数据概览"""
-    from app.services.stock.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
     service = NewsTradeNotifyDividendBaiduService(db)
     return await service.get_overview()
 
@@ -3506,7 +3506,7 @@ async def refresh_news_trade_notify_dividend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """刷新分红派息数据"""
-    from app.services.stock.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
     service = NewsTradeNotifyDividendBaiduService(db)
     return await service.refresh_data()
 
@@ -3516,7 +3516,7 @@ async def clear_news_trade_notify_dividend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """清空分红派息数据"""
-    from app.services.stock.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_dividend_baidu_service import NewsTradeNotifyDividendBaiduService
     service = NewsTradeNotifyDividendBaiduService(db)
     return await service.clear_data()
 
@@ -3530,7 +3530,7 @@ async def get_news_trade_notify_suspend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取停复牌数据"""
-    from app.services.stock.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
     service = NewsTradeNotifySuspendBaiduService(db)
     return await service.get_data(skip=skip, limit=limit)
 
@@ -3540,7 +3540,7 @@ async def get_news_trade_notify_suspend_baidu_overview(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取停复牌数据概览"""
-    from app.services.stock.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
     service = NewsTradeNotifySuspendBaiduService(db)
     return await service.get_overview()
 
@@ -3550,7 +3550,7 @@ async def refresh_news_trade_notify_suspend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """刷新停复牌数据"""
-    from app.services.stock.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
     service = NewsTradeNotifySuspendBaiduService(db)
     return await service.refresh_data()
 
@@ -3560,7 +3560,7 @@ async def clear_news_trade_notify_suspend_baidu(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """清空停复牌数据"""
-    from app.services.stock.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
+    from app.services.data_sources.stocks.services.news_trade_notify_suspend_baidu_service import NewsTradeNotifySuspendBaiduService
     service = NewsTradeNotifySuspendBaiduService(db)
     return await service.clear_data()
 
@@ -3574,7 +3574,7 @@ async def get_stock_a_all_pb(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取A 股等权重与中位数市净率数据"""
-    from app.services.stock.stock_a_all_pb_service import StockAAllPbService
+    from app.services.data_sources.stocks.services.stock_a_all_pb_service import StockAAllPbService
     service = StockAAllPbService(db)
     return await service.get_data(skip=skip, limit=limit)
 
@@ -3584,7 +3584,7 @@ async def get_stock_a_all_pb_overview(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """获取A 股等权重与中位数市净率数据概览"""
-    from app.services.stock.stock_a_all_pb_service import StockAAllPbService
+    from app.services.data_sources.stocks.services.stock_a_all_pb_service import StockAAllPbService
     service = StockAAllPbService(db)
     return await service.get_overview()
 
@@ -3594,7 +3594,7 @@ async def refresh_stock_a_all_pb(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """刷新A 股等权重与中位数市净率数据"""
-    from app.services.stock.stock_a_all_pb_service import StockAAllPbService
+    from app.services.data_sources.stocks.services.stock_a_all_pb_service import StockAAllPbService
     service = StockAAllPbService(db)
     return await service.refresh_data()
 
@@ -3604,7 +3604,7 @@ async def clear_stock_a_all_pb(
     db: AsyncIOMotorClient = Depends(get_mongo_db)
 ):
     """清空A 股等权重与中位数市净率数据"""
-    from app.services.stock.stock_a_all_pb_service import StockAAllPbService
+    from app.services.data_sources.stocks.services.stock_a_all_pb_service import StockAAllPbService
     service = StockAAllPbService(db)
     return await service.clear_data()
 

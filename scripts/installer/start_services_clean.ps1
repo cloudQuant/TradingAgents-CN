@@ -1,4 +1,4 @@
-# TradingAgents-CN Services Starter (Clean English Version)
+# 云子量化 Services Starter (Clean English Version)
 # Start MongoDB and Redis services without Chinese characters
 
 param(

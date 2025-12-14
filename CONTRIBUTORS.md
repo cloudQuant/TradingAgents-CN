@@ -1,6 +1,6 @@
 # 🤝 贡献者名单
 
-感谢所有为TradingAgents-CN项目做出贡献的开发者和用户！
+感谢所有为云子量化项目做出贡献的开发者和用户！
 
 ## 🌟 贡献者分类
 
@@ -37,11 +37,11 @@
 
 - **[@YifanHere](https://github.com/YifanHere)**
   - **主要贡献**：
-    - 🔧 **CLI代码质量改进** ([PR #158](https://github.com/hsliuping/TradingAgents-CN/pull/158))
+    - 🔧 **CLI代码质量改进** ([PR #158](https://github.com/hsliuping/云子量化/pull/158))
       - 优化命令行界面的用户体验和错误处理机制
       - 提升了命令行工具的稳定性和用户友好性
       - 贡献时间：2025年
-    - 🐛 **关键Bug修复** ([PR #173](https://github.com/hsliuping/TradingAgents-CN/pull/173))
+    - 🐛 **关键Bug修复** ([PR #173](https://github.com/hsliuping/云子量化/pull/173))
       - 发现并报告了关键的 `KeyError: 'volume'` 问题
       - 提供了详细的问题分析、根因定位和修复方案
       - 显著提升了Tushare数据源的系统稳定性，解决了缓存数据标准化问题
@@ -80,7 +80,7 @@
 ### 🏅 最佳AI集成贡献奖
 
 - **[@charliecai](https://github.com/charliecai)** - 硅基流动(SiliconFlow) LLM提供商集成
-- **TradingAgents-CN团队** - 百度千帆(Qianfan) ERNIE模型集成，提供OpenAI兼容接口
+- **云子量化团队** - 百度千帆(Qianfan) ERNIE模型集成，提供OpenAI兼容接口
 
 ### 🛠️ 最佳Bug修复贡献奖
 
@@ -129,14 +129,14 @@
 
 如果您想成为贡献者或有任何问题，请通过以下方式联系我们：
 
-- **GitHub Issues**: [提交问题或建议](https://github.com/hsliuping/TradingAgents-CN/issues)
-- **GitHub Discussions**: [参与社区讨论](https://github.com/hsliuping/TradingAgents-CN/discussions)
-- **Pull Requests**: [提交代码贡献](https://github.com/hsliuping/TradingAgents-CN/pulls)
+- **GitHub Issues**: [提交问题或建议](https://github.com/hsliuping/云子量化/issues)
+- **GitHub Discussions**: [参与社区讨论](https://github.com/hsliuping/云子量化/discussions)
+- **Pull Requests**: [提交代码贡献](https://github.com/hsliuping/云子量化/pulls)
 - 加入到ＱＱ群：782124367
 
 ## 🙏 致谢
 
-感谢每一位贡献者的无私奉献！正是因为有了大家的支持和贡献，TradingAgents-CN才能不断发展壮大，为中文用户提供更好的AI金融分析工具。
+感谢每一位贡献者的无私奉献！正是因为有了大家的支持和贡献，云子量化才能不断发展壮大，为中文用户提供更好的AI金融分析工具。
 
 ---
 

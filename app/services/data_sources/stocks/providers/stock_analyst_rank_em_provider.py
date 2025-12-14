@@ -14,7 +14,7 @@ class StockAnalystRankEmProvider(BaseProvider):
     collection_name = "stock_analyst_rank_em"
     display_name = "分析师指数排行"
     akshare_func = "stock_analyst_rank_em"
-    unique_keys = ['代码']
+    unique_keys = ['序号']
     
     # 可选属性
     collection_description = "东方财富网-数据中心-研究报告-东方财富分析师指数"

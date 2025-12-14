@@ -1,5 +1,67 @@
 # 股票数据集合测试说明
 
+## 概述
+
+本目录包含 365 个股票数据集合的测试文件，每个测试文件对应一个数据集合接口。
+
+### 测试文件结构
+
+- `XXX_<collection_name>_collection.py` - 单个集合的测试文件（包含 API 测试和 Playwright UI 测试）
+- `test_collections_requirements_coverage.py` - 需求覆盖率测试
+- `test_akshare_data_api.py` - AKShare 接口可用性测试
+- `run_collection_tests.py` - 批量运行测试脚本
+- `generate_missing_tests.py` - 生成缺失测试文件的脚本
+- `add_playwright_tests.py` - 添加 Playwright UI 测试的脚本
+- `fix_playwright_tests_final.py` - 修复 Playwright 测试格式的脚本
+
+## Playwright UI 自动化测试
+
+### 概述
+
+每个测试文件都包含一个 Playwright UI 自动化测试用例 `test_ui_update_data_flow`，用于测试数据集合页面的更新数据功能。
+
+### 测试内容
+
+1. 访问数据集合页面
+2. 点击"更新数据"按钮
+3. 在弹窗中填写必要参数（根据接口类型）
+4. 点击"开始更新"按钮
+5. 验证更新结果
+
+### 接口类型
+
+不同接口需要不同的参数：
+
+- **no_param**: 无参数接口，直接点击更新
+- **symbol**: 需要股票代码（如 "000001"）
+- **symbol_hk**: 需要港股代码（如 "00700"）
+- **board**: 需要板块名称（如 "小金属"）
+- **date**: 需要日期参数（如 "20231215"）
+
+### 运行 Playwright 测试
+
+```bash
+# 安装 Playwright
+pip install playwright
+playwright install chromium
+
+# 运行所有 Playwright 测试
+pytest -m playwright -v
+
+# 运行单个文件的 Playwright 测试
+pytest 007_stock_sse_summary_collection.py::TestStockSSESummaryCollection::test_ui_update_data_flow -v
+
+# 设置前端地址
+export FRONTEND_BASE_URL="http://localhost:3000"
+```
+
+### 环境变量
+
+```bash
+# 前端地址（默认 http://localhost:3000）
+export FRONTEND_BASE_URL="http://localhost:3000"
+```
+
 ## test_collections_requirements_coverage.py
 
 ### 功能
@@ -20,7 +82,7 @@
 在运行完整测试之前，建议先运行快速检查，了解当前状态：
 
 ```powershell
-cd f:\source_code\TradingAgents-CN\tests\stocks
+cd f:\source_code\云子量化\tests\stocks
 
 # 快速检查当前覆盖率
 python quick_check.py
@@ -36,7 +98,7 @@ python quick_check.py
 
 ```powershell
 # 在 tests/stocks 目录下运行
-cd f:\source_code\TradingAgents-CN\tests\stocks
+cd f:\source_code\云子量化\tests\stocks
 
 # 方式1：显示详细输出（推荐）
 pytest .\collections\test_collections_requirements_coverage.py -v -s
@@ -91,7 +153,7 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
 ================================================================================
 【需求文档扫描结果】
   从需求文档中解析到 300 个数据集合需要验证
-  需求文档目录: f:\source_code\TradingAgents-CN\tests\stocks\requirements
+  需求文档目录: f:\source_code\云子量化\tests\stocks\requirements
 ================================================================================
 
 【API 接口返回结果】
@@ -119,7 +181,7 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
     ...
 ================================================================================
 
-✓ 详细日志已保存到: f:\source_code\TradingAgents-CN\tests\stocks\test_coverage_report_20241123_195530.log
+✓ 详细日志已保存到: f:\source_code\云子量化\tests\stocks\test_coverage_report_20241123_195530.log
 ```
 
 ### 如何使用测试结果

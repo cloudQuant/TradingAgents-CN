@@ -40,6 +40,7 @@ from app.routers import bonds as bonds_router
 from app.routers import funds as funds_router
 from app.routers import futures as futures_router
 from app.routers import options as options_router
+from app.routers import indexs as indexs_router
 from app.routers import currencies as currencies_router
 from app.routers import cryptos as cryptos_router
 from app.routers import stock_collections as stock_collections_router
@@ -634,6 +635,7 @@ app.include_router(bonds_router.router)
 app.include_router(funds_router.router)
 app.include_router(futures_router.router)
 app.include_router(options_router.router)
+app.include_router(indexs_router.router)
 app.include_router(currencies_router.router)
 app.include_router(cryptos_router.router)
 app.include_router(tags.router, prefix="/api", tags=["tags"])

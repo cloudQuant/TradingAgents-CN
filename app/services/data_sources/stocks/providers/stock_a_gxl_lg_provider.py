@@ -14,7 +14,7 @@ class StockAGxlLgProvider(BaseProvider):
     collection_name = "stock_a_gxl_lg"
     display_name = "A 股股息率"
     akshare_func = "stock_a_gxl_lg"
-    unique_keys = ['代码']
+    unique_keys = ['日期']
     
     # 可选属性
     collection_description = "乐咕乐股-股息率-A 股股息率"

@@ -1,0 +1,1040 @@
+[
+  {
+    "name": "futures_fees_info",
+    "display": "期货交易费用参照表",
+    "func": "futures_fees_info",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 848,
+    "columns": [
+      "交易所",
+      "合约代码",
+      "合约名称",
+      "品种代码",
+      "品种名称",
+      "合约乘数",
+      "最小跳动",
+      "开仓费率",
+      "开仓费用/手",
+      "平仓费率",
+      "平仓费用/手",
+      "平今费率",
+      "平今费用/手",
+      "做多保证金率",
+      "做多保证金/手",
+      "做空保证金率",
+      "做空保证金/手",
+      "上日结算价",
+      "上日收盘价",
+      "最新价",
+      "成交量",
+      "持仓量",
+      "1手开仓费用",
+      "1手平仓费用",
+      "1手平今费用",
+      "做多1手保证金",
+      "做空1手保证金",
+      "1手市值",
+      "1Tick平仓盈亏",
+      "1Tick平仓净利",
+      "2Tick平仓净利",
+      "1Tick平仓收益率%",
+      "2Tick平仓收益率%",
+      "1Tick平今净利",
+      "2Tick平今净利",
+      "1Tick平今收益率%",
+      "2Tick平今收益率%",
+      "更新时间"
+    ],
+    "error": null,
+    "duration_ms": 680.5047988891602
+  },
+  {
+    "name": "futures_contract_info_dce",
+    "display": "大连商品交易所合约信息",
+    "func": "futures_contract_info_dce",
+    "params": {},
+    "type": "no_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "duration_ms": 185.38618087768555
+  },
+  {
+    "name": "futures_contract_info_gfex",
+    "display": "广州期货交易所合约信息",
+    "func": "futures_contract_info_gfex",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 47,
+    "columns": [
+      "品种",
+      "合约代码",
+      "交易单位",
+      "最小变动单位",
+      "开始交易日",
+      "最后交易日",
+      "最后交割日"
+    ],
+    "error": null,
+    "duration_ms": 264.415979385376
+  },
+  {
+    "name": "futures_hq_subscribe_exchange_symbol",
+    "display": "外盘品种代码表",
+    "func": "futures_hq_subscribe_exchange_symbol",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 30,
+    "columns": [
+      "symbol",
+      "code"
+    ],
+    "error": null,
+    "duration_ms": 1.7960071563720703
+  },
+  {
+    "name": "futures_global_spot_em",
+    "display": "外盘实时行情数据-东财",
+    "func": "futures_global_spot_em",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 620,
+    "columns": [
+      "序号",
+      "代码",
+      "名称",
+      "最新价",
+      "涨跌额",
+      "涨跌幅",
+      "今开",
+      "最高",
+      "最低",
+      "昨结",
+      "成交量",
+      "买盘",
+      "卖盘",
+      "持仓量"
+    ],
+    "error": null,
+    "duration_ms": 7734.17067527771
+  },
+  {
+    "name": "index_hog_spot_price",
+    "display": "生猪市场价格指数",
+    "func": "index_hog_spot_price",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 550,
+    "columns": [
+      "日期",
+      "指数",
+      "4个月均线",
+      "6个月均线",
+      "12个月均线",
+      "预售均价",
+      "成交均价",
+      "成交均重"
+    ],
+    "error": null,
+    "duration_ms": 470.8390235900879
+  },
+  {
+    "name": "futures_news_shmet",
+    "display": "期货资讯",
+    "func": "futures_news_shmet",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 20,
+    "columns": [
+      "发布时间",
+      "内容"
+    ],
+    "error": null,
+    "duration_ms": 333.8360786437988
+  },
+  {
+    "name": "futures_stock_shfe_js",
+    "display": "上海期货交易所-库存数据",
+    "func": "futures_stock_shfe_js",
+    "params": {},
+    "type": "no_param",
+    "success": true,
+    "data_count": 0,
+    "columns": [],
+    "error": null,
+    "duration_ms": 248.07381629943848,
+    "warning": "返回空DataFrame"
+  },
+  {
+    "name": "futures_rule",
+    "display": "期货规则-交易日历表",
+    "func": "futures_rule",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 134,
+    "columns": [
+      "交易所",
+      "品种",
+      "代码",
+      "交易保证金比例",
+      "涨跌停板幅度",
+      "合约乘数",
+      "最小变动价位",
+      "限价单每笔最大下单手数",
+      "特殊合约参数调整",
+      "调整备注"
+    ],
+    "error": null,
+    "duration_ms": 664.1418933868408
+  },
+  {
+    "name": "futures_dce_position_rank",
+    "display": "大连商品交易所-持仓排名",
+    "func": "futures_dce_position_rank",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "File is not a zip file",
+    "duration_ms": 100.79312324523926
+  },
+  {
+    "name": "futures_gfex_position_rank",
+    "display": "广州期货交易所-持仓排名",
+    "func": "futures_gfex_position_rank",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 9,
+    "columns": [],
+    "error": null,
+    "duration_ms": 5950.481176376343
+  },
+  {
+    "name": "futures_warehouse_receipt_czce",
+    "display": "仓单日报-郑州商品交易所",
+    "func": "futures_warehouse_receipt_czce",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 25,
+    "columns": [],
+    "error": null,
+    "duration_ms": 859.5209121704102
+  },
+  {
+    "name": "futures_warehouse_receipt_dce",
+    "display": "仓单日报-大连商品交易所",
+    "func": "futures_warehouse_receipt_dce",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "duration_ms": 168.56765747070312
+  },
+  {
+    "name": "futures_shfe_warehouse_receipt",
+    "display": "仓单日报-上海期货交易所",
+    "func": "futures_shfe_warehouse_receipt",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 28,
+    "columns": [],
+    "error": null,
+    "duration_ms": 461.8549346923828
+  },
+  {
+    "name": "futures_gfex_warehouse_receipt",
+    "display": "仓单日报-广州期货交易所",
+    "func": "futures_gfex_warehouse_receipt",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 2,
+    "columns": [],
+    "error": null,
+    "duration_ms": 142.82536506652832
+  },
+  {
+    "name": "futures_contract_info_shfe",
+    "display": "上海期货交易所-合约信息",
+    "func": "futures_contract_info_shfe",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 276,
+    "columns": [
+      "合约代码",
+      "上市日",
+      "到期日",
+      "开始交割日",
+      "最后交割日",
+      "挂牌基准价",
+      "交易日",
+      "更新时间"
+    ],
+    "error": null,
+    "duration_ms": 344.65813636779785
+  },
+  {
+    "name": "futures_contract_info_ine",
+    "display": "上海国际能源交易中心-合约信息",
+    "func": "futures_contract_info_ine",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 62,
+    "columns": [
+      "合约代码",
+      "上市日",
+      "到期日",
+      "开始交割日",
+      "最后交割日",
+      "挂牌基准价",
+      "交易日"
+    ],
+    "error": null,
+    "duration_ms": 355.5898666381836
+  },
+  {
+    "name": "futures_contract_info_czce",
+    "display": "郑州商品交易所-合约信息",
+    "func": "futures_contract_info_czce",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 232,
+    "columns": [
+      "产品名称",
+      "合约代码",
+      "产品代码",
+      "产品类型",
+      "交易所MIC编码",
+      "交易场所",
+      "交易时间节假日除外",
+      "交易国家ISO编码",
+      "交易币种ISO编码",
+      "结算币种ISO编码",
+      "到期时间待国家公布2025年节假日安排后进行调整",
+      "结算方式",
+      "挂牌频率",
+      "最小变动价位",
+      "最小变动价值",
+      "交易单位",
+      "计量单位",
+      "最大下单量",
+      "日持仓限额期货公司会员不限仓",
+      "大宗交易最小规模",
+      "是否受CESR监管",
+      "是否为灵活合约",
+      "上市周期该产品的所有合约月份",
+      "交割通知日",
+      "第一交易日",
+      "最后交易日待国家公布2025年节假日安排后进行调整",
+      "交割结算日",
+      "月份代码",
+      "年份代码",
+      "最后交割日",
+      "车（船）板最后交割日",
+      "合约交割月份本合约交割月份",
+      "交易保证金率",
+      "涨跌停板",
+      "费用币种ISO编码",
+      "交易手续费",
+      "手续费收取方式",
+      "交割手续费",
+      "平今仓手续费",
+      "交易限额"
+    ],
+    "error": null,
+    "duration_ms": 451.23815536499023
+  },
+  {
+    "name": "futures_contract_info_cffex",
+    "display": "中国金融期货交易所-合约信息",
+    "func": "futures_contract_info_cffex",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 898,
+    "columns": [
+      "合约代码",
+      "合约月份",
+      "挂盘基准价",
+      "上市日",
+      "最后交易日",
+      "涨停板幅度",
+      "跌停板幅度",
+      "涨停板价位",
+      "跌停板价位",
+      "持仓限额",
+      "品种",
+      "查询交易日"
+    ],
+    "error": null,
+    "duration_ms": 75261.84296607971
+  },
+  {
+    "name": "futures_to_spot_dce",
+    "display": "期转现-大连",
+    "func": "futures_to_spot_dce",
+    "params": {
+      "date": "202412"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "No tables found",
+    "duration_ms": 186.26928329467773
+  },
+  {
+    "name": "futures_to_spot_czce",
+    "display": "期转现-郑州",
+    "func": "futures_to_spot_czce",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 1,
+    "columns": [
+      "合约代码",
+      "合约数量"
+    ],
+    "error": null,
+    "duration_ms": 564.0771389007568
+  },
+  {
+    "name": "futures_to_spot_shfe",
+    "display": "期转现-上海",
+    "func": "futures_to_spot_shfe",
+    "params": {
+      "date": "202412"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "HTTPSConnectionPool(host='tsite.shfe.com.cn', port=443): Max retries exceeded with url: /data/instrument/ExchangeDelivery202412.dat (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x11c43a690>: Failed to resolve 'tsite.shfe.com.cn' ([Errno 8] nodename nor servname provided, or not known)\"))",
+    "duration_ms": 5.074739456176758
+  },
+  {
+    "name": "futures_delivery_dce",
+    "display": "交割信息-大连",
+    "func": "futures_delivery_dce",
+    "params": {
+      "date": "202412"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "No tables found",
+    "duration_ms": 169.49892044067383
+  },
+  {
+    "name": "futures_delivery_czce",
+    "display": "交割信息-郑州",
+    "func": "futures_delivery_czce",
+    "params": {
+      "date": "202412"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "Excel file format cannot be determined, you must specify an engine manually.",
+    "duration_ms": 383.35418701171875
+  },
+  {
+    "name": "futures_delivery_shfe",
+    "display": "交割信息-上海",
+    "func": "futures_delivery_shfe",
+    "params": {
+      "date": "202412"
+    },
+    "type": "date_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "HTTPSConnectionPool(host='tsite.shfe.com.cn', port=443): Max retries exceeded with url: /data/dailydata/202412monthvarietystatistics.dat (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x11c4f7c90>: Failed to resolve 'tsite.shfe.com.cn' ([Errno 8] nodename nor servname provided, or not known)\"))",
+    "duration_ms": 3.2088756561279297
+  },
+  {
+    "name": "futures_delivery_match_dce",
+    "display": "交割配对-大连",
+    "func": "futures_delivery_match_dce",
+    "params": {
+      "symbol": "a"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "No tables found",
+    "duration_ms": 112.64204978942871
+  },
+  {
+    "name": "futures_delivery_match_czce",
+    "display": "交割配对-郑州",
+    "func": "futures_delivery_match_czce",
+    "params": {
+      "symbol": "PTA"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "futures_delivery_match_czce() got an unexpected keyword argument 'symbol'",
+    "duration_ms": 0.0400543212890625
+  },
+  {
+    "name": "futures_settlement_price_sgx",
+    "display": "新加坡交易所期货-结算价",
+    "func": "futures_settlement_price_sgx",
+    "params": {
+      "date": "20241213"
+    },
+    "type": "date_param",
+    "success": true,
+    "data_count": 2448,
+    "columns": [
+      "DATE",
+      "COM",
+      "COM_MM",
+      "COM_YY",
+      "OPEN",
+      "HIGH",
+      "LOW",
+      "CLOSE",
+      "SETTLE",
+      "VOLUME",
+      "OINT",
+      "SERIES"
+    ],
+    "error": null,
+    "duration_ms": 6357.932090759277
+  },
+  {
+    "name": "futures_comm_info",
+    "display": "期货手续费与保证金",
+    "func": "futures_comm_info",
+    "params": {
+      "symbol": "所有"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 819,
+    "columns": [
+      "交易所名称",
+      "合约名称",
+      "合约代码",
+      "现价",
+      "涨停板",
+      "跌停板",
+      "保证金-买开",
+      "保证金-卖开",
+      "保证金-每手",
+      "手续费标准-开仓-万分之",
+      "手续费标准-开仓-元",
+      "手续费标准-平昨-万分之",
+      "手续费标准-平昨-元",
+      "手续费标准-平今-万分之",
+      "手续费标准-平今-元",
+      "每跳毛利",
+      "手续费",
+      "每跳净利",
+      "备注",
+      "手续费更新时间",
+      "价格更新时间"
+    ],
+    "error": null,
+    "duration_ms": 15046.139001846313
+  },
+  {
+    "name": "futures_inventory_99",
+    "display": "库存数据-99期货网",
+    "func": "futures_inventory_99",
+    "params": {
+      "symbol": "豆一"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 4196,
+    "columns": [
+      "日期",
+      "收盘价",
+      "库存"
+    ],
+    "error": null,
+    "duration_ms": 2751.6050338745117
+  },
+  {
+    "name": "futures_inventory_em",
+    "display": "库存数据-东方财富",
+    "func": "futures_inventory_em",
+    "params": {
+      "symbol": "A"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 67,
+    "columns": [
+      "日期",
+      "库存",
+      "增减"
+    ],
+    "error": null,
+    "duration_ms": 558.1278800964355
+  },
+  {
+    "name": "futures_hold_pos_sina",
+    "display": "持仓数据-新浪",
+    "func": "futures_hold_pos_sina",
+    "params": {
+      "symbol": "成交量",
+      "contract": "IF2501",
+      "date": "20241213"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 0,
+    "columns": [
+      "名次",
+      "会员简称",
+      "成交量",
+      "比上交易增减"
+    ],
+    "error": null,
+    "duration_ms": 169.66819763183594,
+    "warning": "返回空DataFrame"
+  },
+  {
+    "name": "futures_spot_sys",
+    "display": "现期图",
+    "func": "futures_spot_sys",
+    "params": {
+      "symbol": "铜"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 11,
+    "columns": [
+      "日期",
+      "现货价格",
+      "主力合约",
+      "最近合约"
+    ],
+    "error": null,
+    "duration_ms": 383.95023345947266
+  },
+  {
+    "name": "futures_zh_spot",
+    "display": "内盘-实时行情数据",
+    "func": "futures_zh_spot",
+    "params": {},
+    "type": "no_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "Length mismatch: Expected axis has 1 elements, new values have 44 elements",
+    "duration_ms": 199.21112060546875
+  },
+  {
+    "name": "futures_zh_realtime",
+    "display": "内盘-实时行情数据(品种)",
+    "func": "futures_zh_realtime",
+    "params": {
+      "symbol": "白糖"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 7,
+    "columns": [
+      "symbol",
+      "exchange",
+      "name",
+      "trade",
+      "settlement",
+      "presettlement",
+      "open",
+      "high",
+      "low",
+      "close",
+      "bidprice1",
+      "askprice1",
+      "bidvol1",
+      "askvol1",
+      "volume",
+      "position",
+      "ticktime",
+      "tradedate",
+      "preclose",
+      "changepercent",
+      "bid",
+      "ask",
+      "prevsettlement"
+    ],
+    "error": null,
+    "duration_ms": 308.67671966552734
+  },
+  {
+    "name": "futures_zh_minute_sina",
+    "display": "内盘-分钟数据",
+    "func": "futures_zh_minute_sina",
+    "params": {
+      "symbol": "IF2501"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 1023,
+    "columns": [
+      "datetime",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "hold"
+    ],
+    "error": null,
+    "duration_ms": 209.8219394683838
+  },
+  {
+    "name": "futures_zh_daily_sina",
+    "display": "内盘-日线数据",
+    "func": "futures_zh_daily_sina",
+    "params": {
+      "symbol": "RB0"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 4060,
+    "columns": [
+      "date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "hold",
+      "settle"
+    ],
+    "error": null,
+    "duration_ms": 375.8397102355957
+  },
+  {
+    "name": "futures_main_sina",
+    "display": "期货连续合约-新浪",
+    "func": "futures_main_sina",
+    "params": {
+      "symbol": "V0"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 4017,
+    "columns": [
+      "日期",
+      "开盘价",
+      "最高价",
+      "最低价",
+      "收盘价",
+      "成交量",
+      "持仓量",
+      "动态结算价"
+    ],
+    "error": null,
+    "duration_ms": 302.5028705596924
+  },
+  {
+    "name": "futures_contract_detail",
+    "display": "期货合约详情-新浪",
+    "func": "futures_contract_detail",
+    "params": {
+      "symbol": "V2501"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 123,
+    "columns": [
+      "item",
+      "value"
+    ],
+    "error": null,
+    "duration_ms": 341.0801887512207
+  },
+  {
+    "name": "futures_contract_detail_em",
+    "display": "期货合约详情-东财",
+    "func": "futures_contract_detail_em",
+    "params": {
+      "symbol": "螺纹钢主力"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "'NoneType' object has no attribute 'find'",
+    "duration_ms": 241.08600616455078
+  },
+  {
+    "name": "futures_foreign_commodity_realtime",
+    "display": "外盘-实时行情",
+    "func": "futures_foreign_commodity_realtime",
+    "params": {
+      "symbol": "CL"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 1,
+    "columns": [
+      "名称",
+      "最新价",
+      "人民币报价",
+      "涨跌额",
+      "涨跌幅",
+      "开盘价",
+      "最高价",
+      "最低价",
+      "昨日结算价",
+      "持仓量",
+      "买价",
+      "卖价",
+      "行情时间",
+      "日期"
+    ],
+    "error": null,
+    "duration_ms": 416.5229797363281
+  },
+  {
+    "name": "futures_global_hist_em",
+    "display": "外盘-历史行情-东财",
+    "func": "futures_global_hist_em",
+    "params": {
+      "symbol": "伦敦金"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "'NoneType' object is not subscriptable",
+    "duration_ms": 219.35701370239258
+  },
+  {
+    "name": "futures_foreign_hist",
+    "display": "外盘-历史行情",
+    "func": "futures_foreign_hist",
+    "params": {
+      "symbol": "GC"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 2593,
+    "columns": [
+      "date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "position",
+      "s",
+      "settlement"
+    ],
+    "error": null,
+    "duration_ms": 344.04993057250977
+  },
+  {
+    "name": "futures_foreign_detail",
+    "display": "外盘-合约详情",
+    "func": "futures_foreign_detail",
+    "params": {
+      "symbol": "GC"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 4,
+    "columns": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "error": null,
+    "duration_ms": 185.90474128723145
+  },
+  {
+    "name": "futures_index_ccidx",
+    "display": "中证商品指数",
+    "func": "futures_index_ccidx",
+    "params": {
+      "symbol": "中证商品期货指数"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "the JSON object must be str, bytes or bytearray, not dict",
+    "duration_ms": 837.371826171875
+  },
+  {
+    "name": "futures_spot_stock",
+    "display": "现货库存",
+    "func": "futures_spot_stock",
+    "params": {
+      "symbol": "铜"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "list indices must be integers or slices, not NoneType",
+    "duration_ms": 510.2972984313965
+  },
+  {
+    "name": "futures_comex_inventory",
+    "display": "COMEX库存数据",
+    "func": "futures_comex_inventory",
+    "params": {
+      "symbol": "黄金"
+    },
+    "type": "symbol_param",
+    "success": true,
+    "data_count": 1246,
+    "columns": [
+      "序号",
+      "日期",
+      "COMEX黄金库存量-吨",
+      "COMEX黄金库存量-盎司"
+    ],
+    "error": null,
+    "duration_ms": 1559.2691898345947
+  },
+  {
+    "name": "futures_hog_core",
+    "display": "生猪核心数据",
+    "func": "futures_hog_core",
+    "params": {
+      "symbol": "全国"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "返回None",
+    "duration_ms": 0.01811981201171875
+  },
+  {
+    "name": "futures_hog_cost",
+    "display": "生猪成本数据",
+    "func": "futures_hog_cost",
+    "params": {
+      "symbol": "全国"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "返回None",
+    "duration_ms": 0.015020370483398438
+  },
+  {
+    "name": "futures_hog_supply",
+    "display": "生猪供应数据",
+    "func": "futures_hog_supply",
+    "params": {
+      "symbol": "全国"
+    },
+    "type": "symbol_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "返回None",
+    "duration_ms": 0.008821487426757812
+  },
+  {
+    "name": "futures_hist_em",
+    "display": "内盘-历史行情-东财",
+    "func": "futures_hist_em",
+    "params": {
+      "symbol": "螺纹钢主力",
+      "period": "daily",
+      "start_date": "20241201",
+      "end_date": "20241213"
+    },
+    "type": "date_range_param",
+    "success": false,
+    "data_count": 0,
+    "columns": [],
+    "error": "list index out of range",
+    "duration_ms": 26029.28113937378
+  },
+  {
+    "name": "get_futures_daily",
+    "display": "内盘-历史行情-交易所",
+    "func": "get_futures_daily",
+    "params": {
+      "start_date": "20241201",
+      "end_date": "20241213",
+      "market": "SHFE"
+    },
+    "type": "date_range_param",
+    "success": true,
+    "data_count": 2800,
+    "columns": [
+      "index",
+      "symbol",
+      "date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "open_interest",
+      "turnover",
+      "settle",
+      "pre_settle",
+      "variety"
+    ],
+    "error": null,
+    "duration_ms": 4180.3834438323975
+  }
+]

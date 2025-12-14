@@ -1,8 +1,8 @@
-# TradingAgents-CN 项目上下文
+# 云子量化 项目上下文
 
 ## 项目概述
 
-TradingAgents-CN 是一个基于多智能体大语言模型的**中文金融交易决策框架**，专为中文用户优化，提供完整的A股/港股/美股分析能力。该项目基于原版 [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) 进行中文增强和功能扩展。
+云子量化 是一个基于多智能体大语言模型的**中文金融交易决策框架**，专为中文用户优化，提供完整的A股/港股/美股分析能力。该项目基于原版 [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) 进行中文增强和功能扩展。
 
 ### 核心特性
 
@@ -37,7 +37,7 @@ TradingAgents-CN 是一个基于多智能体大语言模型的**中文金融交�
 ## 项目结构
 
 ```
-F:\source_code\TradingAgents-CN\
+F:\source_code\云子量化\
 ├── app/                    # FastAPI 后端应用 (专有组件)
 ├── frontend/               # Vue 3 前端应用 (专有组件)
 ├── tradingagents/          # 核心多智能体框架
@@ -160,7 +160,7 @@ python main.py
 ### 文档
 - 中文文档优先
 - 详细的 README.md 和使用指南
-- 微信公众号: TradingAgents-CN
+- 微信公众号: 云子量化
 
 ## 关键文件
 

@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ========================================
-echo   TradingAgents-CN Stop All Services
+echo   云子量化 Stop All Services
 echo ========================================
 echo.
 

@@ -1,4 +1,4 @@
-# Backup TradingAgents-CN Docker Volumes
+# Backup 云子量化 Docker Volumes
 # This script backs up MongoDB and Redis data volumes
 
 $ErrorActionPreference = "Stop"

@@ -14,7 +14,7 @@ class StockATtmLyrProvider(SimpleProvider):
     collection_name = "stock_a_ttm_lyr"
     display_name = "A 股等权重与中位数市盈率"
     akshare_func = "stock_a_ttm_lyr"
-    unique_keys = ['代码']
+    unique_keys = ['date']
     
     # 可选属性
     collection_description = "乐咕乐股-A 股等权重市盈率与中位数市盈率"

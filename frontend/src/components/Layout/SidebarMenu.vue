@@ -11,6 +11,15 @@
       <template #title>仪表板</template>
     </el-menu-item>
 
+    <el-sub-menu index="/indexs">
+      <template #title>
+        <el-icon><DataLine /></el-icon>
+        <span>指数投研</span>
+      </template>
+      <el-menu-item index="/indexs/overview">概览</el-menu-item>
+      <el-menu-item index="/indexs/collections">数据集合</el-menu-item>
+    </el-sub-menu>
+
     <el-sub-menu index="/stocks">
       <template #title>
         <el-icon><TrendCharts /></el-icon>
@@ -169,7 +178,8 @@ import {
   /* Document 移除：不再使用顶级分析报告菜单图标 */
   Setting,
   InfoFilled,
-  CreditCard
+  CreditCard,
+  DataLine
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

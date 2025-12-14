@@ -14,7 +14,7 @@ class StockAccountStatisticsEmProvider(SimpleProvider):
     collection_name = "stock_account_statistics_em"
     display_name = "股票账户统计月度"
     akshare_func = "stock_account_statistics_em"
-    unique_keys = ['代码']
+    unique_keys = ['数据日期']
     
     # 可选属性
     collection_description = "东方财富网-数据中心-特色数据-股票账户统计"

@@ -1,8 +1,8 @@
 @echo off
-REM TradingAgents-CN Backend Launcher for Windows
+REM 云子量化 Backend Launcher for Windows
 REM 快速启动脚本
 
-echo 🚀 TradingAgents-CN Backend Launcher
+echo 🚀 云子量化 Backend Launcher
 echo ==================================================
 
 REM 检查Python是否安装
