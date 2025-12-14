@@ -11,12 +11,14 @@ TradingAgents-CN 使用基于文件的用户认证系统，用户信息存储在
 ## 用户角色和权限
 
 ### 管理员 (admin)
+
 - 权限：`["analysis", "config", "admin"]`
 - 可以进行股票分析
 - 可以访问系统配置
 - 可以管理用户和系统
 
 ### 普通用户 (user)
+
 - 权限：`["analysis"]`
 - 只能进行股票分析
 - 无法访问系统配置和管理功能
@@ -24,7 +26,7 @@ TradingAgents-CN 使用基于文件的用户认证系统，用户信息存储在
 ## 安全特性
 
 - 密码使用 SHA-256 哈希存储
-- 会话超时机制（1小时）
+- 会话超时机制（1 小时）
 - 权限分级控制
 - 登录日志记录
 
@@ -36,13 +38,14 @@ TradingAgents-CN 使用基于文件的用户认证系统，用户信息存储在
 ```json
 {
   "新用户名": {
-    "password_hash": "密码的SHA-256哈希值",
+    "password_hash": "密码的 SHA-256 哈希值",
     "role": "user",
     "permissions": ["analysis"],
     "created_at": 时间戳
   }
 }
-```
+
+```bash
 
 ## 注意事项
 

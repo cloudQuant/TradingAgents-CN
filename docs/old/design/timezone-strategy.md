@@ -11,14 +11,17 @@
 ## 配置来源与优先级
 
 1) 系统设置（数据库）
+
 - 键：`system_settings.app_timezone`（例如 `"Asia/Shanghai"`）
 - 可在 Web 前端“系统设置”页面可视化编辑；保存后即时生效（缓存失效后立刻应用）。
 
 2) 环境变量（.env / 进程环境）
+
 - 键：`TIMEZONE`（例如 `TIMEZONE=Asia/Shanghai`）
 - 当 DB 未配置或缓存尚未命中时作为回退；若设置了 ENV，某些元数据会将该项标记为来自环境变量（只读）。
 
 3) 默认值
+
 - 默认：`Asia/Shanghai`
 
 > 实现参考：`app/utils/timezone.py` 使用 DB（provider cache）> ENV(settings.TIMEZONE) > 默认 的策略获取有效时区。
@@ -33,6 +36,7 @@
 - 缓存与生效：更新系统设置后，后端会调用 `config_provider.invalidate()` 失效缓存；provider 层默认 TTL 约 60s（若未手动失效）。
 
 涉及的关键文件（示例）：
+
 - `app/utils/timezone.py`（get_tz_name/get_tz/now_tz/to_config_tz）
 - `app/models/*.py`（默认时间统一为 `now_tz`）
 - `app/services/config_service.py`（系统设置默认包含 `app_timezone`）
@@ -56,8 +60,8 @@ MongoDB/BSON 内部以 UTC 存储 datetime。由于我们在应用层以“配�
 const start = new Date("2025-09-27T00:00:00+08:00");
 const end   = new Date("2025-09-28T00:00:00+08:00");
 db.operation_logs.find({ timestamp: { $gte: start, $lt: end } }).limit(5);
-```
 
+```bash
 2) 使用聚合管道在“显示层”转为本地时区：
 
 ```javascript
@@ -72,9 +76,10 @@ db.operation_logs.aggregate([
       action: 1
   } }
 ]).limit(5);
-```
 
+```bash
 Compass 小贴士：
+
 - 可在 Aggregation 里使用 `timezone` 进行转换，结果面板直接显示本地时间。
 - Compass 偏好中通常也有 “Display dates in local timezone” 选项，按需勾选。
 
@@ -112,10 +117,10 @@ Compass 小贴士：
 - 适用：v0.1.16+（含本次“统一时区配置”改造）
 - 向后兼容：未配置 DB `app_timezone` 时，使用环境变量 `TIMEZONE`，否则默认 `Asia/Shanghai`；不影响既有 API 协议。
 
----
+- --
 
 如需扩展：
+
 - 更多 IANA 时区下拉项与搜索
 - 后端保存时区名合法性校验（无效值报错）
 - 视图/脚本自动化（运维零心智负担）
-

@@ -16,14 +16,14 @@
 
 ```bash
 python scripts/init_model_catalog.py
-```
 
+```bash
 这会在数据库中创建默认的模型目录，包含 7 个厂家共 31 个模型。
 
 ### 2. 访问管理界面
 
 1. 启动前端和后端服务
-2. 访问：`http://localhost:3001`
+2. 访问：`<http://localhost:3001`>
 3. 登录系统
 4. 进入：**设置 → 系统配置 → 配置管理 → 模型目录**
 
@@ -36,7 +36,7 @@ python scripts/init_model_catalog.py
 3. 填写：
    - **模型名称**：如 `qwen-2.5-72b`
    - **显示名称**：如 `Qwen 2.5 72B - 超大参数`
-4. 点击"保存"
+1. 点击"保存"
 
 #### 添加新厂家
 
@@ -44,12 +44,12 @@ python scripts/init_model_catalog.py
 2. 填写：
    - **厂家标识**：如 `mistral`
    - **厂家名称**：如 `Mistral AI`
-3. 添加模型
-4. 点击"保存"
+1. 添加模型
+2. 点击"保存"
 
 ## 📊 数据流程
 
-```
+```bash
 ┌──────────────────────────────────────────────────────────┐
 │  1. 管理员维护模型目录                                      │
 │     (设置 → 配置管理 → 模型目录)                           │
@@ -67,7 +67,7 @@ python scripts/init_model_catalog.py
 │     (设置 → 配置管理 → 大模型配置 → 添加)                  │
 │     - 选择厂家                                            │
 │     - 从模型目录中选择模型（或手动输入）                    │
-│     - 配置参数（API密钥、温度等）                          │
+│     - 配置参数（API 密钥、温度等）                          │
 └────────────────┬─────────────────────────────────────────┘
                  │
                  ↓
@@ -75,27 +75,29 @@ python scripts/init_model_catalog.py
 │  4. 用户配置保存到数据库                                    │
 │     (system_configs.llm_configs)                          │
 └──────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 ## 🎨 界面预览
 
 ### 模型目录管理页面
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
 │  模型目录管理                    [+ 添加厂家模型目录]      │
 ├─────────────────────────────────────────────────────────┤
 │  厂家标识  │ 厂家名称  │ 模型数量 │ 模型列表  │ 操作      │
 ├─────────────────────────────────────────────────────────┤
-│  dashscope │ 通义千问  │ 8个模型  │ Qwen...   │ 编辑 删除 │
-│  openai    │ OpenAI   │ 5个模型  │ GPT-4...  │ 编辑 删除 │
-│  google    │ Gemini   │ 4个模型  │ Gemini... │ 编辑 删除 │
+│  dashscope │ 通义千问  │ 8 个模型  │ Qwen...   │ 编辑 删除 │
+│  openai    │ OpenAI   │ 5 个模型  │ GPT-4...  │ 编辑 删除 │
+│  google    │ Gemini   │ 4 个模型  │ Gemini... │ 编辑 删除 │
 └─────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 ### 添加大模型配置（使用模型目录）
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
 │  添加大模型配置                                           │
 ├─────────────────────────────────────────────────────────┤
@@ -105,13 +107,14 @@ python scripts/init_model_catalog.py
 │                ↑ 从模型目录自动加载                       │
 │                💡 可以从列表中选择，也可以直接输入         │
 │                                                          │
-│  API密钥：     [sk-*********************]                │
-│  最大Token：   [4000]                                    │
+│  API 密钥：     [sk-*********************]                │
+│  最大 Token：   [4000]                                    │
 │  温度：        [0.7]                                     │
 │                                                          │
 │                                    [取消]  [保存]        │
 └─────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 ## 🔧 维护流程
 
@@ -121,38 +124,49 @@ python scripts/init_model_catalog.py
 2. **找到对应厂家，点击"编辑"**
 3. **点击"添加模型"**
 4. **填写模型信息**：
+
    ```
+
    模型名称：qwen-2.5-72b
    显示名称：Qwen 2.5 72B - 超大参数
    ```
-5. **点击"保存"**
-6. **完成！** 用户立即可以在添加配置时看到新模型
+
+1. **点击"保存"**
+2. **完成！**用户立即可以在添加配置时看到新模型
 
 ### 当模型被废弃时
 
-1. **编辑对应的模型目录**
-2. **修改显示名称**，添加"(已废弃)"标记：
+1.**编辑对应的模型目录**
+
+1. **修改显示名称**，添加"(已废弃)"标记：
+
    ```
+
    显示名称：Qwen Old Model (已废弃)
    ```
-3. **保存**
+
+1. **保存**
 
 ## 📝 API 使用示例
 
 ### 获取模型目录
 
 ```bash
-curl -X GET http://localhost:8000/api/config/model-catalog \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+curl -X GET <http://localhost:8000/api/config/model-catalog> \
+
+  - H "Authorization: Bearer YOUR_TOKEN"
+
+```bash
 
 ### 添加新模型到目录
 
 ```bash
-curl -X POST http://localhost:8000/api/config/model-catalog \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
+curl -X POST <http://localhost:8000/api/config/model-catalog> \
+
+  - H "Authorization: Bearer YOUR_TOKEN" \
+  - H "Content-Type: application/json" \
+  - d '{
+
     "provider": "dashscope",
     "provider_name": "通义千问",
     "models": [
@@ -166,54 +180,60 @@ curl -X POST http://localhost:8000/api/config/model-catalog \
       }
     ]
   }'
-```
+
+```bash
 
 ## 🎉 优势
 
 ### 之前（硬编码）
 
-❌ 添加新模型需要修改代码  
-❌ 需要重启服务才能生效  
-❌ 不支持通过界面管理  
+❌ 添加新模型需要修改代码
+❌ 需要重启服务才能生效
+❌ 不支持通过界面管理
 ❌ 维护困难
 
 ### 现在（数据库存储）
 
-✅ 通过界面动态添加模型  
-✅ 立即生效，无需重启  
-✅ 支持前端界面管理  
-✅ 易于维护和更新  
-✅ 支持批量管理  
+✅ 通过界面动态添加模型
+✅ 立即生效，无需重启
+✅ 支持前端界面管理
+✅ 易于维护和更新
+✅ 支持批量管理
 ✅ 支持 API 操作
 
 ## 🔍 常见问题
 
 ### Q: 修改模型目录会影响现有配置吗？
 
-**A:** 不会。模型目录只是提供可选列表，用户的实际配置独立存储在 `system_configs.llm_configs` 中。
+- *A:** 不会。模型目录只是提供可选列表，用户的实际配置独立存储在 `system_configs.llm_configs` 中。
 
 ### Q: 如果模型不在目录中，还能使用吗？
 
-**A:** 可以。用户仍然可以手动输入任意模型名称，模型目录只是提供便利，不是强制约束。
+- *A:** 可以。用户仍然可以手动输入任意模型名称，模型目录只是提供便利，不是强制约束。
 
 ### Q: 如何备份模型目录？
 
-**A:** 可以通过 MongoDB 导出 `model_catalog` 集合：
+- *A:** 可以通过 MongoDB 导出 `model_catalog` 集合：
+
 ```bash
 mongoexport --db=tradingagents --collection=model_catalog --out=model_catalog_backup.json
-```
+
+```bash
 
 ### Q: 如何恢复模型目录？
 
-**A:** 可以通过 MongoDB 导入：
+- *A:** 可以通过 MongoDB 导入：
+
 ```bash
 mongoimport --db=tradingagents --collection=model_catalog --file=model_catalog_backup.json
-```
 
+```bash
 或者重新运行初始化脚本：
+
 ```bash
 python scripts/init_model_catalog.py
-```
+
+```bash
 
 ## 📚 相关文档
 
@@ -229,4 +249,3 @@ python scripts/init_model_catalog.py
 4. ✅ 测试添加大模型配置时的体验
 
 祝使用愉快！ 🎊
-

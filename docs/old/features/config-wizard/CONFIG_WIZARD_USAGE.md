@@ -1,44 +1,44 @@
 # 配置向导和验证功能使用指南
 
-> **版本**: 1.0  
-> **更新日期**: 2025-10-05  
+> **版本**: 1.0
+> **更新日期**: 2025-10-05
 > **适用版本**: v1.0.0-preview+
 
----
+- --
 
 ## 📋 概述
 
 本文档介绍如何使用 TradingAgents-CN 的配置向导和配置验证功能，帮助用户快速完成系统配置。
 
----
+- --
 
 ## 🎯 功能特性
 
 ### 1. 配置向导 (ConfigWizard)
 
-**功能**:
+- *功能**:
 - 首次使用时自动显示
-- 5步引导流程
+- 5 步引导流程
 - 友好的帮助信息
 - 配置摘要显示
 
-**触发条件**:
+- *触发条件**:
 - 首次启动应用
 - 检测到缺少必需配置
 - 用户未完成过配置向导
 
 ### 2. 配置验证 (ConfigValidator)
 
-**功能**:
+- *功能**:
 - 实时验证配置完整性
 - 区分必需/推荐配置
 - 可视化状态显示
 - 详细的错误提示
 
-**访问路径**:
+- *访问路径**:
 - 配置管理页面 → 配置验证
 
----
+- --
 
 ## 🚀 快速开始
 
@@ -47,28 +47,32 @@
 #### 步骤 1: 启动应用
 
 ```bash
+
 # 启动后端服务
+
 cd TradingAgents-CN
 .\.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # 启动前端服务（新终端）
+
 cd frontend
 npm run dev
-```
+
+```bash
 
 #### 步骤 2: 打开浏览器
 
-访问: `http://localhost:3000`
+访问: `<http://localhost:3000`>
 
 #### 步骤 3: 配置向导
 
 如果是首次使用，系统会自动显示配置向导：
 
-**步骤 0: 欢迎**
+- *步骤 0: 欢迎**
 - 阅读欢迎信息
 - 点击"开始配置"
 
-**步骤 1: 数据库配置**
+- *步骤 1: 数据库配置**
 - MongoDB 主机: `localhost`
 - MongoDB 端口: `27017`
 - MongoDB 数据库: `tradingagents`
@@ -77,27 +81,28 @@ npm run dev
 
 > ⚠️ 注意: 数据库配置需要在 `.env` 文件中设置，此处仅用于验证。
 
-**步骤 2: 大模型配置**
+- *步骤 2: 大模型配置**
 - 选择大模型提供商（推荐 DeepSeek 或通义千问）
 - 输入 API 密钥
 - 选择模型名称
 
-**步骤 3: 数据源配置**
+- *步骤 3: 数据源配置**
 - 选择数据源（推荐 AKShare，免费无需密钥）
 - 如果选择 Tushare，需要输入 Token
 
-**步骤 4: 完成**
+- *步骤 4: 完成**
 - 查看配置摘要
 - 点击"完成"
 
 #### 步骤 4: 开始使用
 
 配置完成后，您可以：
+
 - 访问"仪表盘"查看系统概览
 - 访问"单股分析"开始分析股票
 - 访问"配置管理"调整详细设置
 
----
+- --
 
 ## 📊 配置验证
 
@@ -109,24 +114,35 @@ npm run dev
 
 ### 验证结果说明
 
-#### 必需配置（6项）
+#### 必需配置（6 项）
 
 | 配置项 | 说明 | 示例 |
+
 |--------|------|------|
+
 | MONGODB_HOST | MongoDB 主机地址 | localhost |
+
 | MONGODB_PORT | MongoDB 端口 | 27017 |
+
 | MONGODB_DATABASE | MongoDB 数据库名称 | tradingagents |
+
 | REDIS_HOST | Redis 主机地址 | localhost |
+
 | REDIS_PORT | Redis 端口 | 6379 |
+
 | JWT_SECRET | JWT 认证密钥 | your-secret-key |
 
-#### 推荐配置（3项）
+#### 推荐配置（3 项）
 
 | 配置项 | 说明 | 获取方式 |
+
 |--------|------|----------|
-| DEEPSEEK_API_KEY | DeepSeek API 密钥 | https://platform.deepseek.com/ |
-| DASHSCOPE_API_KEY | 通义千问 API 密钥 | https://dashscope.aliyun.com/ |
-| TUSHARE_TOKEN | Tushare Token | https://tushare.pro/ |
+
+| DEEPSEEK_API_KEY | DeepSeek API 密钥 | <https://platform.deepseek.com/> |
+
+| DASHSCOPE_API_KEY | 通义千问 API 密钥 | <https://dashscope.aliyun.com/> |
+
+| TUSHARE_TOKEN | Tushare Token | <https://tushare.pro/> |
 
 #### 状态图标
 
@@ -134,7 +150,7 @@ npm run dev
 - ❌ 红色叉号 = 未配置（必需）
 - ⚠️ 黄色警告 = 未配置（推荐）
 
----
+- --
 
 ## 🔧 配置方法
 
@@ -144,12 +160,15 @@ npm run dev
 
 ```bash
 cp .env.example .env
-```
+
+```bash
 
 #### 2. 编辑 .env 文件
 
 ```bash
+
 # 必需配置
+
 MONGODB_HOST=localhost
 MONGODB_PORT=27017
 MONGODB_DATABASE=tradingagents
@@ -158,18 +177,24 @@ REDIS_PORT=6379
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
 # 推荐配置
+
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
 DASHSCOPE_API_KEY=your_dashscope_api_key_here
 TUSHARE_TOKEN=your_tushare_token_here
-```
+
+```bash
 
 #### 3. 重启后端服务
 
 ```bash
+
 # 停止当前服务（Ctrl+C）
+
 # 重新启动
+
 .\.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+
+```bash
 
 ### 方法 2: 通过 Web 界面
 
@@ -191,13 +216,13 @@ TUSHARE_TOKEN=your_tushare_token_here
 - 填写必要信息
 - 保存
 
----
+- --
 
 ## 🎨 界面说明
 
 ### 配置向导界面
 
-```
+```bash
 ┌─────────────────────────────────────────────────┐
 │  ⭐ → 💾 → 🤖 → 📊 → ✅                         │
 │  欢迎  数据库  大模型  数据源  完成              │
@@ -210,11 +235,12 @@ TUSHARE_TOKEN=your_tushare_token_here
 ├─────────────────────────────────────────────────┤
 │  [上一步]                          [下一步]      │
 └─────────────────────────────────────────────────┘
-```
+
+```bash
 
 ### 配置验证界面
 
-```
+```bash
 ┌─────────────────────────────────────────────────┐
 │  ✓ 配置验证                    [重新验证]        │
 ├─────────────────────────────────────────────────┤
@@ -234,32 +260,35 @@ TUSHARE_TOKEN=your_tushare_token_here
 │  │ ✓ 通义千问 API         [已配置]           │ │
 │  └───────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────┘
-```
 
----
+```bash
+
+- --
 
 ## 🐛 常见问题
 
 ### Q1: 配置向导不显示？
 
-**原因**:
+- *原因**:
 - 已经完成过配置向导
 - 所有必需配置已设置
 
-**解决方法**:
+- *解决方法**:
+
 ```javascript
 // 在浏览器控制台执行
 localStorage.removeItem('config_wizard_completed')
 // 刷新页面
-```
+
+```bash
 
 ### Q2: 配置验证失败？
 
-**原因**:
+- *原因**:
 - 缺少必需配置
 - 配置值无效
 
-**解决方法**:
+- *解决方法**:
 1. 查看验证结果中的错误提示
 2. 按照提示修改 `.env` 文件
 3. 重启后端服务
@@ -267,11 +296,11 @@ localStorage.removeItem('config_wizard_completed')
 
 ### Q3: API 密钥配置后还是显示未配置？
 
-**原因**:
+- *原因**:
 - 环境变量未生效
 - 后端服务未重启
 
-**解决方法**:
+- *解决方法**:
 1. 确认 `.env` 文件已保存
 2. 重启后端服务
 3. 清除浏览器缓存
@@ -279,22 +308,26 @@ localStorage.removeItem('config_wizard_completed')
 
 ### Q4: 如何跳过配置向导？
 
-**方法 1**: 点击"跳过向导"按钮
+- *方法 1**: 点击"跳过向导"按钮
 
-**方法 2**: 在浏览器控制台执行
+- *方法 2**: 在浏览器控制台执行
+
 ```javascript
 localStorage.setItem('config_wizard_completed', 'true')
-```
+
+```bash
 
 ### Q5: 如何重新显示配置向导？
 
-**方法**: 在浏览器控制台执行
+- *方法**: 在浏览器控制台执行
+
 ```javascript
 localStorage.removeItem('config_wizard_completed')
 location.reload()
-```
 
----
+```bash
+
+- --
 
 ## 📖 API 文档
 
@@ -302,9 +335,10 @@ location.reload()
 
 #### 端点
 
-```
+```bash
 GET /api/system/config/validate
-```
+
+```bash
 
 #### 响应
 
@@ -325,9 +359,10 @@ GET /api/system/config/validate
   },
   "message": "配置验证完成"
 }
-```
 
----
+```bash
+
+- --
 
 ## 🔗 相关文档
 
@@ -335,7 +370,7 @@ GET /api/system/config/validate
 - [配置验证器文档](./CONFIGURATION_VALIDATOR.md) - 验证器技术文档
 - [Phase 3 实施文档](./PHASE3_WEB_UI_OPTIMIZATION.md) - Web UI 优化文档
 
----
+- --
 
 ## 💡 最佳实践
 
@@ -360,7 +395,7 @@ GET /api/system/config/validate
 - ✅ 定期检查配置状态
 - ✅ 保持配置文件同步
 
----
+- --
 
 ## 🎉 总结
 
@@ -372,11 +407,10 @@ GET /api/system/config/validate
 
 开始使用 TradingAgents-CN，享受智能股票分析的乐趣！🚀
 
----
+- --
 
-**需要帮助？**
+- *需要帮助？**
 
-- 📧 提交 Issue: https://github.com/hsliuping/TradingAgents-CN/issues
+- 📧 提交 Issue: <https://github.com/hsliuping/TradingAgents-CN/issues>
 - 📖 查看文档: `docs/` 目录
 - 💬 加入讨论: GitHub Discussions
-

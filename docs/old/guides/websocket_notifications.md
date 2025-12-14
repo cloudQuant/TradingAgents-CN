@@ -7,15 +7,22 @@ WebSocket 通知系统是对 SSE + Redis PubSub 方案的替代，解决了 Redi
 ### ✅ 优势
 
 | 特性 | SSE + Redis PubSub | WebSocket |
-|------|-------------------|-----------|
-| **连接管理** | 每个 SSE 连接创建独立的 PubSub 连接 ❌ | 直接管理 WebSocket 连接 ✅ |
-| **Redis 连接** | 不使用连接池，容易泄漏 ❌ | 不需要 Redis PubSub ✅ |
-| **双向通信** | 单向（服务器→客户端）❌ | 双向（服务器↔客户端）✅ |
-| **实时性** | 较好 ⚠️ | 更好 ✅ |
-| **连接数限制** | 受 Redis 连接数限制 ❌ | 只受服务器资源限制 ✅ |
-| **自动重连** | 浏览器自动重连 ✅ | 需要手动实现 ⚠️ |
 
----
+|------|-------------------|-----------|
+
+| **连接管理**| 每个 SSE 连接创建独立的 PubSub 连接 ❌ | 直接管理 WebSocket 连接 ✅ |
+
+|**Redis 连接**| 不使用连接池，容易泄漏 ❌ | 不需要 Redis PubSub ✅ |
+
+|**双向通信**| 单向（服务器→客户端）❌ | 双向（服务器↔客户端）✅ |
+
+|**实时性**| 较好 ⚠️ | 更好 ✅ |
+
+|**连接数限制**| 受 Redis 连接数限制 ❌ | 只受服务器资源限制 ✅ |
+
+|**自动重连** | 浏览器自动重连 ✅ | 需要手动实现 ⚠️ |
+
+- --
 
 ## 🚀 快速开始
 
@@ -23,11 +30,12 @@ WebSocket 通知系统是对 SSE + Redis PubSub 方案的替代，解决了 Redi
 
 #### 1. WebSocket 通知端点
 
-```
+```bash
 ws://localhost:8000/api/ws/notifications?token=<jwt_token>
-```
 
-**消息格式**：
+```bash
+
+- *消息格式**：
 
 ```json
 {
@@ -43,15 +51,17 @@ ws://localhost:8000/api/ws/notifications?token=<jwt_token>
     "status": "unread"
   }
 }
-```
+
+```bash
 
 #### 2. WebSocket 任务进度端点
 
-```
+```bash
 ws://localhost:8000/api/ws/tasks/<task_id>?token=<jwt_token>
-```
 
-**消息格式**：
+```bash
+
+- *消息格式**：
 
 ```json
 {
@@ -65,15 +75,17 @@ ws://localhost:8000/api/ws/tasks/<task_id>?token=<jwt_token>
     "timestamp": "2025-10-23T12:00:00"
   }
 }
-```
+
+```bash
 
 #### 3. WebSocket 连接统计
 
-```
+```bash
 GET /api/ws/stats
-```
 
-**响应**：
+```bash
+
+- *响应**：
 
 ```json
 {
@@ -85,9 +97,10 @@ GET /api/ws/stats
     "user2": 1
   }
 }
-```
 
----
+```bash
+
+- --
 
 ## 💻 前端集成
 
@@ -103,8 +116,10 @@ import { useAuthStore } from './auth'
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const ws = ref<WebSocket | null>(null)
+
   const connected = ref(false)
   const reconnectTimer = ref<number | null>(null)
+
   const reconnectAttempts = ref(0)
   const maxReconnectAttempts = 5
 
@@ -119,7 +134,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
       const authStore = useAuthStore()
       const token = authStore.token || localStorage.getItem('auth-token') || ''
+
       const base = import.meta.env.VITE_API_BASE_URL || ''
+
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const wsHost = base.replace(/^https?:\/\//, '').replace(/\/$/, '')
       const url = `${wsProtocol}//${wsHost}/api/ws/notifications?token=${encodeURIComponent(token)}`
@@ -142,9 +159,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
         // 自动重连
         if (reconnectAttempts.value < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.value), 30000)
+          const delay = Math.min(1000 *Math.pow(2, reconnectAttempts.value), 30000)
           console.log(`[WS] ${delay}ms 后重连 (尝试 ${reconnectAttempts.value + 1}/${maxReconnectAttempts})`)
-          
+
           reconnectTimer.value = window.setTimeout(() => {
             reconnectAttempts.value++
             connect()
@@ -244,7 +261,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
     send
   }
 })
-```
+
+```bash
 
 #### 2. 在 App.vue 中初始化
 
@@ -269,19 +287,24 @@ onUnmounted(() => {
   wsStore.disconnect()
 })
 </script>
-```
 
----
+```bash
+
+- --
 
 ## 🔧 配置
 
 ### 环境变量
 
 ```env
+
 # WebSocket 配置（可选）
+
 WS_HEARTBEAT_INTERVAL=30  # 心跳间隔（秒）
+
 WS_MAX_CONNECTIONS_PER_USER=3  # 每个用户最大连接数
-```
+
+```bash
 
 ### Nginx 配置
 
@@ -289,46 +312,49 @@ WS_MAX_CONNECTIONS_PER_USER=3  # 每个用户最大连接数
 
 ```nginx
 location /api/ {
-    proxy_pass http://backend/api/;
+    proxy_pass <http://backend/api/;>
 
-    # WebSocket 支持（必需）
+# WebSocket 支持（必需）
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
 
-    # 超时设置（重要！）
-    # WebSocket 长连接需要更长的超时时间
-    proxy_connect_timeout 120s;
-    proxy_send_timeout 3600s;  # 1小时
-    proxy_read_timeout 3600s;  # 1小时
+# 超时设置（重要！）
 
-    # 禁用缓存
+# WebSocket 长连接需要更长的超时时间
+    proxy_connect_timeout 120s;
+    proxy_send_timeout 3600s;  # 1 小时
+    proxy_read_timeout 3600s;  # 1 小时
+
+# 禁用缓存
     proxy_buffering off;
     proxy_cache off;
 }
-```
 
-**关键配置说明**：
+```bash
+
+- *关键配置说明**：
 
 1. **`proxy_http_version 1.1`**：WebSocket 需要 HTTP/1.1
 2. **`Upgrade` 和 `Connection` 头**：用于协议升级
 3. **`proxy_send_timeout` 和 `proxy_read_timeout`**：
-   - 设置为 3600s（1小时）或更长
+   - 设置为 3600s（1 小时）或更长
    - 如果设置太短（如 120s），WebSocket 连接会被意外关闭
    - 后端有心跳机制（每 30 秒），可以保持连接活跃
-4. **`proxy_buffering off`**：禁用缓冲，确保实时性
+1. **`proxy_buffering off`**：禁用缓冲，确保实时性
 
----
+- --
 
 ## 📊 监控
 
 ### 查看连接统计
 
 ```bash
-curl http://localhost:8000/api/ws/stats
-```
+curl <http://localhost:8000/api/ws/stats>
 
-**响应示例**：
+```bash
+
+- *响应示例**：
 
 ```json
 {
@@ -340,9 +366,10 @@ curl http://localhost:8000/api/ws/stats
     "user2": 1
   }
 }
-```
 
----
+```bash
+
+- --
 
 ## 🔄 迁移指南
 
@@ -354,7 +381,7 @@ curl http://localhost:8000/api/ws/stats
 
 #### 2. 前端修改
 
-**旧代码（SSE）**：
+- *旧代码（SSE）**：
 
 ```typescript
 const sse = new EventSource('/api/notifications/stream?token=...')
@@ -362,9 +389,10 @@ sse.addEventListener('notification', (event) => {
   const data = JSON.parse(event.data)
   // 处理通知
 })
-```
 
-**新代码（WebSocket）**：
+```bash
+
+- *新代码（WebSocket）**：
 
 ```typescript
 const ws = new WebSocket('ws://localhost:8000/api/ws/notifications?token=...')
@@ -374,9 +402,10 @@ ws.onmessage = (event) => {
     // 处理通知
   }
 }
-```
 
----
+```bash
+
+- --
 
 ## ⚠️ 注意事项
 
@@ -385,9 +414,8 @@ ws.onmessage = (event) => {
 3. **连接限制**：每个用户可以有多个连接（例如多个浏览器标签页）
 4. **兼容性**：旧的 SSE 客户端仍然可以工作（通过 Redis PubSub）
 
----
+- --
 
 ## 🎉 总结
 
 WebSocket 方案彻底解决了 Redis 连接泄漏问题，提供了更好的实时性和连接管理。推荐所有新项目使用 WebSocket 替代 SSE。
-

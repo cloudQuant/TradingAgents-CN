@@ -11,6 +11,7 @@
 #### 1. `frontend/src/views/Favorites/index.vue`
 
 ##### 页面描述（第 4-10 行）
+
 ```vue
 <!-- 修改前 -->
 <p class="page-description">
@@ -21,10 +22,13 @@
 <p class="page-description">
   管理您关注的股票
 </p>
-```
+
+```bash
 
 ##### 添加自选股对话框（第 233-242 行）
+
 移除了"价格提醒"表单项：
+
 ```vue
 <!-- 移除的内容 -->
 <el-form-item label="价格提醒">
@@ -45,18 +49,21 @@
     </el-col>
   </el-row>
 </el-form-item>
-```
+
+```bash
 
 ##### 编辑自选股对话框（第 273-276 行）
+
 移除了"价格提醒"表单项（同上）
 
 ##### 数据模型（第 411-417 行）
+
 ```typescript
 // 修改前
 const addForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A 股',
   tags: [],
   notes: '',
   alert_price_high: null,
@@ -67,43 +74,49 @@ const addForm = ref({
 const addForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A 股',
   tags: [],
   notes: ''
 })
-```
+
+```bash
 
 ##### 编辑表单数据模型（第 432-438 行）
+
 ```typescript
 // 修改前
 const editForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A 股',
   tags: [] as string[],
   notes: '',
   alert_price_high: null as number | null,
+
   alert_price_low: null as number | null,
+
 })
 
 // 修改后
 const editForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A 股',
   tags: [] as string[],
   notes: ''
 })
-```
+
+```bash
 
 ##### showAddDialog 函数（第 620-629 行）
+
 ```typescript
 // 修改前
 const showAddDialog = () => {
   addForm.value = {
     stock_code: '',
     stock_name: '',
-    market: 'A股',
+    market: 'A 股',
     tags: [],
     notes: '',
     alert_price_high: null,
@@ -117,15 +130,17 @@ const showAddDialog = () => {
   addForm.value = {
     stock_code: '',
     stock_name: '',
-    market: 'A股',
+    market: 'A 股',
     tags: [],
     notes: ''
   }
   addDialogVisible.value = true
 }
-```
+
+```bash
 
 ##### handleUpdateFavorite 函数（第 658-676 行）
+
 ```typescript
 // 修改前
 const handleUpdateFavorite = async () => {
@@ -152,18 +167,22 @@ const handleUpdateFavorite = async () => {
     // ...
   }
 }
-```
+
+```bash
 
 ##### editFavorite 函数（第 679-688 行）
+
 ```typescript
 // 修改前
 const editFavorite = (row: any) => {
   editForm.value = {
     stock_code: row.stock_code,
     stock_name: row.stock_name,
-    market: row.market || 'A股',
+    market: row.market || 'A 股',
+
     tags: Array.isArray(row.tags) ? [...row.tags] : [],
     notes: row.notes || '',
+
     alert_price_high: row.alert_price_high ?? null,
     alert_price_low: row.alert_price_low ?? null,
   }
@@ -175,19 +194,23 @@ const editFavorite = (row: any) => {
   editForm.value = {
     stock_code: row.stock_code,
     stock_name: row.stock_name,
-    market: row.market || 'A股',
+    market: row.market || 'A 股',
+
     tags: Array.isArray(row.tags) ? [...row.tags] : [],
     notes: row.notes || ''
+
   }
   editDialogVisible.value = true
 }
-```
+
+```bash
 
 ### 后端保留
 
-**注意**：后端的价格提醒字段（`alert_price_high`、`alert_price_low`）暂时保留，以便将来需要时可以快速恢复该功能。
+- *注意**：后端的价格提醒字段（`alert_price_high`、`alert_price_low`）暂时保留，以便将来需要时可以快速恢复该功能。
 
 相关文件：
+
 - `app/routers/favorites.py` - API 路由（保留字段定义）
 - `app/models/user.py` - 数据模型（保留字段定义）
 - `app/services/favorites_service.py` - 业务逻辑（保留字段处理）
@@ -195,17 +218,20 @@ const editFavorite = (row: any) => {
 ## 影响范围
 
 ### 前端
+
 - ✅ 自选股列表页面：移除价格提醒相关 UI
 - ✅ 添加自选股对话框：移除价格提醒输入框
 - ✅ 编辑自选股对话框：移除价格提醒输入框
 - ✅ 数据模型：移除价格提醒字段
 
 ### 后端
+
 - ⚠️ **保留不变**：API 接口仍然接受 `alert_price_high` 和 `alert_price_low` 参数
 - ⚠️ **保留不变**：数据库模型仍然包含价格提醒字段
 - ⚠️ **保留不变**：业务逻辑仍然处理价格提醒数据
 
 ### API 兼容性
+
 - ✅ **向后兼容**：前端不再发送价格提醒字段，后端会将其设置为 `null`
 - ✅ **向前兼容**：如果将来恢复该功能，只需修改前端代码即可
 
@@ -221,14 +247,14 @@ const editFavorite = (row: any) => {
    - 点击"添加"
    - ✅ 确认添加成功
 
-2. **编辑自选股**：
+1. **编辑自选股**：
    - 在自选股列表中点击"编辑"按钮
    - ✅ 确认对话框中没有"价格提醒"输入框
    - 修改标签或备注
    - 点击"保存"
    - ✅ 确认保存成功
 
-3. **页面描述**：
+1. **页面描述**：
    - ✅ 确认页面描述为"管理您关注的股票"（不包含"设置价格提醒"）
 
 ## 恢复方案
@@ -240,21 +266,23 @@ const editFavorite = (row: any) => {
    - 恢复数据模型中的 `alert_price_high` 和 `alert_price_low` 字段
    - 恢复相关函数中的价格提醒字段处理
 
-2. **后端无需修改**：
+1. **后端无需修改**：
    - 后端代码已经支持价格提醒功能
    - 数据库模型已经包含价格提醒字段
 
-3. **参考本文档**：
+1. **参考本文档**：
    - 本文档记录了所有修改的位置
    - 可以通过 Git 历史查看具体的修改内容
 
 ## 相关文件
 
 ### 前端
+
 - `frontend/src/views/Favorites/index.vue` - 自选股页面（已修改）
 - `frontend/src/api/favorites.ts` - 自选股 API（保留字段定义，但前端不再使用）
 
 ### 后端（保留不变）
+
 - `app/routers/favorites.py` - 自选股路由
 - `app/models/user.py` - 用户模型
 - `app/services/favorites_service.py` - 自选股服务
@@ -267,4 +295,3 @@ const editFavorite = (row: any) => {
 2. ✅ **保持灵活性**：将来可以快速恢复该功能
 3. ✅ **向后兼容**：不影响现有数据和 API
 4. ✅ **易于维护**：修改范围小，风险低
-

@@ -6,28 +6,33 @@ This directory contains scripts for the 云子量化 portable (green) version.
 
 ### Stop Services Scripts
 
-- **stop_all.ps1** - PowerShell script to stop all services
-- **stop_all_services.bat** - Batch file wrapper for easy execution
+- **stop_all.ps1**- PowerShell script to stop all services
+- **stop_all_services.bat**- Batch file wrapper for easy execution
 
 ## Deployment
 
 These scripts should be copied to the portable release directory during the build process:
 
 ```powershell
+
 # Copy stop scripts
+
 Copy-Item scripts/portable/stop_all.ps1 release/TradingAgentsCN-portable/stop_all.ps1
 Copy-Item scripts/portable/stop_all_services.bat release/TradingAgentsCN-portable/停止所有服务.bat
 
 # Copy documentation
+
 Copy-Item docs/deployment/stop-services-guide.md release/TradingAgentsCN-portable/停止服务说明.md
-```
+
+```bash
 
 ## Usage in Portable Version
 
 After deployment, users can stop all services by:
 
-1. **Double-click** `停止所有服务.bat`
-2. Or run in PowerShell: `.\stop_all.ps1`
+1.**Double-click**`停止所有服务.bat`
+
+1. Or run in PowerShell: `.\stop_all.ps1`
 
 ## Features
 
@@ -47,27 +52,35 @@ After deployment, users can stop all services by:
 ### Examples
 
 ```powershell
+
 # Normal stop (recommended)
+
 .\stop_all.ps1
 
 # Force stop all related processes
+
 .\stop_all.ps1 -Force
 
 # Only use PID file
+
 .\stop_all.ps1 -OnlyPid
 
 # Quiet mode
+
 .\stop_all.ps1 -Quiet
-```
+
+```bash
 
 ## Service Stop Order
 
-1. **Nginx** - Stop frontend service first
-2. **Backend (FastAPI)** - Stop backend API service
-3. **Redis** - Stop cache service
-4. **MongoDB** - Stop database service
+1. **Nginx**- Stop frontend service first
+
+2.**Backend (FastAPI)**- Stop backend API service
+3.**Redis**- Stop cache service
+4.**MongoDB** - Stop database service
 
 This order ensures:
+
 - No new requests enter the system
 - Ongoing requests have time to complete
 - Data is saved correctly
@@ -105,7 +118,6 @@ See [docs/deployment/stop-services-guide.md](../../docs/deployment/stop-services
 - May require administrator privileges to stop some processes
 - Always backup data before stopping services
 
----
+- --
 
-**Last Updated**: 2025-11-05
-
+- *Last Updated**: 2025-11-05

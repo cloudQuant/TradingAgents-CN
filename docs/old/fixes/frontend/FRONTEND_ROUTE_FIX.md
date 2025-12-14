@@ -2,7 +2,7 @@
 
 ## 🎯 问题描述
 
-用户点击侧边栏菜单中的"系统配置"时，进入了404页面，说明路由配置有问题。
+用户点击侧边栏菜单中的"系统配置"时，进入了 404 页面，说明路由配置有问题。
 
 ## 🔍 问题分析
 
@@ -20,7 +20,7 @@
 
 ### 1. 更新侧边栏菜单路由
 
-**文件**: `frontend/src/components/Layout/SidebarMenu.vue`
+- *文件**: `frontend/src/components/Layout/SidebarMenu.vue`
 
 ```vue
 <!-- 修复前 -->
@@ -34,11 +34,12 @@
   <el-icon><Tools /></el-icon>
   <template #title>系统配置</template>
 </el-menu-item>
-```
+
+```bash
 
 ### 2. 添加配置管理子路由
 
-**文件**: `frontend/src/router/index.ts`
+- *文件**: `frontend/src/router/index.ts`
 
 在 `/settings` 路由下添加 `config` 子路由：
 
@@ -62,7 +63,8 @@
     }
   ]
 }
-```
+
+```bash
 
 ### 3. 完善系统管理路由组
 
@@ -94,7 +96,8 @@
     }
   ]
 }
-```
+
+```bash
 
 ### 4. 完善报表统计路由组
 
@@ -120,69 +123,89 @@
       path: 'token',
       name: 'TokenStatistics',
       component: () => import('@/views/Reports/TokenStatistics.vue'),
-      meta: { title: 'Token统计', requiresAuth: true }
+      meta: { title: 'Token 统计', requiresAuth: true }
     }
   ]
 }
-```
+
+```bash
 
 ## ✅ 修复结果
 
 ### 路由映射表
 
 | 菜单项 | 路由路径 | 组件 | 状态 |
+
 |--------|----------|------|------|
+
 | 仪表板 | `/dashboard` | Dashboard/index.vue | ✅ 正常 |
+
 | 单股分析 | `/analysis/single` | Analysis/SingleAnalysis.vue | ✅ 正常 |
+
 | 批量分析 | `/analysis/batch` | Analysis/BatchAnalysis.vue | ✅ 正常 |
+
 | 分析历史 | `/analysis/history` | Analysis/AnalysisHistory.vue | ✅ 正常 |
+
 | 股票筛选 | `/screening` | Screening/index.vue | ✅ 正常 |
+
 | 我的自选股 | `/favorites` | Favorites/index.vue | ✅ 正常 |
+
 | 任务中心 | `/tasks` | Tasks/TaskCenter.vue | ✅ 正常 |
+
 | 分析报告 | `/reports` | Reports/index.vue | ✅ 正常 |
+
 | 个人设置 | `/settings` | Settings/index.vue | ✅ 正常 |
-| **系统配置** | `/settings/config` | Settings/ConfigManagement.vue | ✅ **已修复** |
+
+| **系统配置**| `/settings/config` | Settings/ConfigManagement.vue | ✅**已修复**|
+
 | 关于 | `/about` | About/index.vue | ✅ 正常 |
 
 ### 新增的系统管理路由
 
 | 功能 | 路由路径 | 组件 | 状态 |
+
 |------|----------|------|------|
+
 | 数据库管理 | `/system/database` | System/DatabaseManagement.vue | ✅ 新增 |
+
 | 操作日志 | `/system/logs` | System/OperationLogs.vue | ✅ 新增 |
-| Token统计 | `/reports/token` | Reports/TokenStatistics.vue | ✅ 新增 |
+
+| Token 统计 | `/reports/token` | Reports/TokenStatistics.vue | ✅ 新增 |
 
 ## 🎯 验证步骤
 
-1. **点击系统配置菜单**: 应该正确跳转到配置管理页面
-2. **检查URL**: 应该显示 `/settings/config`
-3. **页面内容**: 应该显示完整的配置管理界面
-4. **面包屑导航**: 应该显示正确的导航路径
+1.**点击系统配置菜单**: 应该正确跳转到配置管理页面
+
+1. **检查 URL**: 应该显示 `/settings/config`
+2. **页面内容**: 应该显示完整的配置管理界面
+3. **面包屑导航**: 应该显示正确的导航路径
 
 ## 📊 修复统计
 
-- **修复的路由**: 1个 (`/admin/config` → `/settings/config`)
-- **新增的路由组**: 2个 (`/system`, `/reports` 完善)
-- **新增的子路由**: 4个
-- **修复的菜单项**: 1个
+- **修复的路由**: 1 个 (`/admin/config` → `/settings/config`)
+- **新增的路由组**: 2 个 (`/system`, `/reports` 完善)
+- **新增的子路由**: 4 个
+- **修复的菜单项**: 1 个
 
 ## 🔄 相关文件变更
 
 ### 修改的文件
+
 - `frontend/src/components/Layout/SidebarMenu.vue` - 更新菜单路由
 - `frontend/src/router/index.ts` - 添加路由配置
 
 ### 涉及的组件
+
 - `Settings/ConfigManagement.vue` - 配置管理页面
 - `System/DatabaseManagement.vue` - 数据库管理页面
 - `System/OperationLogs.vue` - 操作日志页面
-- `Reports/TokenStatistics.vue` - Token统计页面
+- `Reports/TokenStatistics.vue` - Token 统计页面
 
 ## 🎉 修复效果
 
 - ✅ **系统配置菜单**: 现在可以正确访问配置管理页面
 - ✅ **路由一致性**: 所有菜单项都有对应的有效路由
-- ✅ **用户体验**: 不再出现404错误页面
+- ✅ **用户体验**: 不再出现 404 错误页面
 - ✅ **功能完整性**: 所有系统管理功能都有对应的访问路径
 
 ## 🔮 后续优化建议
@@ -197,8 +220,8 @@
 - [x] 系统配置菜单可以正确访问
 - [x] 配置管理页面正常显示
 - [x] 路由路径正确 (`/settings/config`)
-- [x] 没有404错误
+- [x] 没有 404 错误
 - [x] 其他菜单项不受影响
 - [x] 新增的系统管理路由可访问
 
-**系统配置菜单路由问题已完全修复！** 🎉
+- *系统配置菜单路由问题已完全修复！** 🎉

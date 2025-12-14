@@ -1,52 +1,65 @@
 # 云子量化 测试目录
 
-这个目录包含了云子量化项目的所有测试文件，用于验证功能正确性、API集成和模型测试。
+这个目录包含了云子量化项目的所有测试文件，用于验证功能正确性、API 集成和模型测试。
 
 ## 目录结构
 
-```
+```bash
 tests/
 ├── README.md                           # 本文件
-├── __init__.py                         # Python包初始化
+
+├── __init__.py                         # Python 包初始化
+
 ├── integration/                        # 集成测试
+
 │   ├── __init__.py
 │   └── test_dashscope_integration.py   # 阿里百炼集成测试
+
 ├── test_*.py                          # 各种功能测试
+
 └── debug_*.py                         # 调试和诊断工具
-```
+
+```bash
 
 ## 测试分类
 
-### 🔧 API和集成测试
-- `test_all_apis.py` - 所有API密钥测试
-- `test_correct_apis.py` - Google和Reddit API测试
-- `test_analysis_with_apis.py` - API集成分析测试
+### 🔧 API 和集成测试
+
+- `test_all_apis.py` - 所有 API 密钥测试
+- `test_correct_apis.py` - Google 和 Reddit API 测试
+- `test_analysis_with_apis.py` - API 集成分析测试
 - `test_toolkit_tools.py` - 工具包测试
 - `integration/test_dashscope_integration.py` - 阿里百炼集成测试
 
 ### 📊 数据源测试
-- `fast_tdx_test.py` - Tushare数据接口快速连接测试
-- `test_tdx_integration.py` - Tushare数据接口完整集成测试
+
+- `fast_tdx_test.py` - Tushare 数据接口快速连接测试
+- `test_tdx_integration.py` - Tushare 数据接口完整集成测试
 
 ### ⚡ 性能测试
-- `test_redis_performance.py` - Redis性能基准测试
-- `quick_redis_test.py` - Redis快速连接测试
 
-### 🤖 AI模型测试
+- `test_redis_performance.py` - Redis 性能基准测试
+- `quick_redis_test.py` - Redis 快速连接测试
+
+### 🤖 AI 模型测试
+
 - `test_chinese_output.py` - 中文输出测试
-- `test_gemini*.py` - Google Gemini模型系列测试
+- `test_gemini*.py` - Google Gemini 模型系列测试
 - `test_embedding_models.py` - 嵌入模型测试
-- `test_google_memory_fix.py` - Google AI内存功能测试
+- `test_google_memory_fix.py` - Google AI 内存功能测试
 
-### 🌐 Web界面测试
-- `test_web_interface.py` - Web界面功能测试
+### 🌐 Web 界面测试
+
+- `test_web_interface.py` - Web 界面功能测试
 
 ### 🔍 调试和诊断工具
+
 - `debug_imports.py` - 导入问题诊断
-- `diagnose_gemini_25.py` - Gemini 2.5模型诊断
-- `check_gemini_models.py` - Gemini模型可用性检查
+- `diagnose_gemini_25.py` - Gemini 2.5 模型诊断
+- `check_gemini_models.py` - Gemini 模型可用性检查
 
 ### 🧪 功能测试
+
 - `test_analysis.py` - 基础分析功能测试
 - `test_format_fix.py` - 格式化修复测试
 - `test_progress.py` - 进度跟踪测试
@@ -54,80 +67,110 @@ tests/
 ## 运行测试
 
 ### 运行所有测试
+
 ```bash
+
 # 从项目根目录运行
+
 python -m pytest tests/
 
 # 或者直接运行特定测试
+
 cd tests
 python test_chinese_output.py
-```
+
+```bash
 
 ### 运行特定类别的测试
+
 ```bash
-# API测试
+
+# API 测试
+
 python tests/test_all_apis.py
 
-# Gemini模型测试
+# Gemini 模型测试
+
 python tests/test_gemini_correct.py
 
-# Web界面测试
+# Web 界面测试
+
 python tests/test_web_interface.py
 
 # 阿里百炼集成测试
+
 python tests/integration/test_dashscope_integration.py
 
-# Tushare数据接口测试
+# Tushare 数据接口测试
+
 python tests/fast_tdx_test.py
 python tests/test_tdx_integration.py
 
-# Redis性能测试
+# Redis 性能测试
+
 python tests/quick_redis_test.py
 python tests/test_redis_performance.py
-```
+
+```bash
 
 ### 诊断工具
+
 ```bash
-# 诊断Gemini模型问题
+
+# 诊断 Gemini 模型问题
+
 python tests/diagnose_gemini_25.py
 
 # 检查导入问题
+
 python tests/debug_imports.py
 
-# 检查所有可用的Gemini模型
+# 检查所有可用的 Gemini 模型
+
 python tests/check_gemini_models.py
-```
+
+```bash
 
 ## 测试环境要求
 
 ### 必需的环境变量
-在运行测试前，请确保在`.env`文件中配置了以下API密钥：
+
+在运行测试前，请确保在`.env`文件中配置了以下 API 密钥：
 
 ```env
-# 阿里百炼API（必需）
+
+# 阿里百炼 API（必需）
+
 DASHSCOPE_API_KEY=your_dashscope_key
 
-# Google AI API（可选，用于Gemini测试）
+# Google AI API（可选，用于 Gemini 测试）
+
 GOOGLE_API_KEY=your_google_key
 
-# 金融数据API（可选）
+# 金融数据 API（可选）
+
 FINNHUB_API_KEY=your_finnhub_key
 
 # Reddit API（可选）
+
 REDDIT_CLIENT_ID=your_reddit_id
 REDDIT_CLIENT_SECRET=your_reddit_secret
 REDDIT_USER_AGENT=your_user_agent
-```
 
-### Python依赖
+```bash
+
+### Python 依赖
+
 ```bash
 pip install -r requirements.txt
-```
+
+```bash
 
 ### 测试结果解读
+
 - **所有测试通过**：功能完全正常，可以使用完整功能
 - **部分测试通过**：基本功能正常，可能需要检查配置
-- **大部分测试失败**：存在问题，需要排查API密钥和环境配置
+- **大部分测试失败**：存在问题，需要排查 API 密钥和环境配置
 
 ## 贡献指南
 
@@ -142,7 +185,9 @@ pip install -r requirements.txt
 ### 测试模板
 
 ```python
-#!/usr/bin/env python3
+
+# !/usr/bin/env python3
+
 """
 新功能测试
 """
@@ -152,20 +197,22 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# 添加项目根目录到 Python 路径
+
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # 加载环境变量
+
 load_dotenv(project_root / ".env", override=True)
 
 def test_new_feature():
     """测试新功能"""
     try:
         print("🧪 测试新功能")
-        print("=" * 50)
+        print("=" *50)
 
-        # 测试代码
+# 测试代码
 
         print("✅ 测试成功")
         return True
@@ -176,7 +223,7 @@ def test_new_feature():
 def main():
     """主测试函数"""
     print("🧪 新功能测试")
-    print("=" * 60)
+    print("="* 60)
 
     success = test_new_feature()
 
@@ -187,16 +234,17 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
+
+```bash
 
 ## 最近更新
 
-- ✅ 添加了Google Gemini模型系列测试
-- ✅ 添加了Web界面Google模型选择测试
-- ✅ 添加了API集成测试（Google、Reddit）
+- ✅ 添加了 Google Gemini 模型系列测试
+- ✅ 添加了 Web 界面 Google 模型选择测试
+- ✅ 添加了 API 集成测试（Google、Reddit）
 - ✅ 添加了中文输出功能测试
 - ✅ 添加了内存系统和嵌入模型测试
-- ✅ 整理了所有测试文件到tests目录
+- ✅ 整理了所有测试文件到 tests 目录
 - ✅ 添加了调试和诊断工具
 
 ## 测试最佳实践
@@ -210,37 +258,47 @@ if __name__ == "__main__":
 ## 故障排除
 
 ### 常见问题
-1. **API密钥问题** - 检查.env文件配置
-2. **网络连接问题** - 确认网络和防火墙设置
-3. **依赖包问题** - 确保所有依赖已安装
-4. **模型兼容性** - 检查模型名称和版本
+
+1. **API 密钥问题**- 检查.env 文件配置
+
+2.**网络连接问题**- 确认网络和防火墙设置
+3.**依赖包问题**- 确保所有依赖已安装
+4.**模型兼容性** - 检查模型名称和版本
 
 ### 调试技巧
+
 1. 启用详细输出查看错误信息
 2. 单独运行测试函数定位问题
 3. 使用诊断工具检查配置
-4. 查看Web应用日志了解运行状态
+4. 查看 Web 应用日志了解运行状态
 
 ## 许可证
 
-本项目遵循Apache 2.0许可证。
+本项目遵循 Apache 2.0 许可证。
 
 
 ## 新增的测试文件
 
 ### 集成测试
+
 - `quick_test.py` - 快速集成测试，验证基本功能
 - `test_smart_system.py` - 智能系统完整测试
 - `demo_fallback_system.py` - 降级系统演示和测试
 
 ### 运行方法
+
 ```bash
+
 # 快速测试
+
 python tests/quick_test.py
 
 # 智能系统测试
+
 python tests/test_smart_system.py
 
 # 降级系统演示
+
 python tests/demo_fallback_system.py
-```
+
+```bash

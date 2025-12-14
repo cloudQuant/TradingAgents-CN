@@ -36,7 +36,8 @@
     }
   }
 }
-```
+
+```bash
 
 ### 问题分析
 
@@ -59,6 +60,7 @@ MongoDB 复合索引的字段顺序非常重要，应该遵循 **ESR 原则**：
 ### 2. 查询条件匹配
 
 对于查询条件：
+
 ```javascript
 {
   "symbol": "688188",           // 等值查询
@@ -66,19 +68,21 @@ MongoDB 复合索引的字段顺序非常重要，应该遵循 **ESR 原则**：
   "data_source": "tushare",     // 等值查询
   "period": "daily"             // 等值查询
 }
-```
 
+```bash
 最优索引应该是：
-```javascript
-db.stock_daily_quotes.createIndex({
-  "symbol": 1,
-  "data_source": 1,
-  "trade_date": 1,
-  "period": 1
-})
-```
 
+```javascript
+db.stock_daily_quotes.createIndex({
+  "symbol": 1,
+  "data_source": 1,
+  "trade_date": 1,
+  "period": 1
+})
+
+```bash
 或者（根据查询频率调整顺序）：
+
 ```javascript
 db.stock_daily_quotes.createIndex({
   "symbol": 1,
@@ -86,7 +90,8 @@ db.stock_daily_quotes.createIndex({
   "data_source": 1,
   "period": 1
 })
-```
+
+```bash
 
 ### 3. 索引覆盖查询
 
@@ -99,16 +104,22 @@ db.stock_daily_quotes.createIndex({
 运行索引优化脚本：
 
 ```bash
+
 # 激活虚拟环境
+
 source env/bin/activate  # Linux/Mac
+
 # 或
+
 .\env\Scripts\activate   # Windows
 
 # 运行优化脚本
-python scripts/maintenance/optimize_mongodb_indexes.py
-```
 
+python scripts/maintenance/optimize_mongodb_indexes.py
+
+```bash
 脚本会自动：
+
 1. ✅ 分析现有索引
 2. ✅ 创建优化索引
 3. ✅ 测试查询性能
@@ -119,18 +130,23 @@ python scripts/maintenance/optimize_mongodb_indexes.py
 #### 2.1 连接到 MongoDB
 
 ```bash
+
 # Docker 环境
+
 docker exec -it tradingagents-mongodb mongosh -u admin -p your_password --authenticationDatabase admin
 
 # 本地环境
+
 mongosh mongodb://localhost:27017/tradingagents
-```
+
+```bash
 
 #### 2.2 切换到数据库
 
 ```javascript
 use tradingagents
-```
+
+```bash
 
 #### 2.3 创建索引
 
@@ -184,7 +200,8 @@ db.stock_daily_quotes.createIndex(
     background: true
   }
 )
-```
+
+```bash
 
 #### 2.4 验证索引
 
@@ -194,7 +211,8 @@ db.stock_daily_quotes.getIndexes()
 
 // 查看索引大小
 db.stock_daily_quotes.stats()
-```
+
+```bash
 
 ## 📊 性能测试
 
@@ -208,7 +226,8 @@ db.stock_daily_quotes.find({
   "data_source": "tushare",
   "period": "daily"
 }).explain("executionStats")
-```
+
+```bash
 
 ### 关键指标
 
@@ -219,21 +238,22 @@ db.stock_daily_quotes.find({
    - ⚠️ 10-100ms: 可接受
    - ❌ > 100ms: 需要优化
 
-2. **totalDocsExamined**: 扫描的文档数
+1. **totalDocsExamined**: 扫描的文档数
    - ✅ 应该接近 `nReturned`（返回的文档数）
    - ❌ 如果远大于 `nReturned`，说明索引不够优化
 
-3. **totalKeysExamined**: 扫描的索引键数
+1. **totalKeysExamined**: 扫描的索引键数
    - ✅ 应该接近 `nReturned`
    - ❌ 如果为 0，说明没有使用索引
 
-4. **stage**: 查询阶段
+1. **stage**: 查询阶段
    - ✅ `IXSCAN`: 使用了索引扫描
    - ❌ `COLLSCAN`: 全集合扫描（需要添加索引）
 
 ### 优化前后对比
 
-**优化前**（COLLSCAN）：
+- *优化前**（COLLSCAN）：
+
 ```json
 {
   "executionTimeMillis": 287,
@@ -241,9 +261,11 @@ db.stock_daily_quotes.find({
   "totalKeysExamined": 0,
   "stage": "COLLSCAN"
 }
-```
 
-**优化后**（IXSCAN）：
+```bash
+
+- *优化后**（IXSCAN）：
+
 ```json
 {
   "executionTimeMillis": 2,
@@ -252,8 +274,8 @@ db.stock_daily_quotes.find({
   "stage": "IXSCAN",
   "indexName": "symbol_source_date_period_idx"
 }
-```
 
+```bash
 性能提升：**287ms → 2ms**（提升 143 倍）
 
 ## 🎯 索引维护建议
@@ -261,18 +283,24 @@ db.stock_daily_quotes.find({
 ### 1. 定期监控慢查询
 
 ```bash
+
 # 查看 MongoDB 慢查询日志
+
 docker logs tradingagents-mongodb | grep "Slow query"
-```
+
+```bash
 
 ### 2. 定期运行优化脚本
 
 建议每月运行一次索引优化脚本：
 
 ```bash
-# 添加到 crontab（每月1号凌晨2点）
-0 2 1 * * cd /path/to/TradingAgentsCN && python scripts/maintenance/optimize_mongodb_indexes.py
-```
+
+# 添加到 crontab（每月 1 号凌晨 2 点）
+
+0 2 1 * *cd /path/to/TradingAgentsCN && python scripts/maintenance/optimize_mongodb_indexes.py
+
+```bash
 
 ### 3. 监控索引大小
 
@@ -284,7 +312,8 @@ db.stock_daily_quotes.stats()
 
 // 查看索引大小
 db.stock_daily_quotes.totalIndexSize()
-```
+
+```bash
 
 ### 4. 删除未使用的索引
 
@@ -296,32 +325,33 @@ db.stock_daily_quotes.aggregate([
 
 // 删除未使用的索引
 db.stock_daily_quotes.dropIndex("unused_index_name")
-```
+
+```bash
 
 ## 📚 参考资料
 
-- [MongoDB 索引最佳实践](https://www.mongodb.com/docs/manual/indexes/)
-- [MongoDB 查询优化](https://www.mongodb.com/docs/manual/core/query-optimization/)
-- [MongoDB Explain 输出解读](https://www.mongodb.com/docs/manual/reference/explain-results/)
+- [MongoDB 索引最佳实践](<https://www.mongodb.com/docs/manual/indexes/)>
+- [MongoDB 查询优化](<https://www.mongodb.com/docs/manual/core/query-optimization/)>
+- [MongoDB Explain 输出解读](<https://www.mongodb.com/docs/manual/reference/explain-results/)>
 
 ## 🆘 常见问题
 
 ### Q1: 索引创建需要多长时间？
 
-**A**: 取决于集合大小：
-- 小集合（< 10万文档）：几秒钟
-- 中等集合（10万-100万文档）：几分钟
-- 大集合（> 100万文档）：可能需要几十分钟
+- *A**: 取决于集合大小：
+- 小集合（< 10 万文档）：几秒钟
+- 中等集合（10 万-100 万文档）：几分钟
+- 大集合（> 100 万文档）：可能需要几十分钟
 
 建议使用 `background: true` 选项，在后台创建索引，不阻塞数据库操作。
 
 ### Q2: 索引会占用多少存储空间？
 
-**A**: 通常是数据大小的 10-30%。可以通过 `db.collection.stats()` 查看。
+- *A**: 通常是数据大小的 10-30%。可以通过 `db.collection.stats()` 查看。
 
 ### Q3: 索引越多越好吗？
 
-**A**: 不是！索引的缺点：
+- *A**: 不是！索引的缺点：
 - ❌ 占用存储空间
 - ❌ 写入操作变慢（需要更新索引）
 - ❌ 内存占用增加
@@ -330,7 +360,7 @@ db.stock_daily_quotes.dropIndex("unused_index_name")
 
 ### Q4: 如何判断是否需要添加索引？
 
-**A**: 监控慢查询日志，如果看到：
+- *A**: 监控慢查询日志，如果看到：
 - `planSummary: "COLLSCAN"`
 - `executionTimeMillis > 100`
 - `totalDocsExamined >> nReturned`
@@ -344,4 +374,3 @@ db.stock_daily_quotes.dropIndex("unused_index_name")
 3. ✅ 测试查询性能，确认优化效果
 4. ✅ 根据实际查询模式调整索引
 5. ✅ 删除未使用的索引，节省资源
-

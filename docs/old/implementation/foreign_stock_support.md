@@ -13,55 +13,58 @@
 ### 1. 架构设计
 
 采用**混合方案**：
-- **A股**：继续使用MongoDB查询（现有逻辑）
+
+- **A 股**：继续使用 MongoDB 查询（现有逻辑）
 - **港股/美股**：使用 `tradingagents` 的集成缓存系统（Redis + MongoDB + API）
 
 ### 2. 缓存策略
 
 #### 三层缓存架构
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
-│                    API请求                               │
+│                    API 请求                               │
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
-│  Level 1: Redis缓存 (快速访问，10分钟-1天TTL)            │
-│  - 实时行情: 10分钟                                       │
-│  - 基础信息: 1天                                          │
-│  - K线数据: 2小时                                         │
+│  Level 1: Redis 缓存 (快速访问，10 分钟-1 天 TTL)            │
+│  - 实时行情: 10 分钟                                       │
+│  - 基础信息: 1 天                                          │
+│  - K 线数据: 2 小时                                         │
 └─────────────────────────────────────────────────────────┘
                           ↓ (缓存未命中)
 ┌─────────────────────────────────────────────────────────┐
-│  Level 2: MongoDB缓存 (持久化，按数据源优先级查询)        │
+│  Level 2: MongoDB 缓存 (持久化，按数据源优先级查询)        │
 │  - stock_basic_info_hk / stock_basic_info_us            │
 │  - market_quotes_hk / market_quotes_us                  │
 │  - stock_daily_quotes_hk / stock_daily_quotes_us        │
 └─────────────────────────────────────────────────────────┘
                           ↓ (缓存未命中)
 ┌─────────────────────────────────────────────────────────┐
-│  Level 3: 外部API (按数据源优先级)                       │
+│  Level 3: 外部 API (按数据源优先级)                       │
 │  - 港股: yfinance → AKShare                             │
 │  - 美股: yfinance → Alpha Vantage → Finnhub            │
 └─────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 #### 缓存时间配置
 
 ```python
 CACHE_TTL = {
     "HK": {
-        "quote": 600,        # 10分钟（实时行情）
-        "info": 86400,       # 1天（基础信息）
-        "kline": 7200,       # 2小时（K线数据）
+        "quote": 600,        # 10 分钟（实时行情）
+        "info": 86400,       # 1 天（基础信息）
+        "kline": 7200,       # 2 小时（K 线数据）
     },
     "US": {
-        "quote": 600,        # 10分钟
-        "info": 86400,       # 1天
-        "kline": 7200,       # 2小时
+        "quote": 600,        # 10 分钟
+        "info": 86400,       # 1 天
+        "kline": 7200,       # 2 小时
     }
 }
-```
+
+```bash
 
 ### 3. 市场类型检测
 
@@ -71,58 +74,73 @@ CACHE_TTL = {
 def _detect_market_and_code(code: str) -> Tuple[str, str]:
     """
     检测股票代码的市场类型并标准化代码
-    
+
     规则：
-    - 带.HK后缀 → 港股
+
+    - 带.HK 后缀 → 港股
     - 纯字母 → 美股
-    - 4-5位数字 → 港股
-    - 6位数字 → A股
+    - 4-5 位数字 → 港股
+    - 6 位数字 → A 股
+
     """
-```
+
+```bash
 
 #### 测试结果
 
 | 输入代码 | 识别市场 | 标准化代码 | 状态 |
+
 |---------|---------|-----------|------|
+
 | 000001  | CN      | 000001    | ✅   |
+
 | 600519  | CN      | 600519    | ✅   |
+
 | 0700    | HK      | 00700     | ✅   |
+
 | 00700   | HK      | 00700     | ✅   |
+
 | 0700.HK | HK      | 00700     | ✅   |
+
 | AAPL    | US      | AAPL      | ✅   |
+
 | TSLA    | US      | TSLA      | ✅   |
 
 ### 4. 数据源优先级
 
 #### 港股数据源
 
-1. **yfinance** (主要)
+1. **yfinance**(主要)
    - 优点：数据全面，包含实时行情和历史数据
    - 缺点：可能被限流
 
-2. **AKShare** (备用)
+2.**AKShare**(备用)
+
    - 优点：国内访问稳定
    - 缺点：数据更新可能有延迟
 
 #### 美股数据源
 
-1. **yfinance** (主要)
+1.**yfinance**(主要)
+
    - 优点：免费，数据全面
    - 缺点：可能被限流
 
-2. **Alpha Vantage** (备用)
-   - 优点：官方API，稳定
-   - 缺点：需要API Key，有请求限制
+2.**Alpha Vantage**(备用)
 
-3. **Finnhub** (备用)
+   - 优点：官方 API，稳定
+   - 缺点：需要 API Key，有请求限制
+
+3.**Finnhub** (备用)
+
    - 优点：实时数据
-   - 缺点：需要API Key
+   - 缺点：需要 API Key
 
 ## 📁 文件结构
 
 ### 新增文件
 
-```
+```bash
 app/services/
 └── foreign_stock_service.py          # 港股和美股数据服务
 
@@ -131,32 +149,35 @@ scripts/
 
 docs/implementation/
 └── foreign_stock_support.md          # 本文档
-```
+
+```bash
 
 ### 修改文件
 
-```
+```bash
 app/routers/
 └── stocks.py                          # 添加市场类型检测和多市场支持
     ├── _detect_market_and_code()      # 新增：市场类型检测
     ├── get_quote()                    # 修改：支持港股/美股
     ├── get_fundamentals()             # 修改：支持港股/美股
     └── get_kline()                    # 修改：支持港股/美股
-```
 
-## 🔌 API接口
+```bash
+
+## 🔌 API 接口
 
 ### 1. 获取实时行情
 
 ```http
 GET /api/stocks/{code}/quote?force_refresh=false
-```
 
-**参数**：
+```bash
+
+- *参数**：
 - `code`: 股票代码（自动识别市场类型）
 - `force_refresh`: 是否强制刷新（跳过缓存），默认 `false`
 
-**响应示例**：
+- *响应示例**：
 
 ```json
 {
@@ -176,15 +197,17 @@ GET /api/stocks/{code}/quote?force_refresh=false
     "updated_at": "2024-01-15T15:30:00"
   }
 }
-```
+
+```bash
 
 ### 2. 获取基础信息
 
 ```http
 GET /api/stocks/{code}/fundamentals?force_refresh=false
-```
 
-**响应示例**：
+```bash
+
+- *响应示例**：
 
 ```json
 {
@@ -204,20 +227,22 @@ GET /api/stocks/{code}/fundamentals?force_refresh=false
     "updated_at": "2024-01-15T15:30:00"
   }
 }
-```
 
-### 3. 获取K线数据
+```bash
+
+### 3. 获取 K 线数据
 
 ```http
 GET /api/stocks/{code}/kline?period=day&limit=120&force_refresh=false
-```
 
-**参数**：
+```bash
+
+- *参数**：
 - `period`: 周期 (day/week/month/5m/15m/30m/60m)
 - `limit`: 数据条数
 - `force_refresh`: 是否强制刷新
 
-**响应示例**：
+- *响应示例**：
 
 ```json
 {
@@ -238,7 +263,8 @@ GET /api/stocks/{code}/kline?period=day&limit=120&force_refresh=false
     "source": "cache_or_api"
   }
 }
-```
+
+```bash
 
 ## 🧪 测试
 
@@ -246,19 +272,20 @@ GET /api/stocks/{code}/kline?period=day&limit=120&force_refresh=false
 
 ```bash
 python scripts/test_foreign_stock_api.py
-```
+
+```bash
 
 ### 测试结果
 
 #### ✅ 成功的测试
 
 1. **市场类型检测**：所有测试用例通过
-2. **港股行情获取**：成功（使用AKShare作为备用数据源）
-3. **缓存功能**：成功（数据被缓存到Redis）
+2. **港股行情获取**：成功（使用 AKShare 作为备用数据源）
+3. **缓存功能**：成功（数据被缓存到 Redis）
 
 #### ⚠️ 限流问题
 
-- **yfinance被限流**：`Too Many Requests. Rate limited. Try after a while.`
+- **yfinance 被限流**：`Too Many Requests. Rate limited. Try after a while.`
 - **解决方案**：自动降级到备用数据源（AKShare for HK, Alpha Vantage for US）
 
 ## 🚀 部署
@@ -268,77 +295,86 @@ python scripts/test_foreign_stock_api.py
 确保以下环境变量已配置：
 
 ```bash
-# Redis配置
+
+# Redis 配置
+
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 
-# MongoDB配置
+# MongoDB 配置
+
 MONGODB_HOST=127.0.0.1
 MONGODB_PORT=27017
 
 # API Keys（可选，用于备用数据源）
+
 ALPHA_VANTAGE_API_KEY=your_key_here
 FINNHUB_API_KEY=your_key_here
-```
+
+```bash
 
 ### 2. 依赖安装
 
 ```bash
 pip install yfinance akshare
-```
+
+```bash
 
 ### 3. 启动服务
 
 ```bash
-# 启动Web服务
+
+# 启动 Web 服务
+
 python web/app.py
-```
+
+```bash
 
 ## 📊 性能优化
 
 ### 1. 缓存命中率
 
-- **Redis缓存**：10分钟-1天TTL，预期命中率 > 80%
-- **MongoDB缓存**：持久化，预期命中率 > 60%
+- **Redis 缓存**：10 分钟-1 天 TTL，预期命中率 > 80%
+- **MongoDB 缓存**：持久化，预期命中率 > 60%
 
 ### 2. 响应时间
 
 - **缓存命中**：< 100ms
-- **API调用**：1-3秒（取决于数据源）
+- **API 调用**：1-3 秒（取决于数据源）
 
 ### 3. 降级策略
 
-1. Redis失败 → MongoDB
-2. MongoDB失败 → 外部API
+1. Redis 失败 → MongoDB
+2. MongoDB 失败 → 外部 API
 3. 主数据源失败 → 备用数据源
 
 ## 🔍 故障排除
 
-### 问题1：yfinance被限流
+### 问题 1：yfinance 被限流
 
-**症状**：`Too Many Requests. Rate limited. Try after a while.`
+- *症状**：`Too Many Requests. Rate limited. Try after a while.`
 
-**解决方案**：
+- *解决方案**：
 1. 自动降级到备用数据源（AKShare/Alpha Vantage）
-2. 增加缓存时间，减少API调用频率
-3. 使用代理或VPN
+2. 增加缓存时间，减少 API 调用频率
+3. 使用代理或 VPN
 
-### 问题2：缓存未生效
+### 问题 2：缓存未生效
 
-**症状**：每次请求都调用API
+- *症状**：每次请求都调用 API
 
-**解决方案**：
-1. 检查Redis连接：`redis-cli ping`
-2. 检查MongoDB连接：`mongo --eval "db.adminCommand('ping')"`
+- *解决方案**：
+1. 检查 Redis 连接：`redis-cli ping`
+2. 检查 MongoDB 连接：`mongo --eval "db.adminCommand('ping')"`
 3. 查看日志：确认缓存保存和加载日志
 
-### 问题3：数据格式错误
+### 问题 3：数据格式错误
 
-**症状**：前端显示异常
+- *症状**：前端显示异常
 
-**解决方案**：
+- *解决方案**：
 1. 检查数据格式是否符合前端期望
-2. 查看API响应日志
+2. 查看 API 响应日志
 3. 使用测试脚本验证数据格式
 
 ## 📝 后续优化
@@ -358,7 +394,7 @@ python web/app.py
 ### 3. 监控和告警
 
 - [ ] 添加数据源可用性监控
-- [ ] 实现API调用统计
+- [ ] 实现 API 调用统计
 - [ ] 设置缓存命中率告警
 
 ## 🎉 总结
@@ -371,9 +407,8 @@ python web/app.py
 4. ✅ **强制刷新支持**：用户可以手动刷新数据
 5. ✅ **统一接口**：前端无需修改，后端自动处理多市场
 
-**测试结果**：
+- *测试结果**：
 - 市场类型检测：✅ 100%通过
 - 港股数据获取：✅ 成功（使用备用数据源）
 - 缓存功能：✅ 正常工作
 - 美股数据获取：⚠️ 受限流影响（已有降级方案）
-

@@ -22,45 +22,48 @@ class ChatGoogleOpenAI(ChatGoogleGenerativeAI):
     def __init__(self, base_url: Optional[str] = None, **kwargs):
         """
         初始化 Google AI OpenAI 兼容客户端
-        
+
         Args:
             base_url: 自定义 API 端点（可选）
-                     例如：https://generativelanguage.googleapis.com/v1beta
-                          https://generativelanguage.googleapis.com/v1
-                          https://your-proxy.com
+                     例如：<https://generativelanguage.googleapis.com/v1beta>
+                          <https://generativelanguage.googleapis.com/v1>
+                          <https://your-proxy.com>
         """
-        
-        # 处理自定义 base_url
+
+# 处理自定义 base_url
         if base_url:
-            # 提取域名部分（移除 /v1 或 /v1beta 后缀）
+
+# 提取域名部分（移除 /v1 或 /v1beta 后缀）
             if base_url.endswith('/v1beta'):
                 api_endpoint = base_url[:-8]
             elif base_url.endswith('/v1'):
                 api_endpoint = base_url[:-3]
             else:
                 api_endpoint = base_url
-            
-            # 通过 client_options 传递域名
-            # SDK 会自动添加 /v1beta 路径
-            kwargs["client_options"] = {"api_endpoint": api_endpoint}
-        
-        super().__init__(**kwargs)
-```
 
-**关键点**：
+# 通过 client_options 传递域名
+
+# SDK 会自动添加 /v1beta 路径
+            kwargs["client_options"] = {"api_endpoint": api_endpoint}
+
+        super().__init__(**kwargs)
+
+```bash
+
+- *关键点**：
 - `client_options.api_endpoint` 只需要域名部分
 - Google AI SDK 会自动添加 `/v1beta/models/...` 等路径
 - 如果传递完整路径会导致重复：`/v1beta/v1beta/`
 
 #### `tradingagents/graph/trading_graph.py`
 
-**修改 1：`create_llm_by_provider` 函数**
+- *修改 1：`create_llm_by_provider` 函数**
 
 ```python
 if provider.lower() == "google":
     google_api_key = os.getenv('GOOGLE_API_KEY')
     if not google_api_key:
-        raise ValueError("使用Google需要设置GOOGLE_API_KEY环境变量")
+        raise ValueError("使用 Google 需要设置 GOOGLE_API_KEY 环境变量")
 
     return ChatGoogleOpenAI(
         model=model,
@@ -70,15 +73,17 @@ if provider.lower() == "google":
         max_tokens=max_tokens,
         timeout=timeout
     )
-```
 
-**修改 2：`TradingAgentsGraph.__init__` 方法**
+```bash
+
+- *修改 2：`TradingAgentsGraph.__init__` 方法**
 
 ```python
 elif self.config["llm_provider"].lower() == "google":
-    # 获取 backend_url
+
+# 获取 backend_url
     backend_url = self.config.get("backend_url")
-    
+
     self.deep_thinking_llm = ChatGoogleOpenAI(
         model=self.config["deep_think_llm"],
         google_api_key=google_api_key,
@@ -87,50 +92,58 @@ elif self.config["llm_provider"].lower() == "google":
         max_tokens=deep_max_tokens,
         timeout=deep_timeout
     )
-```
+
+```bash
 
 ### 2. 配置方式
 
 #### 数据库配置
 
-**厂家配置（llm_providers 集合）**：
+- *厂家配置（llm_providers 集合）**：
 
 ```json
 {
     "name": "google",
     "display_name": "Google AI",
-    "default_base_url": "https://generativelanguage.googleapis.com/v1beta",
+    "default_base_url": "<https://generativelanguage.googleapis.com/v1beta",>
     "api_key_env_var": "GOOGLE_API_KEY",
     ...
 }
-```
 
-**模型配置（llm_configs 集合）**：
+```bash
+
+- *模型配置（llm_configs 集合）**：
 
 ```json
 {
     "provider": "google",
     "model_name": "gemini-2.5-flash",
-    "api_base": "https://your-custom-endpoint.com/v1beta",  // 可选，覆盖厂家配置
+    "api_base": "<https://your-custom-endpoint.com/v1beta",>  // 可选，覆盖厂家配置
     ...
 }
-```
+
+```bash
 
 #### 配置优先级
 
-```
+```bash
 模型配置的 api_base > 厂家配置的 default_base_url > SDK 默认端点
-```
+
+```bash
 
 ### 3. URL 处理逻辑
 
 | 输入 base_url | 提取的域名 | SDK 最终请求 URL |
-|--------------|-----------|-----------------|
-| `https://generativelanguage.googleapis.com/v1beta` | `https://generativelanguage.googleapis.com` | `https://generativelanguage.googleapis.com/v1beta/models/...` |
-| `https://generativelanguage.googleapis.com/v1` | `https://generativelanguage.googleapis.com` | `https://generativelanguage.googleapis.com/v1beta/models/...` |
-| `https://your-proxy.com` | `https://your-proxy.com` | `https://your-proxy.com/v1beta/models/...` |
 
-**说明**：
+|--------------|-----------|-----------------|
+
+| `<https://generativelanguage.googleapis.com/v1beta`> | `<https://generativelanguage.googleapis.com`> | `<https://generativelanguage.googleapis.com/v1beta/models/...`> |
+
+| `<https://generativelanguage.googleapis.com/v1`> | `<https://generativelanguage.googleapis.com`> | `<https://generativelanguage.googleapis.com/v1beta/models/...`> |
+
+| `<https://your-proxy.com`> | `<https://your-proxy.com`> | `<https://your-proxy.com/v1beta/models/...`> |
+
+- *说明**：
 - 自动移除 `/v1` 或 `/v1beta` 后缀
 - SDK 会自动添加 `/v1beta` 路径
 - 避免路径重复问题
@@ -146,8 +159,10 @@ llm = ChatGoogleOpenAI(
     model="gemini-2.5-flash",
     google_api_key="YOUR_API_KEY"
 )
-# 使用默认端点：https://generativelanguage.googleapis.com
-```
+
+# 使用默认端点：<https://generativelanguage.googleapis.com>
+
+```bash
 
 ### 示例 2：使用自定义端点
 
@@ -155,10 +170,12 @@ llm = ChatGoogleOpenAI(
 llm = ChatGoogleOpenAI(
     model="gemini-2.5-flash",
     google_api_key="YOUR_API_KEY",
-    base_url="https://your-proxy.com/v1beta"
+    base_url="<https://your-proxy.com/v1beta">
 )
-# 使用自定义端点：https://your-proxy.com
-```
+
+# 使用自定义端点：<https://your-proxy.com>
+
+```bash
 
 ### 示例 3：通过工厂函数创建
 
@@ -168,12 +185,13 @@ from tradingagents.graph.trading_graph import create_llm_by_provider
 llm = create_llm_by_provider(
     provider="google",
     model="gemini-2.5-flash",
-    backend_url="https://your-proxy.com/v1beta",
+    backend_url="<https://your-proxy.com/v1beta",>
     temperature=0.7,
     max_tokens=2000,
     timeout=60
 )
-```
+
+```bash
 
 ## 🧪 测试
 
@@ -181,9 +199,10 @@ llm = create_llm_by_provider(
 
 ```bash
 python scripts/test_google_base_url.py
-```
 
-**测试内容**：
+```bash
+
+- *测试内容**：
 1. ✅ 默认端点创建
 2. ✅ 自定义端点（v1beta）创建
 3. ✅ 自动转换 v1 到域名
@@ -193,47 +212,52 @@ python scripts/test_google_base_url.py
 
 ### Q1: 为什么会出现 `/v1beta/v1beta/` 重复？
 
-**原因**：`client_options.api_endpoint` 包含了完整路径（如 `/v1beta`），SDK 会自动添加 `/v1beta`，导致重复。
+- *原因**：`client_options.api_endpoint` 包含了完整路径（如 `/v1beta`），SDK 会自动添加 `/v1beta`，导致重复。
 
-**解决**：只传递域名部分给 `client_options.api_endpoint`。
+- *解决**：只传递域名部分给 `client_options.api_endpoint`。
 
 ### Q2: 如何配置代理？
 
-**方法 1：系统代理**（推荐）
+- *方法 1：系统代理**（推荐）
 - 使用 V2Ray 的系统代理模式
 - 应用会自动使用系统代理
 
-**方法 2：环境变量**
-```bash
-export HTTP_PROXY=http://127.0.0.1:10809
-export HTTPS_PROXY=http://127.0.0.1:10809
-```
+- *方法 2：环境变量**
 
-**注意**：Google AI SDK 的 gRPC 模式不支持 HTTP 代理，建议使用 REST 模式：
+```bash
+export HTTP_PROXY=<http://127.0.0.1:10809>
+export HTTPS_PROXY=<http://127.0.0.1:10809>
+
+```bash
+
+- *注意**：Google AI SDK 的 gRPC 模式不支持 HTTP 代理，建议使用 REST 模式：
 
 ```python
 llm = ChatGoogleOpenAI(
     model="gemini-2.5-flash",
     transport="rest"  # 使用 REST 模式，支持 HTTP 代理
+
 )
-```
+
+```bash
 
 ### Q3: 如何验证配置是否生效？
 
 查看日志输出：
 
-```
-🔍 [Google初始化] 处理 base_url: https://generativelanguage.googleapis.com/v1beta
-🔍 [Google初始化] 从 base_url 提取域名: https://generativelanguage.googleapis.com
-✅ [Google初始化] 设置 client_options.api_endpoint: https://generativelanguage.googleapis.com
+```bash
+🔍 [Google 初始化] 处理 base_url: <https://generativelanguage.googleapis.com/v1beta>
+🔍 [Google 初始化] 从 base_url 提取域名: <https://generativelanguage.googleapis.com>
+✅ [Google 初始化] 设置 client_options.api_endpoint: <https://generativelanguage.googleapis.com>
    SDK 会自动添加 /v1beta 路径
-```
+
+```bash
 
 ## 📚 参考资料
 
-- [LangChain Google GenAI Issue #783](https://github.com/langchain-ai/langchain-google/issues/783)
-- [Google AI Python SDK 文档](https://ai.google.dev/api/python/google/generativeai)
-- [LangChain ChatGoogleGenerativeAI 文档](https://python.langchain.com/docs/integrations/chat/google_generative_ai)
+- [LangChain Google GenAI Issue #783](<https://github.com/langchain-ai/langchain-google/issues/783)>
+- [Google AI Python SDK 文档](<https://ai.google.dev/api/python/google/generativeai)>
+- [LangChain ChatGoogleGenerativeAI 文档](<https://python.langchain.com/docs/integrations/chat/google_generative_ai)>
 
 ## 🎉 总结
 
@@ -245,4 +269,3 @@ llm = ChatGoogleOpenAI(
 - ✅ 支持代理和私有部署
 
 用户可以像配置其他厂商一样配置 Google AI，无需特殊处理。
-

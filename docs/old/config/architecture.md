@@ -1,4 +1,4 @@
-# 配置方案A（分层集中式）与数据库配置治理
+# 配置方案 A（分层集中式）与数据库配置治理
 
 本文档定义运行时配置的“单一事实来源（SoT）”、优先级、边界与迁移路线，适用于 app 与 tradingagents 两侧。
 
@@ -12,6 +12,7 @@
 5) 代码默认值（default_*）
 
 职责划分：
+
 - 环境变量/.env：Mongo/Redis/队列/加密密钥、第三方 API Key 等敏感/基础设施项
 - 数据库：运营/动态参数（开关、阈值、优先级、默认项）与目录数据（分类、分组、厂家）
 - 代码默认：开发兜底默认
@@ -19,6 +20,7 @@
 ## 二、SoT 模式开关
 
 Settings.CONFIG_SOT: file|db|hybrid
+
 - file：以文件/env 为准（推荐，生产缺省）
 - db：以数据库为准（仅兼容旧版，不推荐）
 - hybrid：文件/env 优先，DB 兜底
@@ -39,16 +41,19 @@ Settings.CONFIG_SOT: file|db|hybrid
 ## 五、迁移路线
 
 P0：安全与基线
-- 文档化方案A与权责矩阵（本文档）
+
+- 文档化方案 A 与权责矩阵（本文档）
 - 清理/屏蔽 DB 中明文密钥（生产）；统一响应脱敏
 - 禁止通过 REST 写入密钥；从文件读/写去除 api_key
 
 P1：合并与缓存
+
 - 实现 ConfigProvider（env→DB→用户偏好合并 + 缓存 + 版本失效）
 - migrate_env_to_providers：dev 允许写入以便演示；prod 仅标记 has_key
 - 写配置操作审计日志
 
 P2：扩展
+
 - 用户/租户偏好优先级接入
 - 导入/导出 + 回滚
 - 前端配置中心区分“敏感只读/运营可改”
@@ -72,7 +77,7 @@ P2：扩展
 - 待办（P1 进行中）
   - ConfigProvider：env→DB→用户偏好合并 + 短缓存 + 版本失效
   - 更全面的写入审计覆盖（LLM/数据源/数据库配置增改删）
-  - system_settings 中第三方 key/secret 逐步迁移至环境变量，前端仅展示“已配置/来源ENV”状态
+  - system_settings 中第三方 key/secret 逐步迁移至环境变量，前端仅展示“已配置/来源 ENV”状态
 
 
 ## 八、元数据接口（前端只读/来源渲染依据）
@@ -86,10 +91,12 @@ P2：扩展
   - sensitive：是否敏感（按关键词匹配：key/secret/password/token/client_secret）
   - editable：是否可编辑（敏感项或来源为 environment 时为 False，其余为 True）
   - source：environment | database | default（ENV 覆盖优先，其次 DB，否则 default）
+
   - has_value：是否存在生效值（按 ENV→DB 合并后的结果）
 - 说明：当前接口以 DB 中已有的 system_settings 键为主，若 ENV 中存在同名覆盖，会在 source/has_value 上体现。
 
 ### 示例返回
+
 ```json
 {
   "success": true,
@@ -101,7 +108,8 @@ P2：扩展
   },
   "message": ""
 }
-```
+
+```bash
 
 ## 执行记录追加（P1）
 

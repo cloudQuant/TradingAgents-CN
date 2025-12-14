@@ -15,15 +15,18 @@
 实现**智能模型目录管理**功能，提供三种方式添加模型：
 
 ### 1. 🤖 从 API 自动获取（推荐）
+
 - 自动调用聚合平台的 `/v1/models` 端点
 - 获取最新的模型列表
 - 自动填充到表格中
 
 ### 2. 📋 使用预设模板
+
 - 提供常用模型的预设列表
 - 一键导入
 
 ### 3. ✍️ 手动添加
+
 - 保留手动添加功能
 - 适用于特殊情况
 
@@ -32,6 +35,7 @@
 ### 1. 智能识别聚合平台
 
 系统会自动识别当前选择的厂家是否为聚合平台：
+
 - 302.AI
 - OpenRouter
 - One API
@@ -42,37 +46,37 @@
 
 ### 2. 从 API 获取模型列表
 
-**前提条件**：
+- *前提条件**：
 - 已配置厂家的 API Key（数据库或环境变量）
 - 已配置厂家的 API 基础地址 (`default_base_url`)
 
-**操作步骤**：
+- *操作步骤**：
 1. 选择聚合平台厂家
 2. 点击"从 API 获取模型列表"按钮
 3. 系统自动调用 `/v1/models` 端点
 4. 解析返回的模型列表
 5. 自动填充到表格中
 
-**优点**：
+- *优点**：
 - ✅ 自动获取最新的模型列表
 - ✅ 准确，不会出错
 - ✅ 省时省力
 
 ### 3. 使用预设模板
 
-**预设模板包含**：
+- *预设模板包含**：
 - 常用的 OpenAI 模型（GPT-4o、GPT-4o Mini、GPT-3.5 Turbo 等）
 - 常用的 Anthropic 模型（Claude 3.5 Sonnet、Claude 3 Opus 等）
 - 常用的 Google 模型（Gemini 2.0 Flash、Gemini 1.5 Pro 等）
 - 包含定价信息和上下文长度
 
-**操作步骤**：
+- *操作步骤**：
 1. 选择聚合平台厂家
 2. 点击"使用预设模板"按钮
 3. 确认覆盖当前列表
 4. 预设模型自动导入
 
-**优点**：
+- *优点**：
 - ✅ 快速导入常用模型
 - ✅ 包含完整的定价信息
 - ✅ 无需 API Key
@@ -80,6 +84,7 @@
 ### 4. 手动添加
 
 保留原有的手动添加功能，适用于：
+
 - 添加自定义模型
 - 添加预设模板中没有的模型
 - 微调模型信息
@@ -88,7 +93,7 @@
 
 ### 前端实现
 
-**文件**：`frontend/src/views/Settings/components/ModelCatalogManagement.vue`
+- *文件**：`frontend/src/views/Settings/components/ModelCatalogManagement.vue`
 
 #### 1. 智能识别聚合平台
 
@@ -100,7 +105,8 @@ const aggregatorProviders = ['302ai', 'oneapi', 'newapi', 'openrouter', 'custom_
 const isAggregatorProvider = computed(() => {
   return aggregatorProviders.includes(formData.value.provider)
 })
-```
+
+```bash
 
 #### 2. 条件显示特殊功能
 
@@ -125,7 +131,8 @@ const isAggregatorProvider = computed(() => {
     使用预设模板
   </el-button>
 </template>
-```
+
+```bash
 
 #### 3. 友好提示
 
@@ -143,7 +150,8 @@ const isAggregatorProvider = computed(() => {
     <li>点击"手动添加模型"逐个添加</li>
   </ul>
 </el-alert>
-```
+
+```bash
 
 #### 4. 从 API 获取模型
 
@@ -163,21 +171,25 @@ const handleFetchModelsFromAPI = async () => {
 
   // 调用后端 API
   const response = await configApi.fetchProviderModels(formData.value.provider)
-  
+
   if (response.success && response.models) {
     formData.value.models = response.models.map((model: any) => ({
       name: model.id || model.name,
+
       display_name: model.name || model.id,
+
       input_price_per_1k: null,
       output_price_per_1k: null,
       context_length: model.context_length || null,
+
       currency: 'CNY'
     }))
-    
+
     ElMessage.success(`成功获取 ${formData.value.models.length} 个模型`)
   }
 }
-```
+
+```bash
 
 #### 5. 使用预设模板
 
@@ -196,14 +208,16 @@ const getPresetModels = (providerName: string): ModelInfo[] => {
       // ... 更多模型
     ]
   }
-  
+
   return presets[providerName] || []
+
 }
-```
+
+```bash
 
 ### 后端实现
 
-**文件**：
+- *文件**：
 - `app/routers/config.py` - API 路由
 - `app/services/config_service.py` - 业务逻辑
 
@@ -218,31 +232,34 @@ async def fetch_provider_models(
     """从厂家 API 获取模型列表"""
     result = await config_service.fetch_provider_models(provider_id)
     return result
-```
+
+```bash
 
 #### 2. 业务逻辑
 
 ```python
 async def fetch_provider_models(self, provider_id: str) -> dict:
     """从厂家 API 获取模型列表"""
-    # 1. 获取厂家信息
+
+# 1. 获取厂家信息
     provider_data = await providers_collection.find_one({"_id": ObjectId(provider_id)})
-    
-    # 2. 获取 API Key（数据库或环境变量）
+
+# 2. 获取 API Key（数据库或环境变量）
     api_key = provider_data.get("api_key") or self._get_env_api_key(provider_name)
-    
-    # 3. 调用 /v1/models 端点
+
+# 3. 调用 /v1/models 端点
     url = f"{base_url}/v1/models"
     response = requests.get(url, headers={"Authorization": f"Bearer {api_key}"})
-    
-    # 4. 解析返回结果
+
+# 4. 解析返回结果
     if response.status_code == 200:
         result = response.json()
         return {
             "success": True,
             "models": result["data"]
         }
-```
+
+```bash
 
 ## 📊 使用流程
 
@@ -278,12 +295,19 @@ async def fetch_provider_models(self, provider_id: str) -> dict:
 ## 🎁 优势对比
 
 | 特性 | 手动添加 | 预设模板 | API 自动获取 |
+
 |------|---------|---------|-------------|
+
 | 速度 | ❌ 慢 | ✅ 快 | ✅ 快 |
+
 | 准确性 | ⚠️ 容易出错 | ✅ 准确 | ✅ 准确 |
+
 | 最新性 | ❌ 可能过时 | ⚠️ 可能过时 | ✅ 最新 |
+
 | 完整性 | ⚠️ 可能遗漏 | ⚠️ 常用模型 | ✅ 全部模型 |
+
 | 定价信息 | ❌ 需手动查询 | ✅ 已包含 | ⚠️ 需手动补充 |
+
 | 前提条件 | ✅ 无 | ✅ 无 | ⚠️ 需 API Key |
 
 ## 📝 注意事项
@@ -291,24 +315,28 @@ async def fetch_provider_models(self, provider_id: str) -> dict:
 ### 1. API Key 要求
 
 从 API 获取模型列表需要配置 API Key：
+
 - 可以在数据库中配置（厂家管理页面）
 - 可以在 `.env` 文件中配置（环境变量）
 
 ### 2. API 基础地址
 
 需要在厂家配置中设置 `default_base_url`：
-- 302.AI: `https://api.302.ai`
-- OpenRouter: `https://openrouter.ai/api`
+
+- 302.AI: `<https://api.302.ai`>
+- OpenRouter: `<https://openrouter.ai/api`>
 
 ### 3. 定价信息
 
 从 API 获取的模型列表通常不包含定价信息，需要手动补充：
+
 - 可以参考聚合平台的官方文档
 - 可以使用预设模板中的定价信息
 
 ### 4. 模型名称格式
 
 不同聚合平台的模型名称格式可能不同：
+
 - 302.AI: `gpt-4o`
 - OpenRouter: `openai/gpt-4o`
 
@@ -321,6 +349,7 @@ async def fetch_provider_models(self, provider_id: str) -> dict:
 ## 🎉 总结
 
 通过智能模型目录管理功能，用户可以：
+
 - ✅ 快速获取聚合平台的模型列表
 - ✅ 避免手动输入错误
 - ✅ 节省大量时间
@@ -328,9 +357,8 @@ async def fetch_provider_models(self, provider_id: str) -> dict:
 
 这大大提升了聚合平台的使用体验！
 
----
+- --
 
-**功能开发日期**：2025-10-12  
-**开发人员**：AI Assistant  
-**需求提出人**：用户
-
+- *功能开发日期**：2025-10-12
+- *开发人员**：AI Assistant
+- *需求提出人**：用户

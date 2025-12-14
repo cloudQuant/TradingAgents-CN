@@ -15,17 +15,19 @@ TradingAgents-CN 使用 APScheduler 作为定时任务调度器，提供了完�
 
 ### 核心组件
 
-1. **APScheduler** - 定时任务调度器
+1. **APScheduler**- 定时任务调度器
    - 使用 `AsyncIOScheduler` 异步调度器
    - 支持 Cron 表达式和间隔触发
    - 在主应用进程中运行
 
-2. **SchedulerService** - 定时任务管理服务
+2.**SchedulerService**- 定时任务管理服务
+
    - 提供任务查询、暂停、恢复、触发等功能
    - 记录任务执行历史到 MongoDB
    - 提供统计信息和健康检查
 
-3. **Scheduler Router** - 定时任务管理 API
+3.**Scheduler Router**- 定时任务管理 API
+
    - RESTful API 接口
    - 需要管理员权限（暂停/恢复/触发操作）
    - 支持分页查询
@@ -33,13 +35,15 @@ TradingAgents-CN 使用 APScheduler 作为定时任务调度器，提供了完�
 ## 📊 当前定时任务列表
 
 ### 1. 股票基础信息同步
-- **任务ID**: 无（未设置ID）
+
+- **任务 ID**: 无（未设置 ID）
 - **函数**: `BasicsSync Service.run_full_sync`
 - **触发器**: Cron 表达式（可配置）
 - **默认时间**: 每天 06:30
 
 ### 2. 实时行情入库
-- **任务ID**: 无（未设置ID）
+
+- **任务 ID**: 无（未设置 ID）
 - **函数**: `QuotesIngestionService.run_once`
 - **触发器**: 间隔触发
 - **默认间隔**: 每 60 秒
@@ -47,93 +51,111 @@ TradingAgents-CN 使用 APScheduler 作为定时任务调度器，提供了完�
 ### 3. Tushare 数据同步任务
 
 #### 3.1 基础信息同步
-- **任务ID**: `tushare_basic_info_sync`
+
+- **任务 ID**: `tushare_basic_info_sync`
 - **函数**: `run_tushare_basic_info_sync`
-- **触发器**: `0 2 * * *` (每天凌晨2点)
+- **触发器**: `0 2 * * *` (每天凌晨 2 点)
 
 #### 3.2 行情同步
-- **任务ID**: `tushare_quotes_sync`
+
+- **任务 ID**: `tushare_quotes_sync`
 - **函数**: `run_tushare_quotes_sync`
-- **触发器**: `*/5 9-15 * * 1-5` (交易日 9:00-15:00，每5分钟)
+- **触发器**: `*/5 9-15 * * 1-5` (交易日 9:00-15:00，每 5 分钟)
 
 #### 3.3 历史数据同步
-- **任务ID**: `tushare_historical_sync`
+
+- **任务 ID**: `tushare_historical_sync`
 - **函数**: `run_tushare_historical_sync`
 - **触发器**: `0 18 * * 1-5` (交易日 18:00)
 
 #### 3.4 财务数据同步
-- **任务ID**: `tushare_financial_sync`
+
+- **任务 ID**: `tushare_financial_sync`
 - **函数**: `run_tushare_financial_sync`
-- **触发器**: `0 3 * * 0` (每周日凌晨3点)
+- **触发器**: `0 3 * * 0` (每周日凌晨 3 点)
 
 #### 3.5 新闻数据同步
-- **任务ID**: `tushare_news_sync`
+
+- **任务 ID**: `tushare_news_sync`
 - **函数**: `run_tushare_news_sync`
-- **触发器**: `0 */2 * * *` (每2小时)
+- **触发器**: `0 */2 * * *` (每 2 小时)
 
 #### 3.6 状态检查
-- **任务ID**: `tushare_status_check`
+
+- **任务 ID**: `tushare_status_check`
 - **函数**: `run_tushare_status_check`
-- **触发器**: `*/30 * * * *` (每30分钟)
+- **触发器**: `*/30 * * * *` (每 30 分钟)
 
 ### 4. AKShare 数据同步任务
 
 #### 4.1 基础信息同步
-- **任务ID**: `akshare_basic_info_sync`
+
+- **任务 ID**: `akshare_basic_info_sync`
 - **函数**: `run_akshare_basic_info_sync`
-- **触发器**: `0 2 * * *` (每天凌晨2点)
+- **触发器**: `0 2 * * *` (每天凌晨 2 点)
 
 #### 4.2 行情同步
-- **任务ID**: `akshare_quotes_sync`
+
+- **任务 ID**: `akshare_quotes_sync`
 - **函数**: `run_akshare_quotes_sync`
-- **触发器**: `*/5 9-15 * * 1-5` (交易日 9:00-15:00，每5分钟)
+- **触发器**: `*/5 9-15 * * 1-5` (交易日 9:00-15:00，每 5 分钟)
 
 #### 4.3 历史数据同步
-- **任务ID**: `akshare_historical_sync`
+
+- **任务 ID**: `akshare_historical_sync`
 - **函数**: `run_akshare_historical_sync`
 - **触发器**: `0 18 * * 1-5` (交易日 18:00)
 
 #### 4.4 财务数据同步
-- **任务ID**: `akshare_financial_sync`
+
+- **任务 ID**: `akshare_financial_sync`
 - **函数**: `run_akshare_financial_sync`
-- **触发器**: `0 3 * * 0` (每周日凌晨3点)
+- **触发器**: `0 3 * * 0` (每周日凌晨 3 点)
 
 #### 4.5 新闻数据同步
-- **任务ID**: `akshare_news_sync`
+
+- **任务 ID**: `akshare_news_sync`
 - **函数**: `run_akshare_news_sync`
-- **触发器**: `0 */2 * * *` (每2小时)
+- **触发器**: `0 */2 * * *` (每 2 小时)
 
 #### 4.6 状态检查
-- **任务ID**: `akshare_status_check`
+
+- **任务 ID**: `akshare_status_check`
 - **函数**: `run_akshare_status_check`
-- **触发器**: `*/30 * * * *` (每30分钟)
+- **触发器**: `*/30 * * * *` (每 30 分钟)
 
 ### 5. BaoStock 数据同步任务
 
 #### 5.1 基础信息同步
-- **任务ID**: `baostock_basic_info_sync`
+
+- **任务 ID**: `baostock_basic_info_sync`
 - **函数**: `run_baostock_basic_info_sync`
-- **触发器**: `0 2 * * *` (每天凌晨2点)
+- **触发器**: `0 2 * * *` (每天凌晨 2 点)
 
 #### 5.2 历史数据同步
-- **任务ID**: `baostock_historical_sync`
+
+- **任务 ID**: `baostock_historical_sync`
 - **函数**: `run_baostock_historical_sync`
 - **触发器**: `0 18 * * 1-5` (交易日 18:00)
 
 #### 5.3 状态检查
-- **任务ID**: `baostock_status_check`
+
+- **任务 ID**: `baostock_status_check`
 - **函数**: `run_baostock_status_check`
-- **触发器**: `*/30 * * * *` (每30分钟)
+- **触发器**: `*/30 * * * *` (每 30 分钟)
 
 ## 🔌 API 接口
 
 ### 1. 获取任务列表
+
 ```http
 GET /api/scheduler/jobs
 Authorization: Bearer {token}
-```
 
-**响应示例**:
+```bash
+
+- *响应示例**:
+
 ```json
 {
   "success": true,
@@ -148,15 +170,19 @@ Authorization: Bearer {token}
   ],
   "message": "获取到 15 个定时任务"
 }
-```
+
+```bash
 
 ### 2. 获取任务详情
+
 ```http
 GET /api/scheduler/jobs/{job_id}
 Authorization: Bearer {token}
-```
 
-**响应示例**:
+```bash
+
+- *响应示例**:
+
 ```json
 {
   "success": true,
@@ -171,57 +197,71 @@ Authorization: Bearer {token}
   },
   "message": "获取任务详情成功"
 }
-```
+
+```bash
 
 ### 3. 暂停任务
+
 ```http
 POST /api/scheduler/jobs/{job_id}/pause
 Authorization: Bearer {token}
-```
 
-**权限要求**: 管理员
+```bash
+
+- *权限要求**: 管理员
 
 ### 4. 恢复任务
+
 ```http
 POST /api/scheduler/jobs/{job_id}/resume
 Authorization: Bearer {token}
-```
 
-**权限要求**: 管理员
+```bash
+
+- *权限要求**: 管理员
 
 ### 5. 手动触发任务
+
 ```http
 POST /api/scheduler/jobs/{job_id}/trigger
 Authorization: Bearer {token}
-```
 
-**权限要求**: 管理员
+```bash
+
+- *权限要求**: 管理员
 
 ### 6. 获取任务执行历史
+
 ```http
 GET /api/scheduler/jobs/{job_id}/history?limit=20&offset=0
 Authorization: Bearer {token}
-```
+
+```bash
 
 ### 7. 获取所有执行历史
+
 ```http
 GET /api/scheduler/history?limit=50&offset=0&job_id={job_id}&status={status}
 Authorization: Bearer {token}
-```
 
-**查询参数**:
+```bash
+
+- *查询参数**:
 - `limit`: 返回数量限制 (1-200)
 - `offset`: 偏移量
-- `job_id`: 任务ID过滤（可选）
+- `job_id`: 任务 ID 过滤（可选）
 - `status`: 状态过滤 (success/failed)（可选）
 
 ### 8. 获取统计信息
+
 ```http
 GET /api/scheduler/stats
 Authorization: Bearer {token}
-```
 
-**响应示例**:
+```bash
+
+- *响应示例**:
+
 ```json
 {
   "success": true,
@@ -234,41 +274,49 @@ Authorization: Bearer {token}
   },
   "message": "获取统计信息成功"
 }
-```
+
+```bash
 
 ### 9. 健康检查
+
 ```http
 GET /api/scheduler/health
 Authorization: Bearer {token}
-```
+
+```bash
 
 ## 📝 数据库集合
 
 ### scheduler_history
+
 存储任务执行历史和操作记录
 
-**字段**:
-- `job_id`: 任务ID
+- *字段**:
+- `job_id`: 任务 ID
 - `action`: 操作类型 (pause/resume/trigger/execute)
 - `status`: 状态 (success/failed)
 - `error_message`: 错误信息（如果有）
 - `timestamp`: 时间戳
 
-**索引**:
+- *索引**:
+
 ```javascript
 db.scheduler_history.createIndex({"job_id": 1, "timestamp": -1})
 db.scheduler_history.createIndex({"timestamp": -1})
 db.scheduler_history.createIndex({"status": 1})
-```
+
+```bash
 
 ## 🧪 测试
 
 运行测试脚本：
+
 ```bash
 python scripts/test_scheduler_management.py
-```
 
+```bash
 测试内容：
+
 1. ✅ 获取任务列表
 2. ✅ 获取任务详情
 3. ✅ 暂停任务
@@ -298,4 +346,3 @@ python scripts/test_scheduler_management.py
 - [ ] 添加任务执行失败重试机制
 - [ ] 添加任务执行日志查看
 - [ ] 添加任务执行性能监控
-

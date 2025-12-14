@@ -4,37 +4,40 @@
 
 用户询问：新闻同步任务是否已经配置到定时任务管理界面中？
 
-**答案**：✅ 是的，新闻同步定时任务已经配置好了。
+- *答案**：✅ 是的，新闻同步定时任务已经配置好了。
 
-**重要修复**：
+- *重要修复**：
 - ❌ **修复前**：只有当 `NEWS_SYNC_ENABLED=true` 时，任务才会出现在界面中
 - ✅ **修复后**：无论 `NEWS_SYNC_ENABLED` 是什么值，任务都会出现在界面中
 - ✅ 如果 `NEWS_SYNC_ENABLED=false`，任务会以**暂停**状态显示
 - ✅ 用户可以直接在界面中启用/禁用任务，无需修改配置文件
 
----
+- --
 
 ## 🔍 当前状态
 
 ### 1. 定时任务已配置
 
-**配置位置**：`app/main.py` 第 436-467 行
+- *配置位置**：`app/main.py` 第 436-467 行
 
 <augment_code_snippet path="app/main.py" mode="EXCERPT">
+
 ````python
-# 新闻数据同步任务配置（使用AKShare同步所有股票新闻）
+
+# 新闻数据同步任务配置（使用 AKShare 同步所有股票新闻）
+
 if settings.NEWS_SYNC_ENABLED:
     logger.info("🔄 配置新闻数据同步任务...")
 
     from app.worker.akshare_sync_service import get_akshare_sync_service
 
     async def run_news_sync():
-        """运行新闻同步任务 - 使用AKShare同步所有股票新闻"""
+        """运行新闻同步任务 - 使用 AKShare 同步所有股票新闻"""
         try:
             logger.info("📰 开始新闻数据同步（AKShare）...")
             service = await get_akshare_sync_service()
             result = await service.sync_news_data(
-                symbols=None,  # None表示同步所有股票
+                symbols=None,  # None 表示同步所有股票
                 max_news_per_stock=settings.NEWS_SYNC_MAX_PER_SOURCE
             )
             logger.info(
@@ -54,58 +57,77 @@ if settings.NEWS_SYNC_ENABLED:
         id="news_sync"
     )
     logger.info(f"📰 新闻数据同步已配置: {settings.NEWS_SYNC_CRON}")
+
 ````
+
 </augment_code_snippet>
 
 ### 2. 任务元数据已注册
 
-**配置位置**：`scripts/init_scheduler_metadata.py` 第 88-92 行
+- *配置位置**：`scripts/init_scheduler_metadata.py` 第 88-92 行
 
 ```python
+
 # 新闻数据同步任务
+
 "news_sync": {
     "display_name": "新闻数据同步（AKShare）",
-    "description": "使用AKShare（东方财富）同步所有股票的个股新闻。每2小时执行一次，每只股票获取最新50条新闻。支持批量处理，自动去重和情绪分析。"
+    "description": "使用 AKShare（东方财富）同步所有股票的个股新闻。每 2 小时执行一次，每只股票获取最新 50 条新闻。支持批量处理，自动去重和情绪分析。"
 },
-```
+
+```bash
 
 ### 3. 默认配置
 
-**配置位置**：`app/core/config.py` 第 235-238 行
+- *配置位置**：`app/core/config.py` 第 235-238 行
 
 ```python
+
 # ===== 新闻数据同步服务配置 =====
+
 NEWS_SYNC_ENABLED: bool = Field(default=True)
-NEWS_SYNC_CRON: str = Field(default="0 */2 * * *")  # 每2小时
+NEWS_SYNC_CRON: str = Field(default="0 */2 * * *")  # 每 2 小时
+
 NEWS_SYNC_HOURS_BACK: int = Field(default=24)
 NEWS_SYNC_MAX_PER_SOURCE: int = Field(default=50)
-```
+
+```bash
 
 ### 4. 环境变量配置（当前状态）
 
-**配置位置**：`.env` 第 321 行
+- *配置位置**：`.env` 第 321 行
 
 ```bash
+
 # ===== 新闻数据同步服务配置 =====
+
 # 新闻数据同步总开关
+
 NEWS_SYNC_ENABLED=true  # ✅ 已启用
-# 新闻同步任务（每2小时执行一次）
+
+# 新闻同步任务（每 2 小时执行一次）
+
 NEWS_SYNC_CRON=0 */2 * * *
+
 # 新闻回溯小时数
+
 NEWS_SYNC_HOURS_BACK=24
+
 # 每个数据源最大新闻数量
+
 NEWS_SYNC_MAX_PER_SOURCE=50
-```
 
-**注意**：修复后，无论此配置是 `true` 还是 `false`，任务都会在界面中显示。
+```bash
 
----
+- *注意**：修复后，无论此配置是 `true` 还是 `false`，任务都会在界面中显示。
+
+- --
 
 ## ✅ 管理新闻同步定时任务
 
 ### 方法 1：通过定时任务管理界面（推荐）✨
 
-**步骤**：
+- *步骤**：
 
 1. 重启后端服务（应用最新修复）
 2. 登录前端系统
@@ -118,7 +140,7 @@ NEWS_SYNC_MAX_PER_SOURCE=50
    - ✅ 查看执行历史
    - ✅ 编辑任务配置（Cron 表达式等）
 
-**优势**：
+- *优势**：
 - ✅ 无需修改配置文件
 - ✅ 无需重启服务
 - ✅ 实时生效
@@ -126,7 +148,7 @@ NEWS_SYNC_MAX_PER_SOURCE=50
 
 ### 方法 2：修改 `.env` 文件
 
-**步骤**：
+- *步骤**：
 
 1. 打开 `.env` 文件
 2. 找到 `NEWS_SYNC_ENABLED=false`
@@ -134,85 +156,107 @@ NEWS_SYNC_MAX_PER_SOURCE=50
 4. 保存文件
 5. 重启后端服务
 
-**修改内容**：
+- *修改内容**：
+
 ```bash
+
 # 修改前
+
 NEWS_SYNC_ENABLED=false
 
 # 修改后
+
 NEWS_SYNC_ENABLED=true
-```
 
-**注意**：修复后，此配置只影响任务的初始状态（启用/暂停），任务始终会在界面中显示。
+```bash
 
----
+- *注意**：修复后，此配置只影响任务的初始状态（启用/暂停），任务始终会在界面中显示。
+
+- --
 
 ## 🔧 配置说明
 
 ### 1. Cron 表达式
 
-**默认值**：`0 */2 * * *`（每 2 小时执行一次）
+- *默认值**：`0 */2 * * *`（每 2 小时执行一次）
 
-**格式**：`分钟 小时 日 月 星期`
+- *格式**：`分钟 小时 日 月 星期`
 
-**常用示例**：
+- *常用示例**：
+
 ```bash
+
 # 每小时执行一次
+
 0 * * * *
 
 # 每 2 小时执行一次（默认）
+
 0 */2 * * *
 
 # 每 4 小时执行一次
+
 0 */4 * * *
 
 # 每天凌晨 2 点执行
+
 0 2 * * *
 
 # 每天早上 8 点和晚上 8 点执行
+
 0 8,20 * * *
 
 # 交易日（周一到周五）每小时执行
-0 * * * 1-5
-```
+
+0 * * *1-5
+
+```bash
 
 ### 2. 回溯时间
 
-**配置项**：`NEWS_SYNC_HOURS_BACK`
+- *配置项**：`NEWS_SYNC_HOURS_BACK`
 
-**默认值**：`24`（回溯 24 小时）
+- *默认值**：`24`（回溯 24 小时）
 
-**说明**：
+- *说明**：
 - 每次同步时，获取最近 N 小时的新闻
 - 建议设置为同步间隔的 2-3 倍，避免遗漏新闻
 - 例如：每 2 小时同步一次，建议回溯 4-6 小时
 
 ### 3. 每个数据源最大新闻数量
 
-**配置项**：`NEWS_SYNC_MAX_PER_SOURCE`
+- *配置项**：`NEWS_SYNC_MAX_PER_SOURCE`
 
-**默认值**：`50`（每只股票最多获取 50 条新闻）
+- *默认值**：`50`（每只股票最多获取 50 条新闻）
 
-**说明**：
+- *说明**：
 - 控制每只股票获取的新闻数量
 - 避免单次同步数据量过大
 - 建议根据服务器性能和网络状况调整
 
----
+- --
 
 ## 📊 任务详情
 
 ### 任务信息
 
 | 属性 | 值 |
+
 |------|-----|
-| **任务 ID** | `news_sync` |
-| **显示名称** | 新闻数据同步（AKShare） |
-| **数据源** | AKShare（东方财富） |
-| **同步范围** | 所有股票的个股新闻 |
-| **执行频率** | 每 2 小时（可配置） |
-| **回溯时间** | 24 小时（可配置） |
-| **每股新闻数** | 50 条（可配置） |
+
+| **任务 ID**| `news_sync` |
+
+|**显示名称**| 新闻数据同步（AKShare） |
+
+|**数据源**| AKShare（东方财富） |
+
+|**同步范围**| 所有股票的个股新闻 |
+
+|**执行频率**| 每 2 小时（可配置） |
+
+|**回溯时间**| 24 小时（可配置） |
+
+|**每股新闻数** | 50 条（可配置） |
 
 ### 任务功能
 
@@ -223,29 +267,35 @@ NEWS_SYNC_ENABLED=true
 - ✅ 关键词提取，便于搜索和分类
 - ✅ 错误重试，提高成功率
 
----
+- --
 
 ## 🚀 重启后端服务
 
 ### Windows PowerShell
 
 ```powershell
+
 # 1. 停止当前运行的后端服务（Ctrl+C）
 
 # 2. 重新启动后端服务
+
 .\.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+
+```bash
 
 ### Linux / Mac
 
 ```bash
+
 # 1. 停止当前运行的后端服务（Ctrl+C）
 
 # 2. 重新启动后端服务
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
 
----
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+```bash
+
+- --
 
 ## 📝 验证任务已显示
 
@@ -253,17 +303,21 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 启动后端服务后，查看日志中是否有以下信息：
 
-**如果 `NEWS_SYNC_ENABLED=true`**：
-```
+- *如果 `NEWS_SYNC_ENABLED=true`**：
+
+```bash
 🔄 配置新闻数据同步任务...
 📰 新闻数据同步已配置: 0 */2 * * *
-```
 
-**如果 `NEWS_SYNC_ENABLED=false`**：
-```
+```bash
+
+- *如果 `NEWS_SYNC_ENABLED=false`**：
+
+```bash
 🔄 配置新闻数据同步任务...
 ⏸️ 新闻数据同步已添加但暂停: 0 */2 * * *
-```
+
+```bash
 
 ### 2. 检查定时任务管理界面
 
@@ -281,13 +335,16 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 1. 在定时任务管理界面中找到「新闻数据同步（AKShare）」
 2. 点击「立即执行」按钮
 3. 查看后端日志，应该显示：
-   ```
-   📰 开始新闻数据同步（AKShare）...
-   ✅ 新闻同步完成: 处理XXX只股票, 成功XXX只, 失败XXX只, 新闻总数XXX条, 耗时XX.XX秒
-   ```
-4. 刷新仪表板页面，查看市场快讯区域是否显示最新新闻
 
----
+   ```
+
+   📰 开始新闻数据同步（AKShare）...
+   ✅ 新闻同步完成: 处理 XXX 只股票, 成功 XXX 只, 失败 XXX 只, 新闻总数 XXX 条, 耗时 XX.XX 秒
+   ```
+
+1. 刷新仪表板页面，查看市场快讯区域是否显示最新新闻
+
+- --
 
 ## 🎯 使用场景
 
@@ -323,7 +380,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    - 执行结果（处理股票数、新闻数等）
    - 错误信息（如果失败）
 
----
+- --
 
 ## 📚 相关文档
 
@@ -333,29 +390,29 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - `scripts/sync_market_news.py` - 新闻同步脚本（手动执行）
 - `scripts/check_news_data.py` - 新闻数据检查脚本
 
----
+- --
 
 ## 🎉 总结
 
-**新闻同步定时任务已经完全配置好了**，只需要：
+- *新闻同步定时任务已经完全配置好了**，只需要：
 
 1. ✅ 修改 `.env` 文件：`NEWS_SYNC_ENABLED=true`
 2. ✅ 重启后端服务
 3. ✅ 在定时任务管理界面中查看和管理任务
 
-**任务会自动执行**，无需手动干预：
+- *任务会自动执行**，无需手动干预：
 - ✅ 每 2 小时自动同步最新新闻
 - ✅ 自动去重，避免重复保存
 - ✅ 自动情绪分析和关键词提取
 - ✅ 失败自动重试，提高成功率
 
-**可以通过界面管理**：
+- *可以通过界面管理**：
 - ✅ 查看任务详情和执行历史
 - ✅ 暂停/恢复任务
 - ✅ 手动触发任务（立即执行）
 - ✅ 编辑任务配置（Cron 表达式等）
 
----
+- --
 
 ## 💡 建议
 
@@ -363,4 +420,3 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 2. **根据服务器性能调整同步频率**，避免过于频繁导致性能问题
 3. **定期查看执行历史**，确保任务正常运行
 4. **监控数据库大小**，定期清理过期新闻数据
-

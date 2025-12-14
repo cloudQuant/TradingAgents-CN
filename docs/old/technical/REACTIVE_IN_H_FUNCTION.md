@@ -2,7 +2,7 @@
 
 ## 🎯 核心问题
 
-**为什么在 `h()` 函数中使用 `ref.value` 不会自动更新？**
+- *为什么在 `h()` 函数中使用 `ref.value` 不会自动更新？**
 
 ## 📚 原理解析
 
@@ -18,13 +18,14 @@ const vnode = h('div', [
   h('button', { onClick: () => count.value++ }, '+1'),
   h('span', `Count: ${count.value}`)  // 静态内容！
 ])
-```
 
-**现象**：
+```bash
+
+- *现象**：
 - 点击按钮，`count.value` 确实变成了 1、2、3...
 - 但是页面显示永远是 "Count: 0"
 
-**原因**：
+- *原因**：
 1. `h()` 函数创建的是 **VNode（虚拟节点）**
 2. VNode 创建时，`count.value` 被**立即求值**为 `0`
 3. 之后 `count.value` 改变，VNode **不会重新创建**
@@ -37,15 +38,15 @@ const vnode = h('div', [
 const message = `Count: ${count.value}`  // message = "Count: 0"
 count.value++  // count.value 变成 1
 console.log(message)  // 仍然是 "Count: 0"
-```
 
+```bash
 字符串模板在创建时就固定了，之后变量改变不会影响已经创建的字符串。
 
 VNode 也是一样的道理！
 
 ## ✅ 解决方案
 
-### 方案1：使用组件（推荐）
+### 方案 1：使用组件（推荐）
 
 ```typescript
 import { ref, h } from 'vue'
@@ -65,14 +66,15 @@ const CounterComponent = {
 
 // 使用组件
 h(CounterComponent)
-```
 
-**为什么这样可以？**
+```bash
+
+- *为什么这样可以？**
 - 组件的 `setup` 返回的是**渲染函数**（函数）
 - 当响应式数据变化时，Vue 会**重新调用渲染函数**
 - 每次调用都会创建新的 VNode，所以能看到最新的值
 
-### 方案2：使用 reactive
+### 方案 2：使用 reactive
 
 ```typescript
 import { reactive, h } from 'vue'
@@ -89,13 +91,14 @@ const CounterComponent = {
     ])
   }
 }
-```
 
-**优点**：
+```bash
+
+- *优点**：
 - 不需要 `.value`
 - 适合多个相关的值
 
-### 方案3：使用 computed
+### 方案 3：使用 computed
 
 ```typescript
 import { reactive, computed, h } from 'vue'
@@ -108,8 +111,8 @@ const state = reactive({
 const Component = {
   setup() {
     // 计算派生值
-    const total = computed(() => state.price * state.quantity)
-    
+    const total = computed(() => state.price *state.quantity)
+
     return () => h('div', [
       h('input', {
         type: 'number',
@@ -125,13 +128,15 @@ const Component = {
     ])
   }
 }
-```
+
+```bash
 
 ## 🔍 实际案例：交易确认对话框
 
 ### 问题场景
 
 用户在对话框中修改交易价格和数量，但是：
+
 - 输入框的值会自动还原
 - 预计金额不会更新
 
@@ -151,12 +156,13 @@ await ElMessageBox({
       modelValue: tradeQuantity.value,
       'onUpdate:modelValue': (val) => { tradeQuantity.value = val }
     }),
-    h('p', `预计金额：${(tradePrice.value * tradeQuantity.value).toFixed(2)}元`)
+    h('p', `预计金额：${(tradePrice.value*tradeQuantity.value).toFixed(2)}元`)
   ])
 })
-```
 
-**问题**：
+```bash
+
+- *问题**：
 - `tradePrice.value` 和 `tradeQuantity.value` 确实会改变
 - 但是 `h('div', [...])` 创建的是静态 VNode
 - 所以输入框显示的值不会更新
@@ -172,7 +178,7 @@ const tradeForm = reactive({
 const MessageComponent = {
   setup() {
     const estimatedAmount = computed(() => {
-      return (tradeForm.price * tradeForm.quantity).toFixed(2)
+      return (tradeForm.price *tradeForm.quantity).toFixed(2)
     })
 
     return () => h('div', [
@@ -192,9 +198,10 @@ const MessageComponent = {
 await ElMessageBox({
   message: h(MessageComponent)  // 传入组件！
 })
-```
 
-**效果**：
+```bash
+
+- *效果**：
 - ✅ 修改价格，预计金额实时更新
 - ✅ 修改数量，预计金额实时更新
 - ✅ 输入框的值不会还原
@@ -202,29 +209,38 @@ await ElMessageBox({
 ## 📊 对比总结
 
 | 方法 | 响应式 | 复杂度 | 适用场景 |
+
 |------|--------|--------|----------|
+
 | 直接 h() + ref.value | ❌ | 低 | 静态内容 |
+
 | 组件 + ref | ✅ | 中 | 单个响应式值 |
+
 | 组件 + reactive | ✅ | 中 | 多个相关值 |
+
 | 组件 + computed | ✅ | 高 | 需要计算派生值 |
 
 ## 💡 记忆口诀
 
-**在 `h()` 函数中使用响应式数据：**
+- *在 `h()` 函数中使用响应式数据：**
 
-1. **直接用 = 静态** ❌
+1. **直接用 = 静态**❌
+
    ```typescript
    h('span', count.value)  // 静态
    ```
 
-2. **组件包 = 动态** ✅
+2.**组件包 = 动态**✅
+
    ```typescript
    const C = { setup() { return () => h('span', count.value) } }
    h(C)  // 响应式
    ```
 
-3. **记住公式**：
+3.**记住公式**：
+
    ```
+
    响应式数据 + h() = 静态 ❌
    响应式数据 + 组件 + h() = 响应式 ✅
    ```
@@ -254,16 +270,17 @@ count.value++
 // - 创建新的 VNode
 // - 对比新旧 VNode
 // - 更新 DOM
-```
+
+```bash
 
 ### 为什么需要组件？
 
-**组件提供了一个"容器"**：
+- *组件提供了一个"容器"**：
 - 在这个容器中，Vue 可以**追踪依赖**
 - 当依赖变化时，Vue 知道要**重新渲染**
 - 重新渲染 = 重新调用渲染函数 = 创建新的 VNode
 
-**没有组件**：
+- *没有组件**：
 - Vue 不知道这个 VNode 依赖了哪些响应式数据
 - 所以数据变化时，Vue 不会更新这个 VNode
 
@@ -290,7 +307,8 @@ const FormComponent = {
 await ElMessageBox({
   message: h(FormComponent)
 })
-```
+
+```bash
 
 ### 2. 在 ElDialog 中使用响应式数据
 
@@ -304,7 +322,8 @@ const form = reactive({ name: '' })
   <el-input v-model="form.name" />
   <p>Hello, {{ form.name }}!</p>
 </el-dialog>
-```
+
+```bash
 
 ### 3. 在自定义渲染函数中使用响应式数据
 
@@ -313,14 +332,15 @@ const form = reactive({ name: '' })
 export default {
   setup() {
     const count = ref(0)
-    
+
     return () => h('div', [
       h('button', { onClick: () => count.value++ }, '+1'),
       h('span', count.value)
     ])
   }
 }
-```
+
+```bash
 
 ## 🎯 总结
 
@@ -331,4 +351,3 @@ export default {
 5. **使用 `computed` 计算派生值**
 
 记住：**响应式数据 + 组件 = 响应式 UI** ✅
-

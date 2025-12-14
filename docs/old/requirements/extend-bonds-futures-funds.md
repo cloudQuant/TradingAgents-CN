@@ -2,7 +2,7 @@
 
 本需求在不破坏现有 A/H/美股分析框架的前提下，扩展同一条数据管线（统一接口 → 数据源管理 → Provider → 缓存 → 分析 → 输出），新增债券、期货、基金三个资产类别的获取、校验、缓存、分析、回传与降级。
 
----
+- --
 
 ## 一、目标与范围
 
@@ -17,7 +17,7 @@
   - Wind/同花顺等商业数据源接入。
   - 深度债券估值（全量现金流、到期收益率等高精度模型）。
 
----
+- --
 
 ## 二、业务与数据需求
 
@@ -36,7 +36,7 @@
   - 历史数据：日级单位净值、累计净值，ETF 的日线档（OHLCV）。
   - 分析：区间收益、年化、波动率、夏普、回撤；ETF 跟踪误差（若有指数基准）。
 
----
+- --
 
 ## 三、架构设计
 
@@ -46,7 +46,7 @@
     - `BOND_CN`, `FUTURES_CN`, `FUND_CN`
   - 统一接口根据资产类型分流到对应 Provider 与格式化方法。
 - **[数据源优先级与降级]**
-  - 为不同资产类型定义独立优先级（DB → 第一优先源 → 备用源1 → 备用源2）：
+  - 为不同资产类型定义独立优先级（DB → 第一优先源 → 备用源 1 → 备用源 2）：
     - 债券：`MongoDB → Tushare → AKShare`
     - 期货：`MongoDB → AKShare → Tushare`
     - 基金：`MongoDB → AKShare → Tushare`
@@ -77,13 +77,14 @@
   - 保持现有字符串报表输出路径，短期内兼容数据分析页面。
   - 同时为内部调用提供 DataFrame/Dict（便于分析计算）。
 
----
+- --
 
 ## 四、统一接口（Interface）与服务（Service）
 
 - **[新增统一接口函数]**
   - `get_cn_bond_data_unified(code, start_date, end_date, period='daily') -> str`
   - `get_cn_futures_data_unified(code, start_date, end_date, period='daily', continuous='main|index|none') -> str`
+
   - `get_cn_fund_data_unified(code, start_date, end_date, period='daily') -> str`
   - 基本信息：
     - `get_cn_bond_info_unified(code) -> Dict`
@@ -98,7 +99,7 @@
   - `/api/cn/funds/{code}/history`
   - `/api/cn/{asset}/{code}/info`
 
----
+- --
 
 ## 五、Provider 设计（AKShare / Tushare）
 
@@ -125,7 +126,7 @@
   - 期货：内部统一 `RB2401.SHF`，AKShare 需要 `rb2401`，Tushare 需要 `RB2401.SHFE`。
   - 基金：`510300`（ETF）可能需映射到 `510300.SH`/`sz510300` 视数据源而定。
 
----
+- --
 
 ## 六、数据模型与标准字段
 
@@ -142,7 +143,7 @@
 - **[基金 NAV/daily]**
   - `date`, `code`, `nav`, `acc_nav`, `open?`, `high?`, `low?`, `close?`, `volume?`（ETF）
 
----
+- --
 
 ## 七、分析指标与输出
 
@@ -159,19 +160,22 @@
   - 以价格序列计算趋势指标
   - 若可得收益率/久期字段，提供简化风险揭示
 
----
+- --
 
 ## 八、配置与环境
 
 - **[.env 新增]**
   - `DEFAULT_CN_BOND_SOURCE=akshare|tushare`
+
   - `DEFAULT_CN_FUTURES_SOURCE=akshare|tushare`
+
   - `DEFAULT_CN_FUND_SOURCE=akshare|tushare`
+
   - `TS_TOKEN=...`（如启用 Tushare）
 - **[数据源优先级表]**
   - 入库 `data_sources` 集合，按 `asset_class` 分配可用源与优先级。
 
----
+- --
 
 ## 九、错误处理与日志
 
@@ -182,7 +186,7 @@
   - “资产类型/代码/周期/来源/降级结果/耗时/数据条数”标准化日志。
   - 连续合约的拼接日志单独标签（便于审计）。
 
----
+- --
 
 ## 十、性能与稳定性
 
@@ -195,7 +199,7 @@
 - **[可观测性]**
   - 指标：请求成功率、降级成功率、平均耗时、数据新鲜度、各 Provider 错误分布。
 
----
+- --
 
 ## 十一、测试计划
 
@@ -212,7 +216,7 @@
 - **[CI 建议]**
   - 分离“离线纯单测”和“需要网络的集成测试”。
 
----
+- --
 
 ## 十二、交付物与验收
 
@@ -226,7 +230,7 @@
   - 无 `tuple.split`/事件循环类异常；降级日志清晰，缓存命中可见。
   - 指标计算字段在输出中呈现，数值合理。
 
----
+- --
 
 ## 十三、里程碑与排期（建议）
 
@@ -244,7 +248,7 @@
 - **[M4：文档与上线（~2 天）]**
   - 配置/部署/监控；小规模灰度；问题回收与修复
 
----
+- --
 
 ## 十四、风险与对策
 
@@ -259,12 +263,14 @@
 - **[速率限制与封禁]**
   - 限流与间隔；必要时支持代理/可配置退避。
 
----
+- --
 
 ## 十五、样例接口签名（示意）
 
 ```python
+
 # interface.py
+
 def get_cn_futures_data_unified(code: str, start_date: str, end_date: str,
                                 period: str = "daily",
                                 continuous: str = "main") -> str: ...
@@ -277,29 +283,30 @@ def get_cn_bond_info_unified(code: str) -> dict: ...
 def get_cn_fund_data_unified(code: str, start_date: str, end_date: str,
                              period: str = "daily") -> str: ...
 def get_cn_fund_info_unified(code: str) -> dict: ...
-```
 
----
+```bash
+
+- --
 
 # Recommended Actions
 
-- **[确认优先顺序]** 是否按“基金 → 期货 → 债券”的实现顺序推进？
-- **[锁定数据源]** 是否启用 Tushare（需 Token），或先以 AKShare 为主？
-- **[验收样例]** 提供 3×3 代码列表（基金/期货/债券各 3 个）作为测试基准。
-- **[同意排期]** 确认里程碑与时间估算后，我开始按 M1 执行。
+- **[确认优先顺序]**是否按“基金 → 期货 → 债券”的实现顺序推进？
+- **[锁定数据源]**是否启用 Tushare（需 Token），或先以 AKShare 为主？
+- **[验收样例]**提供 3×3 代码列表（基金/期货/债券各 3 个）作为测试基准。
+- **[同意排期]**确认里程碑与时间估算后，我开始按 M1 执行。
 
 # 状态小结
 
 - 已给出全面需求与落地方案，覆盖架构、数据模型、接口、Provider、缓存、指标、测试与排期。
 - 待你确认优先级、数据源选择与样例清单后，我即可进入实现阶段。
 
----
+- --
 
 ## 十六、指数（国内/国际）支持
 
 - **[业务需求]**
-  - **国内指数**：上证综指、沪深300、中证500、创业板指、科创50、上证50等。
-  - **国际指数**：标普500、道琼斯、纳指、日经225、恒生、DAX、FTSE100 等。
+  - **国内指数**：上证综指、沪深 300、中证 500、创业板指、科创 50、上证 50 等。
+  - **国际指数**：标普 500、道琼斯、纳指、日经 225、恒生、DAX、FTSE100 等。
 - **[数据内容]**
   - 基本信息：`code`, `name`, `market`, `provider_symbol`, `base_date?`, `data_source`, `last_sync`。
   - 历史数据（日级）：`date`, `code`, `open`, `high`, `low`, `close`, `volume?`, `amount?`。
@@ -312,7 +319,7 @@ def get_cn_fund_info_unified(code: str) -> dict: ...
 - **[数据模型（Mongo）]**
   - `index_basic_info`，`index_daily`（`code+date` 唯一索引）。
 
----
+- --
 
 ## 十七、前端改进与交互（新增/通用）
 
@@ -333,7 +340,7 @@ def get_cn_fund_info_unified(code: str) -> dict: ...
 - **[页面与路由]**
   - `/funds`、`/indices`、`/futures`、`/bonds` 专页；统一详情页支持分享与复制链接。
 
----
+- --
 
 ## 十八、后端扩展摘要更新
 
@@ -344,28 +351,28 @@ def get_cn_fund_info_unified(code: str) -> dict: ...
 - **[统一接口]**：新增 `get_index_data_unified`、`get_index_info_unified`；服务层/日志同股指路径复用。
 - **[校验与格式化]**：扩展 `instrument_validator`，新增指数识别与符号映射规则。
 
----
+- --
 
-  ## 十九、更新的里程碑与排期（建议）
-  
-  - **M0：基础设施（~2 天）** 资产类枚举、接口骨架、Mongo 集合/索引、代码映射与校验。
-  - **M1：基金（~3–4 天）** 开放式/ETF/LOF，指标与对比、统一接口与前端页面。
-  - **M2：指数（~2–3 天）** 国内/国际指数，数据模型、接口、前端指数页与基准选择。
-  - **M3：期货（~5–7 天）** 合约/主力/指数连续，拼接诊断与前端合约切换。
-  - **M4：债券（~5–7 天）** 挂牌债基础覆盖与简化风险指标、前端债券页。
-  - **M5：整合与上线（~2 天）** 前端整合、监控、灰度与验收。
-  
- ---
+## 十九、更新的里程碑与排期（建议）
 
- ## 二十、变更摘要（本次更新）
+  - **M0：基础设施（~2 天）**资产类枚举、接口骨架、Mongo 集合/索引、代码映射与校验。
+  - **M1：基金（~3–4 天）**开放式/ETF/LOF，指标与对比、统一接口与前端页面。
+  - **M2：指数（~2–3 天）**国内/国际指数，数据模型、接口、前端指数页与基准选择。
+  - **M3：期货（~5–7 天）**合约/主力/指数连续，拼接诊断与前端合约切换。
+  - **M4：债券（~5–7 天）**挂牌债基础覆盖与简化风险指标、前端债券页。
+  - **M5：整合与上线（~2 天）**前端整合、监控、灰度与验收。
+
+ - --
+
+## 二十、变更摘要（本次更新）
 
  - 新增“指数（国内/国际）”后端与前端需求。
  - 扩展前端导航、图表对比、主力合约切换与基准选择能力。
  - 后端增加指数资产类、接口与数据模型，完善数据源与降级路径。
 
- ---
+ - --
 
- ## 附录：债券（BOND_CN）实施计划（优先）
+## 附录：债券（BOND_CN）实施计划（优先）
 
  - **[目标与范围（Phase 1）]**
    - 上市可转债：基础信息、日线、快照（可选）。
@@ -380,7 +387,7 @@ def get_cn_fund_info_unified(code: str) -> dict: ...
  - **[数据模型与 Mongo]**
    - 集合：`bond_basic_info(code)`、`bond_daily(code+date)`、`yield_curve_daily(date+tenor)`、`bond_events(code+date+event_type)`（后续）。
    - 索引：`(code,date)`、`(date,tenor)` 唯一；常用 `code`、`date`、`updated_at`。
- - **[Provider（AKShare）]** 新增 `providers/china/bonds.py`
+ - **[Provider（AKShare）]**新增 `providers/china/bonds.py`
    - `get_symbol_list()`、`get_basic_info(code)`、`get_historical_data(code, start, end)`、`get_realtime_quote(code)`、`get_yield_curve(start,end)`。
    - 阻塞 IO 用 `asyncio.to_thread`；列名标准化；代码映射 `123001.SZ ↔ 123001`。
  - **[DataSourceManager 与统一接口]**

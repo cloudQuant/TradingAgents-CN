@@ -12,13 +12,15 @@
 
 ```python
 class LLMProvider(BaseModel):
-    # ... 原有字段
-    
-    # 🆕 聚合渠道支持
+
+# ... 原有字段
+
+# 🆕 聚合渠道支持
     is_aggregator: bool = Field(default=False)
     aggregator_type: Optional[str] = Field(None)
     model_name_format: Optional[str] = Field(None)
-```
+
+```bash
 
 ### 2. 模型映射机制
 
@@ -26,29 +28,35 @@ class LLMProvider(BaseModel):
 
 ```python
 class ModelInfo(BaseModel):
-    # ... 原有字段
-    
-    # 🆕 聚合渠道模型映射支持
+
+# ... 原有字段
+
+# 🆕 聚合渠道模型映射支持
     original_provider: Optional[str] = Field(None)
     original_model: Optional[str] = Field(None)
-```
+
+```bash
 
 ### 3. 智能能力映射
 
 `ModelCapabilityService` 支持自动映射聚合渠道模型到原厂能力配置：
 
 ```python
+
 # 聚合渠道模型
+
 "openai/gpt-4" → 自动映射到 "gpt-4" 的能力配置
 
 # 映射结果
+
 {
     "capability_level": 3,
     "suitable_roles": ["both"],
     "features": ["tool_calling", "reasoning"],
     "_mapped_from": "gpt-4"
 }
-```
+
+```bash
 
 ### 4. 预置聚合渠道配置
 
@@ -61,7 +69,8 @@ AGGREGATOR_PROVIDERS = {
     "oneapi": {...},
     "newapi": {...}
 }
-```
+
+```bash
 
 ## 🔧 技术实现
 
@@ -108,10 +117,15 @@ AGGREGATOR_PROVIDERS = {
 ## 📊 支持的聚合渠道
 
 | 渠道 | 状态 | 模型格式 | 说明 |
+
 |------|------|----------|------|
+
 | 302.AI | ✅ | `{provider}/{model}` | 国内聚合平台 |
+
 | OpenRouter | ✅ | `{provider}/{model}` | 国际聚合平台 |
+
 | One API | ✅ | `{model}` | 开源自部署 |
+
 | New API | ✅ | `{model}` | One API 增强版 |
 
 ## 🧪 测试验证
@@ -127,13 +141,15 @@ AGGREGATOR_PROVIDERS = {
 
 ### 测试结果
 
-```
+```bash
 ✅ 所有测试通过
+
 - 模型名称解析: 5/5 通过
 - 能力映射: 10/10 通过
 - 配置加载: 4/4 通过
 - 模型验证: 3/3 通过
-```
+
+```bash
 
 ## 📚 文档
 
@@ -147,33 +163,49 @@ AGGREGATOR_PROVIDERS = {
 
 ### 管理员配置流程
 
-```
+```bash
+
 1. 初始化聚合渠道
+
    ↓
-2. 配置 API Key
+
+1. 配置 API Key
+
    ↓
-3. 添加模型目录
+
+1. 添加模型目录
+
    ↓
-4. 启用模型配置
-```
+
+1. 启用模型配置
+
+```bash
 
 ### 用户使用流程
 
-```
+```bash
+
 1. 选择分析深度
+
    ↓
-2. 系统推荐模型（可能包含聚合渠道模型）
+
+1. 系统推荐模型（可能包含聚合渠道模型）
+
    ↓
-3. 自动映射能力配置
+
+1. 自动映射能力配置
+
    ↓
-4. 执行分析任务
-```
+
+1. 执行分析任务
+
+```bash
 
 ## 🔄 能力映射示例
 
 ### 示例 1: GPT-4 通过 302.AI
 
-```
+```bash
 输入: "openai/gpt-4"
   ↓
 解析: provider="openai", model="gpt-4"
@@ -186,11 +218,12 @@ AGGREGATOR_PROVIDERS = {
   "features": ["tool_calling", "reasoning"],
   "_mapped_from": "gpt-4"
 }
-```
+
+```bash
 
 ### 示例 2: Claude 3 Sonnet 通过 OpenRouter
 
-```
+```bash
 输入: "anthropic/claude-3-sonnet"
   ↓
 解析: provider="anthropic", model="claude-3-sonnet"
@@ -203,7 +236,8 @@ AGGREGATOR_PROVIDERS = {
   "features": ["tool_calling", "long_context", "vision"],
   "_mapped_from": "claude-3-sonnet"
 }
-```
+
+```bash
 
 ## 🚀 后续优化建议
 
@@ -214,11 +248,11 @@ AGGREGATOR_PROVIDERS = {
    - [ ] 在模型选择时显示映射信息
    - [ ] 添加聚合渠道专用的配置向导
 
-2. **模型目录自动化**
+1. **模型目录自动化**
    - [ ] 从聚合渠道 API 自动获取可用模型列表
    - [ ] 自动同步模型价格信息
 
-3. **能力配置优化**
+1. **能力配置优化**
    - [ ] 支持聚合渠道特定的能力覆盖
    - [ ] 添加聚合渠道性能监控
 
@@ -228,11 +262,11 @@ AGGREGATOR_PROVIDERS = {
    - [ ] 实现模型列表的自动更新
    - [ ] 支持模型可用性检测
 
-2. **智能路由**
+1. **智能路由**
    - [ ] 根据成本和性能自动选择渠道
    - [ ] 实现多渠道负载均衡
 
-3. **成本优化**
+1. **成本优化**
    - [ ] 跨渠道价格比较
    - [ ] 自动选择最优价格的渠道
 
@@ -284,4 +318,3 @@ AGGREGATOR_PROVIDERS = {
 5. **兼容性**：不影响现有功能
 
 用户现在可以通过 302.AI、OpenRouter 等聚合渠道，使用单一 API Key 访问多个 AI 模型，大大简化了配置和管理流程。
-

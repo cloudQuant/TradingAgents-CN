@@ -6,22 +6,25 @@
 
 ## 目录结构
 
-```
+```bash
 app/services/data_sources/
 ├── base_provider.py    # 数据提供者基类
+
 ├── base_service.py     # 数据服务基类
+
 ├── funds/
 │   ├── providers/
 │   │   └── fund_xxx_provider.py
 │   └── services/
 │       └── fund_xxx_service.py
-```
 
----
+```bash
 
-## 示例1：简单无参数接口（如 fund_name_em）
+- --
 
-### Provider（约10行代码）
+## 示例 1：简单无参数接口（如 fund_name_em）
+
+### Provider（约 10 行代码）
 
 ```python
 from app.services.data_sources.base_provider import SimpleProvider
@@ -32,15 +35,16 @@ class FundNameEmProvider(SimpleProvider):
     display_name = "基金基本信息"
     akshare_func = "fund_name_em"
     unique_keys = ["基金代码"]
-    
+
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金代码"},
         {"name": "基金简称", "type": "string", "description": "基金简称"},
         {"name": "基金类型", "type": "string", "description": "基金类型"},
     ]
-```
 
-### Service（约5行代码）
+```bash
+
+### Service（约 5 行代码）
 
 ```python
 from app.services.data_sources.base_service import SimpleService
@@ -50,65 +54,68 @@ class FundNameEmService(SimpleService):
     """基金基本信息服务"""
     collection_name = "fund_name_em"
     provider_class = FundNameEmProvider
-```
 
----
+```bash
 
-## 示例2：需要参数的接口（如 fund_etf_fund_info_em）
+- --
 
-### Provider（约20行代码）
+## 示例 2：需要参数的接口（如 fund_etf_fund_info_em）
+
+### Provider（约 20 行代码）
 
 ```python
 from app.services.data_sources.base_provider import BaseProvider
 
 class FundEtfFundInfoEmProvider(BaseProvider):
-    """ETF历史行情提供者"""
+    """ETF 历史行情提供者"""
     collection_name = "fund_etf_fund_info_em"
-    display_name = "ETF基金历史行情"
+    display_name = "ETF 基金历史行情"
     akshare_func = "fund_etf_fund_info_em"
     unique_keys = ["基金代码", "净值日期"]
-    
-    # 参数映射：前端 fund_code -> akshare fund
+
+# 参数映射：前端 fund_code -> akshare fund
     param_mapping = {
         "fund_code": "fund",
         "code": "fund",
     }
-    
-    # 必填参数
+
+# 必填参数
     required_params = ["fund"]
-    
-    # 将参数值添加到数据列
+
+# 将参数值添加到数据列
     add_param_columns = {"fund": "基金代码"}
-    
+
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金代码"},
         {"name": "净值日期", "type": "string", "description": "净值日期"},
         {"name": "单位净值", "type": "float", "description": "单位净值"},
     ]
-```
 
-### Service（约15行代码）
+```bash
+
+### Service（约 15 行代码）
 
 ```python
 from app.services.data_sources.base_service import BaseService
 from .providers.fund_etf_fund_info_em_provider import FundEtfFundInfoEmProvider
 
 class FundEtfFundInfoEmService(BaseService):
-    """ETF基金历史行情服务"""
+    """ETF 基金历史行情服务"""
     collection_name = "fund_etf_fund_info_em"
     provider_class = FundEtfFundInfoEmProvider
-    
-    # 批量更新配置：从 fund_etf_fund_daily_em 获取基金代码
+
+# 批量更新配置：从 fund_etf_fund_daily_em 获取基金代码
     batch_source_collection = "fund_etf_fund_daily_em"
     batch_source_field = "基金代码"
-    
-    # 增量更新：按基金代码检查
+
+# 增量更新：按基金代码检查
     incremental_check_fields = ["基金代码"]
-```
 
----
+```bash
 
-## 示例3：需要年份的复杂批量更新（如 fund_portfolio_hold_em）
+- --
+
+## 示例 3：需要年份的复杂批量更新（如 fund_portfolio_hold_em）
 
 ### Provider
 
@@ -121,16 +128,17 @@ class FundPortfolioHoldEmProvider(BaseProvider):
     display_name = "基金持仓股票"
     akshare_func = "fund_portfolio_hold_em"
     unique_keys = ["基金代码", "股票代码", "季度"]
-    
+
     param_mapping = {
         "fund_code": "symbol",
         "code": "symbol",
         "year": "date",
     }
-    
+
     required_params = ["symbol", "date"]
     add_param_columns = {"symbol": "基金代码"}
-```
+
+```bash
 
 ### Service
 
@@ -142,21 +150,21 @@ class FundPortfolioHoldEmService(BaseService):
     """基金持仓股票服务"""
     collection_name = "fund_portfolio_hold_em"
     provider_class = FundPortfolioHoldEmProvider
-    
-    # 批量更新配置
+
+# 批量更新配置
     batch_source_collection = "fund_name_em"
     batch_source_field = "基金代码"
     batch_use_year = True
-    batch_years_range = (2010, None)  # 2010年到今年
-    
-    # 增量更新：按基金代码+年份检查（从季度字段提取年份）
+    batch_years_range = (2010, None)  # 2010 年到今年
+
+# 增量更新：按基金代码+年份检查（从季度字段提取年份）
     incremental_check_fields = ["基金代码", "季度"]
-    
-    # 自定义参数构建
+
+# 自定义参数构建
     def get_batch_params(self, code, year):
         return {"fund_code": code, "year": year}
-    
-    # 自定义已存在数据检查（从季度提取年份）
+
+# 自定义已存在数据检查（从季度提取年份）
     async def _get_existing_combinations(self):
         existing = set()
         cursor = self.collection.find({}, {"基金代码": 1, "季度": 1})
@@ -167,11 +175,12 @@ class FundPortfolioHoldEmService(BaseService):
                 year = quarter[:4]
                 existing.add((fund_code, year))
         return existing
-```
 
----
+```bash
 
-## 示例4：年份遍历接口（如 fund_fh_em）
+- --
+
+## 示例 4：年份遍历接口（如 fund_fh_em）
 
 ### Provider
 
@@ -184,11 +193,12 @@ class FundFhEmProvider(BaseProvider):
     display_name = "基金分红数据"
     akshare_func = "fund_fh_em"
     unique_keys = ["基金代码", "年份"]
-    
+
     param_mapping = {"year": "date"}
     required_params = ["date"]
     add_param_columns = {"date": "年份"}
-```
+
+```bash
 
 ### Service
 
@@ -199,33 +209,39 @@ class FundFhEmService(BaseService):
     """基金分红数据服务"""
     collection_name = "fund_fh_em"
     provider_class = FundFhEmProvider
-    
-    # 不需要源集合，直接遍历年份
+
+# 不需要源集合，直接遍历年份
     batch_use_year = True
     batch_years_range = (1999, None)
     incremental_check_fields = ["年份"]
-    
-    # 重写获取任务列表（只有年份，没有代码）
+
+# 重写获取任务列表（只有年份，没有代码）
     async def _get_tasks_to_process(self, codes, years):
         existing = await self._get_existing_combinations()
         return [(year,) for year in years if (year,) not in existing]
-    
+
     def get_batch_params(self, year):
         return {"year": year}
-```
 
----
+```bash
+
+- --
 
 ## 对比：使用基类前后代码量
 
 | 类型 | 原代码行数 | 使用基类后 | 减少 |
-|------|-----------|-----------|------|
-| 简单Provider | ~50行 | ~10行 | 80% |
-| 简单Service | ~100行 | ~5行 | 95% |
-| 复杂Provider | ~70行 | ~25行 | 65% |
-| 复杂Service | ~300行 | ~30行 | 90% |
 
----
+|------|-----------|-----------|------|
+
+| 简单 Provider | ~50 行 | ~10 行 | 80% |
+
+| 简单 Service | ~100 行 | ~5 行 | 95% |
+
+| 复杂 Provider | ~70 行 | ~25 行 | 65% |
+
+| 复杂 Service | ~300 行 | ~30 行 | 90% |
+
+- --
 
 ## 基类提供的功能
 
@@ -253,7 +269,7 @@ class FundFhEmService(BaseService):
   - 任务进度更新（`TaskManager`）
 - ✅ 元数据自动添加
 
----
+- --
 
 ## 迁移步骤
 

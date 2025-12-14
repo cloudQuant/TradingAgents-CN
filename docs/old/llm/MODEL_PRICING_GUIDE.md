@@ -3,6 +3,7 @@
 ## 📋 概述
 
 模型目录现在支持保存和管理大模型的价格信息，包括：
+
 - **输入价格**：每 1000 tokens 的输入成本
 - **输出价格**：每 1000 tokens 的输出成本
 - **上下文长度**：模型支持的最大上下文窗口
@@ -20,43 +21,65 @@
 ### 通义千问 (DashScope)
 
 | 模型 | 输入价格 (¥/1K) | 输出价格 (¥/1K) | 上下文长度 |
+
 |------|----------------|----------------|-----------|
+
 | qwen-turbo | 0.0003 | 0.0006 | 8,192 |
+
 | qwen-plus | 0.0008 | 0.002 | 32,768 |
+
 | qwen-max | 0.02 | 0.06 | 8,192 |
+
 | qwen-long | 0.0005 | 0.002 | 1,000,000 |
 
 ### OpenAI
 
 | 模型 | 输入价格 ($/1K) | 输出价格 ($/1K) | 上下文长度 |
+
 |------|----------------|----------------|-----------|
+
 | gpt-4o | 0.005 | 0.015 | 128,000 |
+
 | gpt-4o-mini | 0.00015 | 0.0006 | 128,000 |
+
 | gpt-4-turbo | 0.01 | 0.03 | 128,000 |
+
 | gpt-3.5-turbo | 0.0005 | 0.0015 | 16,385 |
 
 ### Google Gemini
 
 | 模型 | 输入价格 ($/1K) | 输出价格 ($/1K) | 上下文长度 |
+
 |------|----------------|----------------|-----------|
+
 | gemini-2.5-pro | 0.00125 | 0.005 | 1,000,000 |
+
 | gemini-2.5-flash | 0.000075 | 0.0003 | 1,000,000 |
+
 | gemini-1.5-pro | 0.00125 | 0.005 | 2,000,000 |
+
 | gemini-1.5-flash | 0.000075 | 0.0003 | 1,000,000 |
 
 ### DeepSeek
 
 | 模型 | 输入价格 (¥/1K) | 输出价格 (¥/1K) | 上下文长度 |
+
 |------|----------------|----------------|-----------|
+
 | deepseek-chat | 0.0001 | 0.0002 | 32,768 |
+
 | deepseek-coder | 0.0001 | 0.0002 | 16,384 |
 
 ### Anthropic Claude
 
 | 模型 | 输入价格 ($/1K) | 输出价格 ($/1K) | 上下文长度 |
+
 |------|----------------|----------------|-----------|
+
 | claude-3-5-sonnet | 0.003 | 0.015 | 200,000 |
+
 | claude-3-opus | 0.015 | 0.075 | 200,000 |
+
 | claude-3-haiku | 0.00025 | 0.00125 | 200,000 |
 
 ## 🔧 如何管理价格信息
@@ -64,19 +87,21 @@
 ### 方式 1：通过前端界面（推荐）
 
 1. **访问模型目录管理**
+
    ```
+
    设置 → 系统配置 → 配置管理 → 模型目录
    ```
 
-2. **编辑现有厂家**
+1. **编辑现有厂家**
    - 点击对应厂家的"编辑"按钮
    - 在表格中填写或修改价格信息：
-     - **输入价格(¥/1K)**：输入价格（每1000 tokens）
-     - **输出价格(¥/1K)**：输出价格（每1000 tokens）
+     - **输入价格(¥/1K)**：输入价格（每 1000 tokens）
+     - **输出价格(¥/1K)**：输出价格（每 1000 tokens）
      - **上下文长度**：模型支持的最大 tokens 数
    - 点击"保存"
 
-3. **添加新模型**
+1. **添加新模型**
    - 在编辑对话框中点击"添加模型"
    - 填写模型信息和价格
    - 保存
@@ -84,11 +109,15 @@
 ### 方式 2：通过 API
 
 ```bash
+
 # 更新模型目录
-curl -X POST http://localhost:8000/api/config/model-catalog \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
+
+curl -X POST <http://localhost:8000/api/config/model-catalog> \
+
+  - H "Authorization: Bearer YOUR_TOKEN" \
+  - H "Content-Type: application/json" \
+  - d '{
+
     "provider": "dashscope",
     "provider_name": "通义千问",
     "models": [
@@ -102,7 +131,8 @@ curl -X POST http://localhost:8000/api/config/model-catalog \
       }
     ]
   }'
-```
+
+```bash
 
 ### 方式 3：通过脚本批量更新
 
@@ -110,6 +140,7 @@ curl -X POST http://localhost:8000/api/config/model-catalog \
 
 1. 修改 `app/services/config_service.py` 中的 `_get_default_model_catalog()` 方法
 2. 运行更新脚本：
+
    ```bash
    python scripts/update_model_catalog_with_pricing.py
    ```
@@ -120,11 +151,12 @@ curl -X POST http://localhost:8000/api/config/model-catalog \
 
 未来可以在"添加大模型配置"对话框中显示模型的价格信息，帮助用户选择：
 
-```
+```bash
 模型：qwen-turbo
 价格：输入 ¥0.0003/1K，输出 ¥0.0006/1K
 上下文：8,192 tokens
-```
+
+```bash
 
 ### 2. 成本预估
 
@@ -133,39 +165,45 @@ curl -X POST http://localhost:8000/api/config/model-catalog \
 ```python
 input_tokens = 1000
 output_tokens = 500
-input_cost = (input_tokens / 1000) * 0.0003  # ¥0.0003
-output_cost = (output_tokens / 1000) * 0.0006  # ¥0.0003
+input_cost = (input_tokens / 1000) *0.0003  # ¥0.0003
+
+output_cost = (output_tokens / 1000)* 0.0006  # ¥0.0003
+
 total_cost = input_cost + output_cost  # ¥0.0006
-```
+
+```bash
 
 ### 3. 使用统计
 
 结合使用统计功能，可以计算实际花费：
 
-```
+```bash
 本月使用：
+
 - qwen-turbo: 1,000,000 输入 tokens + 500,000 输出 tokens
 - 成本：¥0.3 + ¥0.3 = ¥0.6
-```
+
+```bash
 
 ## 📝 价格更新建议
 
 ### 定期检查
 
 建议每季度检查一次各厂家的价格，因为：
+
 - 大模型价格经常调整（通常是降价）
 - 新模型发布时会有新的价格
 - 促销活动可能提供优惠价格
 
 ### 价格来源
 
-- **通义千问**：https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-metering-and-billing
-- **OpenAI**：https://openai.com/pricing
-- **Google Gemini**：https://ai.google.dev/pricing
-- **DeepSeek**：https://platform.deepseek.com/api-docs/pricing/
-- **Anthropic Claude**：https://www.anthropic.com/pricing
-- **百度千帆**：https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
-- **智谱AI**：https://open.bigmodel.cn/pricing
+- **通义千问**：<https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-metering-and-billing>
+- **OpenAI**：<https://openai.com/pricing>
+- **Google Gemini**：<https://ai.google.dev/pricing>
+- **DeepSeek**：<https://platform.deepseek.com/api-docs/pricing/>
+- **Anthropic Claude**：<https://www.anthropic.com/pricing>
+- **百度千帆**：<https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7>
+- **智谱 AI**：<https://open.bigmodel.cn/pricing>
 
 ## ⚠️ 注意事项
 
@@ -174,14 +212,14 @@ total_cost = input_cost + output_cost  # ¥0.0006
    - 可能存在批量折扣或企业定价
    - 汇率波动会影响美元定价的模型
 
-2. **货币单位** ⚠️ 重要
+1. **货币单位**⚠️ 重要
    - **国内厂家**（通义、DeepSeek、百度、智谱）使用 **CNY（人民币）**
    - **国际厂家**（OpenAI、Google、Anthropic）使用 **USD（美元）**
    - 显示时需要注意货币单位，避免混淆
-   - 汇率参考：1 USD ≈ 7.2 CNY（2025年）
+   - 汇率参考：1 USD ≈ 7.2 CNY（2025 年）
    - 详细说明见 [货币单位使用指南](./CURRENCY_GUIDE.md)
 
-3. **上下文长度**
+1. **上下文长度**
    - 超过上下文长度的输入会被截断或报错
    - 长上下文模型通常价格更高
    - 实际可用长度可能略小于标称值
@@ -193,17 +231,17 @@ total_cost = input_cost + output_cost  # ¥0.0006
    - 自动计算实际花费
    - 生成成本报告
 
-2. **预算控制**
+1. **预算控制**
    - 设置每日/每月预算上限
    - 超出预算时发出警告
    - 自动切换到更经济的模型
 
-3. **价格对比**
+1. **价格对比**
    - 在模型选择时显示价格对比
    - 推荐性价比最高的模型
    - 根据任务类型推荐合适的模型
 
-4. **自动更新**
+1. **自动更新**
    - 定期从厂家 API 获取最新价格
    - 价格变动时发送通知
    - 保留价格历史记录
@@ -211,11 +249,11 @@ total_cost = input_cost + output_cost  # ¥0.0006
 ## 📞 支持
 
 如果您发现价格信息有误或需要添加新模型，请：
+
 1. 在前端界面直接编辑
 2. 或提交 Issue 到项目仓库
 3. 或联系系统管理员
 
----
+- --
 
-**最后更新**：2025-10-07
-
+- *最后更新**：2025-10-07

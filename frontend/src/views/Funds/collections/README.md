@@ -2,18 +2,27 @@
 
 ## 📁 目录结构
 
-```
+```bash
 frontend/src/views/Funds/collections/
 ├── index.vue                    # 动态加载入口
+
 ├── DefaultCollection.vue        # 默认集合组件（通用逻辑）
+
 ├── FundNameEm.vue              # 基金基本信息集合组件
+
 ├── FundBasicInfo.vue           # 雪球基金基本信息集合组件
+
 ├── FundInfoIndexEm.vue         # 指数型基金基本信息集合组件（特殊）
+
 ├── FundPurchaseStatus.vue      # 基金申购状态集合组件（特殊）
-├── FundEtfSpotThs.vue          # ETF基金实时行情-同花顺集合组件（特殊）
-├── FundLofSpotEm.vue           # LOF基金实时行情集合组件（特殊）
+
+├── FundEtfSpotThs.vue          # ETF 基金实时行情-同花顺集合组件（特殊）
+
+├── FundLofSpotEm.vue           # LOF 基金实时行情集合组件（特殊）
+
 └── ...                         # 其他集合组件
-```
+
+```bash
 
 ## 🏗️ 架构设计
 
@@ -42,9 +51,9 @@ frontend/src/views/Funds/collections/
 
 对于有特殊需求的集合（如自定义图表、筛选器等），可以创建独立组件：
 
-**特殊集合列表：**
+- *特殊集合列表：**
 - `fund_purchase_status` - 申购赎回状态图表
-- `fund_etf_spot_ths` - 市场分析图表（涨跌分布、TOP10等）
+- `fund_etf_spot_ths` - 市场分析图表（涨跌分布、TOP10 等）
 - `fund_lof_spot_em` - 市场行情图表
 - `fund_info_index_em` - 指数型基金筛选器（跟踪标的、跟踪方式、基金公司）
 
@@ -62,7 +71,8 @@ frontend/src/views/Funds/collections/
 <script setup lang="ts">
 import DefaultCollection from './DefaultCollection.vue'
 </script>
-```
+
+```bash
 
 ### 方式二：扩展 DefaultCollection
 
@@ -79,12 +89,12 @@ import DefaultCollection from './DefaultCollection.vue'
       :loading="loading"
       @refresh="loadData"
     />
-    
+
     <!-- 自定义内容 -->
     <div class="custom-section">
       <!-- 你的自定义内容 -->
     </div>
-    
+
     <!-- 使用 DefaultCollection 的其他部分 -->
     <CollectionDataTable
       :data="items"
@@ -110,9 +120,10 @@ const {
   loadData,
 } = useFundCollection()
 </script>
-```
 
-2. **直接扩展组件**
+```bash
+
+1. **直接扩展组件**
 
 ```vue
 <template>
@@ -121,11 +132,11 @@ const {
     <template #charts="{ stats, collectionName }">
       <!-- 自定义图表 -->
     </template>
-    
+
     <template #extra-filters="{ collectionName }">
       <!-- 自定义筛选器 -->
     </template>
-    
+
     <template #before-table="{ collectionName }">
       <!-- 表格前内容 -->
     </template>
@@ -135,7 +146,8 @@ const {
 <script setup lang="ts">
 import DefaultCollection from './DefaultCollection.vue'
 </script>
-```
+
+```bash
 
 ### 方式三：完全自定义组件
 
@@ -154,7 +166,8 @@ import { useFundCollection } from '@/components/collection'
 const collection = useFundCollection()
 // 添加自定义逻辑
 </script>
-```
+
+```bash
 
 ## 🔧 Composable API
 
@@ -168,6 +181,7 @@ const collection = useFundCollection()
   loading: Ref<boolean>
   items: Ref<any[]>
   fields: Ref<Array<{name: string, type: string, example: string | null}>>
+
   page: Ref<number>
   pageSize: Ref<number>
   total: Ref<number>
@@ -175,7 +189,8 @@ const collection = useFundCollection()
   collectionInfo: Ref<any>
   // ... 更多状态
 }
-```
+
+```bash
 
 ### 方法
 
@@ -192,26 +207,27 @@ const collection = useFundCollection()
   handleClearData(): Promise<void>
   cleanup(): void
 }
-```
+
+```bash
 
 ## 📋 最佳实践
 
 1. **优先使用 DefaultCollection**
    - 大多数集合可以直接使用，无需额外代码
 
-2. **使用 Composable 共享逻辑**
+1. **使用 Composable 共享逻辑**
    - 避免重复代码
    - 保持一致性
 
-3. **按需扩展**
+1. **按需扩展**
    - 只在需要特殊功能时创建自定义组件
    - 尽量复用现有组件和逻辑
 
-4. **命名规范**
+1. **命名规范**
    - 组件文件：`PascalCase.vue`（如 `FundNameEm.vue`）
    - 集合名称：`snake_case`（如 `fund_name_em`）
 
-5. **组件注册**
+1. **组件注册**
    - 在 `index.vue` 中自动注册
    - 使用动态导入优化性能
 
@@ -322,7 +338,8 @@ onMounted(() => {
   loadData()
 })
 </script>
-```
+
+```bash
 
 ## 📚 相关文件
 

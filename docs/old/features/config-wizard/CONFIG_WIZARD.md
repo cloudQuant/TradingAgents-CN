@@ -6,7 +6,7 @@
 
 ## 🎯 功能特点
 
-- **5步引导流程**：欢迎 → 数据库配置 → 大模型配置 → 数据源配置 → 完成
+- **5 步引导流程**：欢迎 → 数据库配置 → 大模型配置 → 数据源配置 → 完成
 - **智能触发**：自动检测配置缺失并弹出向导
 - **表单验证**：实时验证用户输入
 - **动态选项**：根据选择动态显示相关配置项
@@ -24,7 +24,7 @@
 
 ### 触发流程
 
-```
+```bash
 用户登录
   ↓
 App.vue onMounted
@@ -36,11 +36,13 @@ App.vue onMounted
 检查 result.missing_required.length > 0
   ↓ (有缺失)
 延迟 1 秒后显示配置向导
-```
+
+```bash
 
 ### 代码实现
 
 <augment_code_snippet path="frontend/src/App.vue" mode="EXCERPT">
+
 ````typescript
 // 检查是否需要显示配置向导
 const checkFirstTimeSetup = async () => {
@@ -68,7 +70,9 @@ const checkFirstTimeSetup = async () => {
     console.error('检查配置失败:', error)
   }
 }
+
 ````
+
 </augment_code_snippet>
 
 ## 📋 配置步骤
@@ -83,12 +87,12 @@ const checkFirstTimeSetup = async () => {
 
 配置 MongoDB 和 Redis 连接信息：
 
-**MongoDB**:
+- *MongoDB**:
 - 主机地址（默认：localhost）
 - 端口（默认：27017）
 - 数据库名（默认：tradingagents）
 
-**Redis**:
+- *Redis**:
 - 主机地址（默认：localhost）
 - 端口（默认：6379）
 
@@ -98,18 +102,18 @@ const checkFirstTimeSetup = async () => {
 
 选择并配置大模型 API：
 
-**支持的大模型**:
+- *支持的大模型**:
 - DeepSeek（推荐，性价比高）
 - 通义千问（推荐，国产稳定）
 - OpenAI
 - Google Gemini
 
-**配置项**:
+- *配置项**:
 - 选择大模型提供商
 - 输入 API 密钥
 - 选择模型名称（根据提供商动态更新）
 
-**获取 API 密钥**:
+- *获取 API 密钥**:
 - 每个提供商都有对应的帮助链接
 - 点击"前往获取"可直接跳转到官网
 
@@ -117,12 +121,12 @@ const checkFirstTimeSetup = async () => {
 
 选择股票数据源：
 
-**支持的数据源**:
+- *支持的数据源**:
 - **AKShare**（推荐，免费无需密钥）
-- **Tushare**（专业A股数据，需要 Token）
+- **Tushare**（专业 A 股数据，需要 Token）
 - **FinnHub**（美股数据，需要 API Key）
 
-**配置项**:
+- *配置项**:
 - 选择默认数据源
 - 根据选择输入相应的认证信息
 
@@ -141,7 +145,8 @@ const checkFirstTimeSetup = async () => {
 ```javascript
 localStorage.removeItem('config_wizard_completed');
 location.reload();
-```
+
+```bash
 
 ### 方法 2：修改 App.vue（开发测试）
 
@@ -151,10 +156,11 @@ location.reload();
 onMounted(() => {
   // 强制显示配置向导（测试用）
   showConfigWizard.value = true
-  
+
   // checkFirstTimeSetup() // 注释掉原来的检查
 })
-```
+
+```bash
 
 ### 方法 3：通过代码触发
 
@@ -167,15 +173,17 @@ const showConfigWizard = ref(false)
 
 // 显示配置向导
 showConfigWizard.value = true
-```
+
+```bash
 
 ## 🎨 组件结构
 
 ### 文件位置
 
-```
+```bash
 frontend/src/components/ConfigWizard.vue
-```
+
+```bash
 
 ### Props
 
@@ -183,7 +191,8 @@ frontend/src/components/ConfigWizard.vue
 interface Props {
   modelValue: boolean  // 控制对话框显示/隐藏
 }
-```
+
+```bash
 
 ### Emits
 
@@ -192,7 +201,8 @@ interface Props {
   'update:modelValue': (value: boolean) => void  // 更新显示状态
   'complete': (data: WizardData) => void         // 配置完成回调
 }
-```
+
+```bash
 
 ### 数据结构
 
@@ -218,13 +228,14 @@ interface WizardData {
     apiKey: string
   }
 }
-```
+
+```bash
 
 ## 🔑 关键技术点
 
 ### 1. 具名插槽位置
 
-**重要**：`<template #footer>` 必须是 `el-dialog` 的直接子元素，不能嵌套在其他元素中。
+- *重要**：`<template #footer>` 必须是 `el-dialog` 的直接子元素，不能嵌套在其他元素中。
 
 ```vue
 <!-- ✅ 正确 -->
@@ -240,7 +251,8 @@ interface WizardData {
     <template #footer>...</template>
   </div>
 </el-dialog>
-```
+
+```bash
 
 ### 2. 计算属性双向绑定
 
@@ -253,7 +265,8 @@ const datasourceType = computed({
     wizardData.value.datasource.type = value
   }
 })
-```
+
+```bash
 
 ### 3. 动态选项更新
 
@@ -270,40 +283,46 @@ const availableModels = computed(() => {
     // ...
   }
   return models[provider] || []
+
 })
-```
+
+```bash
 
 ## 🐛 常见问题
 
 ### Q1: 配置向导没有自动弹出？
 
-**检查清单**:
+- *检查清单**:
 1. 确认已登录
 2. 检查 localStorage 中是否有 `config_wizard_completed` 标记
 3. 检查后端 `/api/system/config/validate` API 是否正常
 4. 查看浏览器控制台是否有错误
 
-**解决方法**:
+- *解决方法**:
+
 ```javascript
 // 清除标记并刷新
 localStorage.removeItem('config_wizard_completed');
 location.reload();
-```
+
+```bash
 
 ### Q2: 修改文件后 TypeScript 报错？
 
-**原因**: `components.d.ts` 是自动生成的类型声明文件，删除文件后需要重新生成。
+- *原因**: `components.d.ts` 是自动生成的类型声明文件，删除文件后需要重新生成。
 
-**解决方法**:
+- *解决方法**:
+
 ```powershell
 cd frontend
 Remove-Item components.d.ts -Force
 npm run dev  # 重启开发服务器
-```
+
+```bash
 
 ### Q3: 配置向导显示但样式错乱？
 
-**检查**:
+- *检查**:
 1. 确认 Element Plus 样式已正确导入
 2. 检查 SCSS 变量是否正确配置
 3. 查看浏览器控制台是否有 CSS 加载错误
@@ -335,7 +354,7 @@ await configApi.addLLMProvider({
   provider_key: 'deepseek',
   provider_name: 'DeepSeek',
   api_key: 'sk-xxx',
-  base_url: 'https://api.deepseek.com',
+  base_url: '<https://api.deepseek.com',>
   is_active: true
 })
 
@@ -348,9 +367,10 @@ await configApi.updateLLMConfig({
 
 // 1.3 设置为默认大模型
 await configApi.setDefaultLLM('deepseek-chat')
-```
 
-**对应后端 API**:
+```bash
+
+- *对应后端 API**:
 - `POST /api/config/llm/providers` - 添加厂家
 - `POST /api/config/llm` - 添加模型配置
 - `POST /api/config/llm/set-default` - 设置默认模型
@@ -368,27 +388,33 @@ await configApi.addDataSourceConfig({
 
 // 2.2 设置为默认数据源
 await configApi.setDefaultDataSource('tushare')
-```
 
-**对应后端 API**:
+```bash
+
+- *对应后端 API**:
 - `POST /api/config/datasource` - 添加数据源
 - `POST /api/config/datasource/set-default` - 设置默认数据源
 
 #### 3. 数据库配置
 
-**注意**：数据库配置（MongoDB、Redis）需要在后端 `.env` 文件中设置，配置向导只是收集用户输入用于验证连接。
+- *注意**：数据库配置（MongoDB、Redis）需要在后端 `.env` 文件中设置，配置向导只是收集用户输入用于验证连接。
 
 实际配置需要在 `.env` 文件中：
+
 ```bash
+
 # MongoDB
+
 MONGODB_HOST=localhost
 MONGODB_PORT=27017
 MONGODB_DATABASE=tradingagents
 
 # Redis
+
 REDIS_HOST=localhost
 REDIS_PORT=6379
-```
+
+```bash
 
 ### 配置验证 API
 
@@ -396,9 +422,11 @@ REDIS_PORT=6379
 
 ```typescript
 const response = await axios.get('/api/system/config/validate')
-```
 
-**响应格式**:
+```bash
+
+- *响应格式**:
+
 ```json
 {
   "success": true,
@@ -421,7 +449,8 @@ const response = await axios.get('/api/system/config/validate')
   },
   "message": "配置验证完成"
 }
-```
+
+```bash
 
 ### 错误处理
 
@@ -439,4 +468,3 @@ const response = await axios.get('/api/system/config/validate')
 - **2025-10-06**: 修复具名插槽位置问题，确保 `<template #footer>` 是 `el-dialog` 的直接子元素
 - **2025-10-06**: 添加自动触发机制，基于后端配置验证 API
 - **2025-10-06**: 完善文档，添加使用说明和常见问题
-

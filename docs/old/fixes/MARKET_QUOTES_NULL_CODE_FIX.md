@@ -3,10 +3,12 @@
 ## 问题描述
 
 ### 错误信息
-```
-E11000 duplicate key error collection: tradingagents.market_quotes 
+
+```bash
+E11000 duplicate key error collection: tradingagents.market_quotes
 index: code_1 dup key: { code: null }
-```
+
+```bash
 
 ### 根本原因
 
@@ -21,38 +23,42 @@ index: code_1 dup key: { code: null }
 - **新版本**：改用 `symbol` 字段作为主键
 - **遗留问题**：数据库中的唯一索引还是 `code_1`
 
----
+- --
 
 ## 修复方案
 
 ### 1. 代码修复（已完成）
 
-**文件**：`app/services/stock_data_service.py`
+- *文件**：`app/services/stock_data_service.py`
 
-**修改**：`update_market_quotes()` 方法
+- *修改**：`update_market_quotes()` 方法
 
 ```python
+
 # 修改前
+
 if "symbol" not in quote_data:
     quote_data["symbol"] = symbol6
 
 # 修改后
+
 if "symbol" not in quote_data:
     quote_data["symbol"] = symbol6
 if "code" not in quote_data:
     quote_data["code"] = symbol6  # 兼容旧索引
-```
 
-**效果**：
+```bash
+
+- *效果**：
 - ✅ 确保每次更新时 `code` 和 `symbol` 字段都存在
 - ✅ 避免插入 `code=null` 的记录
 - ✅ 保持向后兼容
 
----
+- --
 
 ### 2. 数据修复（需要手动执行）
 
-**脚本**：`scripts/fix_market_quotes_null_code.py`
+- *脚本**：`scripts/fix_market_quotes_null_code.py`
 
 #### 功能
 
@@ -65,21 +71,27 @@ if "code" not in quote_data:
 #### 使用方法
 
 ```bash
+
 # 方法 1：直接运行脚本
+
 python scripts/fix_market_quotes_null_code.py
 
 # 方法 2：使用虚拟环境
+
 .\.venv\Scripts\python scripts/fix_market_quotes_null_code.py
-```
+
+```bash
 
 #### 预期输出
 
-```
+```bash
 🔧 开始修复 market_quotes 集合中的 code=null 记录...
 📊 market_quotes 集合的索引:
+
   - _id_: {'v': 2, 'key': [('_id', 1)]}
   - code_1: {'v': 2, 'key': [('code', 1)], 'unique': True}
   - symbol_1: {'v': 2, 'key': [('symbol', 1)]}
+
 ✅ 发现 code_1 唯一索引
 📊 发现 2 条 code=null 的记录
 📋 准备修复 2 条记录...
@@ -88,9 +100,10 @@ python scripts/fix_market_quotes_null_code.py
 ✅ 修复完成: 修复 2 条, 删除 0 条
 ✅ 所有 code=null 的记录已修复
 ✅ 修复完成
-```
 
----
+```bash
+
+- --
 
 ## 验证修复
 
@@ -111,115 +124,128 @@ db.market_quotes.getIndexes()
 // 查看示例记录
 db.market_quotes.findOne()
 // 应该同时有 code 和 symbol 字段
-```
+
+```bash
 
 ### 2. 测试更新行情
 
 ```python
+
 # 在 Python 中测试
+
 from app.services.stock_data_service import get_stock_data_service
 
 service = await get_stock_data_service()
 
 # 测试更新行情
+
 quote_data = {
     "price": 10.5,
     "volume": 1000000,
-    # 注意：不包含 code 字段
+
+# 注意：不包含 code 字段
+
 }
 
 # 应该成功，不会报错
+
 success = await service.update_market_quotes("603175", quote_data)
 print(f"更新结果: {success}")
 
 # 验证数据
+
 db = get_mongo_db()
 record = await db.market_quotes.find_one({"symbol": "603175"})
 print(f"code: {record.get('code')}")  # 应该是 "603175"
-print(f"symbol: {record.get('symbol')}")  # 应该是 "603175"
-```
 
----
+print(f"symbol: {record.get('symbol')}")  # 应该是 "603175"
+
+```bash
+
+- --
 
 ## 后续建议
 
 ### 选项 1：保持双字段（推荐）
 
-**优点**：
+- *优点**：
 - ✅ 向后兼容
 - ✅ 支持旧代码
 - ✅ 不需要迁移数据
 
-**缺点**：
+- *缺点**：
 - ❌ 数据冗余
 - ❌ 需要同步维护两个字段
 
-**实现**：
+- *实现**：
 - 已完成，无需额外操作
 
----
+- --
 
 ### 选项 2：迁移到 `symbol` 字段
 
-**优点**：
+- *优点**：
 - ✅ 数据结构更清晰
 - ✅ 减少冗余
 
-**缺点**：
+- *缺点**：
 - ❌ 需要迁移数据
 - ❌ 需要更新所有相关代码
 - ❌ 可能影响旧代码
 
-**实现步骤**：
+- *实现步骤**：
 
 1. **删除 `code_1` 唯一索引**
+
    ```javascript
    db.market_quotes.dropIndex("code_1")
    ```
 
-2. **创建 `symbol_1` 唯一索引**
+1. **创建 `symbol_1` 唯一索引**
+
    ```javascript
    db.market_quotes.createIndex({ symbol: 1 }, { unique: true })
    ```
 
-3. **删除所有记录的 `code` 字段**
+1. **删除所有记录的 `code` 字段**
+
    ```javascript
    db.market_quotes.updateMany({}, { $unset: { code: "" } })
    ```
 
-4. **更新代码**
+1. **更新代码**
    - 移除所有对 `code` 字段的引用
    - 统一使用 `symbol` 字段
 
----
+- --
 
 ## 常见问题
 
 ### Q1: 为什么会有 `code=null` 的记录？
 
-**A**: 因为旧代码在更新行情时只设置了 `symbol` 字段，没有设置 `code` 字段。
+- *A**: 因为旧代码在更新行情时只设置了 `symbol` 字段，没有设置 `code` 字段。
 
----
+- --
 
 ### Q2: 修复脚本会删除数据吗？
 
-**A**: 只会删除**既没有 `symbol` 也没有 `code` 的无效记录**。正常记录只会更新 `code` 字段。
+- *A**: 只会删除**既没有 `symbol` 也没有 `code` 的无效记录**。正常记录只会更新 `code` 字段。
 
----
+- --
 
 ### Q3: 修复后还会出现这个错误吗？
 
-**A**: 不会。代码已修复，每次更新时都会确保 `code` 和 `symbol` 字段存在。
+- *A**: 不会。代码已修复，每次更新时都会确保 `code` 和 `symbol` 字段存在。
 
----
+- --
 
 ### Q4: 我应该选择哪个后续方案？
 
-**A**: 
+- *A**:
 - **如果系统稳定运行**：选择**选项 1**（保持双字段），风险最小
 - **如果准备重构**：选择**选项 2**（迁移到 symbol），数据结构更清晰
 
----
+- --
 
 ## 相关文件
 
@@ -227,9 +253,8 @@ print(f"symbol: {record.get('symbol')}")  # 应该是 "603175"
 - **修复脚本**：`scripts/fix_market_quotes_null_code.py`
 - **本文档**：`docs/fixes/MARKET_QUOTES_NULL_CODE_FIX.md`
 
----
+- --
 
 ## 提交记录
 
 - **6bab35b**: fix: 修复 market_quotes 集合 code 字段为 null 导致的唯一索引冲突
-

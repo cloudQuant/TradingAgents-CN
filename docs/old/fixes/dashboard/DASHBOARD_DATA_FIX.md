@@ -3,6 +3,7 @@
 ## 问题描述
 
 用户反馈仪表板页面显示的数据不是真实数据：
+
 - **自选股**：显示的是硬编码的假数据（000001、000002、600036、600519）
 - **最近分析**：显示的是硬编码的假数据（task_001）
 - **市场快讯**：显示的是硬编码的假数据
@@ -10,16 +11,18 @@
 ## 根本原因
 
 `frontend/src/views/Dashboard/index.vue` 文件中：
-- 第274-299行：自选股数据使用硬编码的假数据
-- 第256-271行：最近分析数据使用硬编码的假数据
-- 第301-317行：市场快讯数据使用硬编码的假数据
-- 第404-415行：`loadFavoriteStocks()` 函数只是打印日志，没有真正调用 API
+
+- 第 274-299 行：自选股数据使用硬编码的假数据
+- 第 256-271 行：最近分析数据使用硬编码的假数据
+- 第 301-317 行：市场快讯数据使用硬编码的假数据
+- 第 404-415 行：`loadFavoriteStocks()` 函数只是打印日志，没有真正调用 API
 
 ## 修复方案
 
 ### 1. 修改自选股数据加载
 
-**修改前**：
+- *修改前**：
+
 ```typescript
 const favoriteStocks = ref([
   {
@@ -39,9 +42,11 @@ const loadFavoriteStocks = async () => {
     console.error('加载自选股失败:', error)
   }
 }
-```
 
-**修改后**：
+```bash
+
+- *修改后**：
+
 ```typescript
 import { favoritesApi } from '@/api/favorites'
 
@@ -55,18 +60,22 @@ const loadFavoriteStocks = async () => {
         stock_code: item.stock_code,
         stock_name: item.stock_name,
         current_price: item.current_price || 0,
+
         change_percent: item.change_percent || 0
+
       }))
     }
   } catch (error) {
     console.error('加载自选股失败:', error)
   }
 }
-```
+
+```bash
 
 ### 2. 修改最近分析数据加载
 
-**修改前**：
+- *修改前**：
+
 ```typescript
 const recentAnalyses = ref<AnalysisTask[]>([
   {
@@ -79,9 +88,11 @@ const recentAnalyses = ref<AnalysisTask[]>([
     // ... 更多硬编码数据
   }
 ])
-```
 
-**修改后**：
+```bash
+
+- *修改后**：
+
 ```typescript
 const recentAnalyses = ref<AnalysisTask[]>([])
 
@@ -94,26 +105,32 @@ const loadRecentAnalyses = async () => {
     })
     if (response.success && response.data) {
       recentAnalyses.value = response.data.tasks || []
-      
+
       // 更新统计数据
       userStats.value.totalAnalyses = response.data.total || 0
+
       userStats.value.successfulAnalyses = response.data.tasks?.filter(
         (item: any) => item.status === 'completed'
       ).length || 0
+
     }
   } catch (error) {
     console.error('加载最近分析失败:', error)
   }
 }
-```
+
+```bash
 
 ### 3. 添加 API 函数
 
-**`frontend/src/api/analysis.ts`**：
+- *`frontend/src/api/analysis.ts`**：
+
 ```typescript
 /**
- * 获取分析历史记录
- */
+
+ - 获取分析历史记录
+ - /
+
 export const getAnalysisHistory = async (params: {
   page?: number
   page_size?: number
@@ -130,11 +147,13 @@ export const getAnalysisHistory = async (params: {
     params
   })
 }
-```
+
+```bash
 
 ### 4. 修改生命周期钩子
 
-**修改前**：
+- *修改前**：
+
 ```typescript
 onMounted(async () => {
   // 加载用户统计数据
@@ -144,9 +163,11 @@ onMounted(async () => {
   // 加载自选股数据
   await loadFavoriteStocks()
 })
-```
 
-**修改后**：
+```bash
+
+- *修改后**：
+
 ```typescript
 onMounted(async () => {
   // 加载自选股数据
@@ -154,30 +175,36 @@ onMounted(async () => {
   // 加载最近分析
   await loadRecentAnalyses()
 })
-```
+
+```bash
 
 ## 修复效果
 
 ### 自选股
+
 - ✅ 从 `/api/favorites/` 端点获取真实的自选股数据
 - ✅ 显示用户实际添加的自选股
 - ✅ 显示实时价格和涨跌幅（如果有）
 - ✅ 如果没有自选股，显示"暂无自选股"提示
 
 ### 最近分析
+
 - ✅ 从 `/api/analysis/user/history` 端点获取真实的分析历史
-- ✅ 显示最近5条分析记录
+- ✅ 显示最近 5 条分析记录
 - ✅ 显示真实的股票代码、名称、状态、创建时间
 - ✅ 更新用户统计数据（总分析数、成功分析数）
 
 ### 市场快讯
+
 - ⚠️ 暂时保留硬编码数据（后续可以接入真实的新闻 API）
 
 ## 后端 API 端点
 
 ### 自选股 API
+
 - **端点**：`GET /api/favorites/`
 - **响应格式**：
+
 ```json
 {
   "success": true,
@@ -185,22 +212,25 @@ onMounted(async () => {
     {
       "stock_code": "601398",
       "stock_name": "工商银行",
-      "market": "A股",
+      "market": "A 股",
       "current_price": 7.30,
       "change_percent": -0.41,
       "added_at": "2025-01-01T00:00:00Z"
     }
   ]
 }
-```
+
+```bash
 
 ### 分析历史 API
+
 - **端点**：`GET /api/analysis/user/history`
 - **查询参数**：
-  - `page`: 页码（默认1）
-  - `page_size`: 每页大小（默认20）
+  - `page`: 页码（默认 1）
+  - `page_size`: 每页大小（默认 20）
   - `status`: 状态筛选（可选）
 - **响应格式**：
+
 ```json
 {
   "success": true,
@@ -220,7 +250,8 @@ onMounted(async () => {
     "page_size": 5
   }
 }
-```
+
+```bash
 
 ## 测试建议
 
@@ -229,12 +260,12 @@ onMounted(async () => {
    - 刷新仪表板页面
    - 验证显示的是真实的自选股数据
 
-2. **测试最近分析显示**：
+1. **测试最近分析显示**：
    - 执行几次股票分析
    - 刷新仪表板页面
    - 验证显示的是真实的分析历史
 
-3. **测试空数据情况**：
+1. **测试空数据情况**：
    - 清空所有自选股
    - 刷新仪表板页面
    - 验证显示"暂无自选股"提示
@@ -252,4 +283,3 @@ onMounted(async () => {
 1. **市场快讯**：目前仍使用硬编码数据，后续可以接入真实的新闻 API
 2. **用户统计**：部分统计数据（如每日配额、并发限制）仍使用默认值
 3. **错误处理**：API 调用失败时，会在控制台打印错误，但不会影响页面显示
-

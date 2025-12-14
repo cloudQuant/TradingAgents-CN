@@ -15,20 +15,29 @@
 
 TradingAgents 的 LLM 集成基于以下架构：
 
-```
+```bash
 tradingagents/
 ├── llm_adapters/              # LLM 适配器实现
+
 │   ├── __init__.py           # 导出所有适配器
+
 │   ├── openai_compatible_base.py  # OpenAI 兼容基类 (核心)
+
 │   ├── dashscope_adapter.py       # 阿里百炼适配器
-│   ├── dashscope_openai_adapter.py # 阿里百炼 OpenAI 兼容适配器  
+
+│   ├── dashscope_openai_adapter.py # 阿里百炼 OpenAI 兼容适配器
+
 │   ├── deepseek_adapter.py        # DeepSeek 原生适配器
+
 │   ├── deepseek_direct_adapter.py # DeepSeek 直接适配器
+
 │   └── google_openai_adapter.py   # Google AI 适配器
+
 └── web/
     ├── components/sidebar.py  # 前端模型选择界面
     └── utils/analysis_runner.py  # 运行时配置与流程编排
-```
+
+```bash
 
 ### 核心组件
 
@@ -45,17 +54,20 @@ tradingagents/
 1. **Fork 并克隆仓库**
 
    ```bash
-   git clone https://github.com/your-username/TradingAgentsCN.git
+   git clone <https://github.com/your-username/TradingAgentsCN.git>
    cd TradingAgentsCN
    ```
-2. **安装依赖**
+
+1. **安装依赖**
 
    ```bash
    pip install -e .
-   # 或使用 uv
+
+# 或使用 uv
    uv pip install -e .
    ```
-3. **创建开发分支**
+
+1. **创建开发分支**
 
    ```bash
    git checkout develop
@@ -70,7 +82,7 @@ tradingagents/
 
 适用于：支持 OpenAI API 格式的模型（如智谱、MiniMax、月之暗面等）
 
-**优势**：
+- *优势**：
 
 - 开发工作量最小
 - 复用现有的工具调用逻辑
@@ -82,7 +94,7 @@ tradingagents/
 
 适用于：非 OpenAI 兼容格式的模型
 
-**需要更多工作**：
+- *需要更多工作**：
 
 - 需要自定义消息格式转换
 - 需要实现工具调用逻辑
@@ -97,6 +109,7 @@ tradingagents/
 在 `tradingagents/llm_adapters/` 下创建新文件：
 
 ```python
+
 # tradingagents/llm_adapters/your_provider_adapter.py
 
 from .openai_compatible_base import OpenAICompatibleBase
@@ -108,13 +121,15 @@ logger = logging.getLogger(__name__)
 
 class ChatYourProvider(OpenAICompatibleBase):
     """你的提供商 OpenAI 兼容适配器"""
-  
+
     def __init__(
         self,
         model: str = "your-default-model",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        **kwargs
+
+        - *kwargs
+
     ) -> None:
         super().__init__(
             provider_name="your_provider",
@@ -122,23 +137,29 @@ class ChatYourProvider(OpenAICompatibleBase):
             temperature=temperature,
             max_tokens=max_tokens,
             api_key_env_var="YOUR_PROVIDER_API_KEY",
-            base_url="https://api.yourprovider.com/v1",
-            **kwargs
+            base_url="<https://api.yourprovider.com/v1",>
+
+            - *kwargs
+
         )
-```
+
+```bash
 
 #### 2. 在基类中注册提供商
 
 编辑 `tradingagents/llm_adapters/openai_compatible_base.py`：
 
 ```python
+
 # 在 OPENAI_COMPATIBLE_PROVIDERS 字典中添加配置
+
 OPENAI_COMPATIBLE_PROVIDERS = {
-    # ... 现有配置 ...
-  
+
+# ... 现有配置 ...
+
     "your_provider": {
         "adapter_class": ChatYourProvider,
-        "base_url": "https://api.yourprovider.com/v1",
+        "base_url": "<https://api.yourprovider.com/v1",>
         "api_key_env": "YOUR_PROVIDER_API_KEY",
         "models": {
             "your-model-1": {"context_length": 8192, "supports_function_calling": True},
@@ -146,7 +167,8 @@ OPENAI_COMPATIBLE_PROVIDERS = {
         }
     },
 }
-```
+
+```bash
 
 #### 3. 更新导入文件
 
@@ -156,30 +178,36 @@ OPENAI_COMPATIBLE_PROVIDERS = {
 from .your_provider_adapter import ChatYourProvider
 
 __all__ = ["ChatDashScope", "ChatDashScopeOpenAI", "ChatGoogleOpenAI", "ChatYourProvider"]
-```
+
+```bash
 
 #### 4. 前端集成
 
 编辑 `web/components/sidebar.py`，在模型选择部分添加：
 
 ```python
+
 # 在 llm_provider 选择中添加选项
+
 options=["dashscope", "deepseek", "google", "openai", "openrouter", "custom_openai", "your_provider"],
 
 # 在格式化映射中添加
+
 format_mapping={
-    # ... 现有映射 ...
+
+# ... 现有映射 ...
     "your_provider": "🚀 您的提供商",
 }
 
 # 添加模型选择逻辑
+
 elif llm_provider == "your_provider":
     your_provider_options = ["your-model-1", "your-model-2"]
-  
+
     current_index = 0
     if st.session_state.llm_model in your_provider_options:
         current_index = your_provider_options.index(st.session_state.llm_model)
-  
+
     llm_model = st.selectbox(
         "选择模型",
         options=your_provider_options,
@@ -191,7 +219,8 @@ elif llm_provider == "your_provider":
         help="选择用于分析的模型",
         key="your_provider_model_select"
     )
-```
+
+```bash
 
 #### 5. 运行时配置
 
@@ -222,19 +251,23 @@ elif llm_provider == "your_provider":
 
 ```python
 elif llm_provider == "your_provider":
-    config["backend_url"] = "https://api.yourprovider.com/v1"
+    config["backend_url"] = "<https://api.yourprovider.com/v1">
     logger.info(f"🚀 [您的提供商] 使用模型: {llm_model}")
-    logger.info(f"🚀 [您的提供商] API端点: https://api.yourprovider.com/v1")
-```
+    logger.info(f"🚀 [您的提供商] API 端点: <https://api.yourprovider.com/v1")>
+
+```bash
 
 ### 📋 必需的环境变量
 
 在项目根目录的 `.env.example` 文件中添加：
 
 ```bash
+
 # 您的提供商 API 配置
+
 YOUR_PROVIDER_API_KEY=your_api_key_here
-```
+
+```bash
 
 ## 🧪 测试指南
 
@@ -248,9 +281,10 @@ from tradingagents.llm_adapters.your_provider_adapter import ChatYourProvider
 
 def test_basic_connection():
     """测试基础连接"""
-    # 设置测试环境变量
+
+# 设置测试环境变量
     os.environ["YOUR_PROVIDER_API_KEY"] = "your_test_key"
-  
+
     try:
         llm = ChatYourProvider(model="your-model-1")
         response = llm.invoke("Hello, world!")
@@ -262,7 +296,8 @@ def test_basic_connection():
 
 if __name__ == "__main__":
     test_basic_connection()
-```
+
+```bash
 
 ### 2. 工具调用测试
 
@@ -272,16 +307,17 @@ from langchain_core.tools import tool
 @tool
 def get_weather(city: str) -> str:
     """获取城市天气信息"""
-    return f"{city}今天晴天，温度25°C"
+    return f"{city}今天晴天，温度 25°C"
 
 def test_function_calling():
     """测试工具调用"""
     llm = ChatYourProvider(model="your-model-1")
     llm_with_tools = llm.bind_tools([get_weather])
-  
+
     response = llm_with_tools.invoke("北京天气如何？")
     print(f"工具调用测试: {response}")
-```
+
+```bash
 
 ### 3. Web 界面测试
 
@@ -290,8 +326,8 @@ def test_function_calling():
 ```bash
 cd web
 streamlit run app.py
-```
 
+```bash
 验证：
 
 - [ ]  在侧边栏能正确选择新提供商
@@ -341,9 +377,11 @@ streamlit run app.py
 #### 1. 使用 OpenAI 兼容基座注册千帆提供商
 
 ```python
+
 # 在 tradingagents/llm_adapters/openai_compatible_base.py 内部注册
+
 OPENAI_COMPATIBLE_PROVIDERS["qianfan"] = {
-    "base_url": "https://qianfan.baidubce.com/v2",
+    "base_url": "<https://qianfan.baidubce.com/v2",>
     "api_key_env": "QIANFAN_API_KEY",
     "models": {
         "ernie-3.5-8k": {"context_length": 8192, "supports_function_calling": True},
@@ -352,19 +390,22 @@ OPENAI_COMPATIBLE_PROVIDERS["qianfan"] = {
         "ERNIE-Lite-8K": {"context_length": 8192, "supports_function_calling": False},
     }
 }
-```
 
+```bash
 > 提示：无需单独的 qianfan_adapter.py 文件，统一由 openai_compatible_base 进行适配。
 
 #### 2. 注册千帆提供商
 
 ```python
+
 # 在 openai_compatible_base.py 中添加
+
 OPENAI_COMPATIBLE_PROVIDERS = {
-    # ... 现有配置 ...
-  
+
+# ... 现有配置 ...
+
     "qianfan": {
-        "base_url": "https://qianfan.baidubce.com/v2",
+        "base_url": "<https://qianfan.baidubce.com/v2",>
         "api_key_env": "QIANFAN_API_KEY",
         "models": {
             "ernie-3.5-8k": {"context_length": 8192, "supports_function_calling": True},
@@ -374,17 +415,21 @@ OPENAI_COMPATIBLE_PROVIDERS = {
         }
     },
 }
-```
+
+```bash
 
 #### 3. 配置环境变量
 
-在 `.env` 文件中添加千帆API配置：
+在 `.env` 文件中添加千帆 API 配置：
 
 ```bash
-# 千帆API配置
+
+# 千帆 API 配置
+
 QIANFAN_ACCESS_KEY=your_access_key_here
 QIANFAN_SECRET_KEY=your_secret_key_here
-```
+
+```bash
 
 #### 4. 添加模型价格配置
 
@@ -419,17 +464,20 @@ QIANFAN_SECRET_KEY=your_secret_key_here
   "output_price_per_1k": 0.002,
   "currency": "CNY"
 }
-```
 
-**价格说明**：
-- 价格单位为每1000个token的费用
+```bash
+
+- *价格说明**：
+- 价格单位为每 1000 个 token 的费用
 - 货币单位为人民币（CNY）
 - 价格基于百度千帆官方定价，可能会有调整
 
 #### 5. 前端界面集成
 
 ```python
+
 # 在 sidebar.py 中添加千帆选项
+
 elif llm_provider == "qianfan":
     qianfan_options = [
         "ernie-3.5-8k",
@@ -457,19 +505,19 @@ elif llm_provider == "qianfan":
     )
 
     if st.session_state.llm_model != llm_model:
-        logger.debug(f"🔄 [Persistence] Qianfan模型变更: {st.session_state.llm_model} → {llm_model}")
+        logger.debug(f"🔄 [Persistence] Qianfan 模型变更: {st.session_state.llm_model} → {llm_model}")
     st.session_state.llm_model = llm_model
-    logger.debug(f"💾 [Persistence] Qianfan模型已保存: {llm_model}")
-```
+    logger.debug(f"💾 [Persistence] Qianfan 模型已保存: {llm_model}")
 
+```bash
 
 ## 🚨 常见问题与解决方案
 
 ### 1. API 密钥验证失败
 
-**问题**: 环境变量设置正确但仍提示 API 密钥错误
+- *问题**: 环境变量设置正确但仍提示 API 密钥错误
 
-**解决方案**:
+- *解决方案**:
 
 - 检查 API 密钥格式是否符合提供商要求
 - 确认环境变量名称拼写正确
@@ -478,9 +526,9 @@ elif llm_provider == "qianfan":
 
 ### 2. 工具调用不工作
 
-**问题**: 模型不能正确调用工具
+- *问题**: 模型不能正确调用工具
 
-**解决方案**:
+- *解决方案**:
 
 - 确认模型本身支持 Function Calling
 - 检查 API 格式是否完全兼容 OpenAI 标准
@@ -489,9 +537,9 @@ elif llm_provider == "qianfan":
 
 ### 3. 前端界面不显示新模型
 
-**问题**: 侧边栏看不到新添加的提供商
+- *问题**: 侧边栏看不到新添加的提供商
 
-**解决方案**:
+- *解决方案**:
 
 - 清除浏览器缓存
 - 检查 `sidebar.py` 中的选项列表
@@ -500,9 +548,9 @@ elif llm_provider == "qianfan":
 
 ### 4. 请求超时或连接错误
 
-**问题**: API 请求经常超时
+- *问题**: API 请求经常超时
 
-**解决方案**:
+- *解决方案**:
 
 - 调整 `timeout` 参数
 - 检查网络连接和 API 端点状态
@@ -511,12 +559,14 @@ elif llm_provider == "qianfan":
 
 ### 5. 中文编码问题
 
-**问题**: 中文输入或输出出现乱码
+- *问题**: 中文输入或输出出现乱码
 
-**解决方案**:
+- *解决方案**:
 
 ```python
+
 # 确保请求和响应都使用 UTF-8 编码
+
 import json
 
 def safe_json_dumps(data):
@@ -524,19 +574,23 @@ def safe_json_dumps(data):
 
 def safe_json_loads(text):
     return json.loads(text.encode('utf-8').decode('utf-8'))
-```
+
+```bash
+
 ### 6. 成本控制问题
 
-**问题**: 某些模型调用成本过高
+- *问题**: 某些模型调用成本过高
 
-**解决方案**:
+- *解决方案**:
 
 - 在配置中设置合理的 `max_tokens` 限制
 - 使用成本较低的模型进行初步分析
 - 实现智能模型路由，根据任务复杂度选择模型
 
 ```python
+
 # 智能模型选择示例
+
 def select_model_by_task(task_complexity: str) -> str:
     if task_complexity == "simple":
         return "ERNIE-Lite-8K"  # 成本低
@@ -544,12 +598,14 @@ def select_model_by_task(task_complexity: str) -> str:
         return "ERNIE-3.5-8K"  # 平衡
     else:
         return "ERNIE-4.0-8K"  # 性能强
-```
+
+```bash
+
 ## 📝 PR 提交规范
 
 ### 提交信息格式
 
-```
+```bash
 feat(llm): add {ProviderName} LLM integration
 
 - Add {ProviderName} OpenAI-compatible adapter
@@ -558,40 +614,51 @@ feat(llm): add {ProviderName} LLM integration
 - Include basic tests and documentation
 
 Closes #{issue_number}
-```
+
+```bash
+
 ### PR 描述模板
 
 ```markdown
+
 ## 🚀 新增大模型支持：{ProviderName}
 
 ### 📋 变更概述
+
 - 添加了 {ProviderName} 的 OpenAI 兼容适配器
 - 更新了前端模型选择界面
 - 完善了配置和环境变量
 - 包含了基础测试
 
 ### 🧪 测试情况
+
 - [x] 基础连接测试通过
 - [x] 工具调用测试通过（如适用）
 - [x] Web 界面集成测试通过
 - [x] 完整的股票分析测试通过
 
 ### 📚 支持的模型
+
 - `model-1`: 快速模型，适合简单任务
 - `model-2`: 强大模型，适合复杂分析
 
 ### 🔧 配置要求
+
 需要设置环境变量：`YOUR_PROVIDER_API_KEY`
 
 ### 📸 截图
+
 （添加前端界面截图）
 
 ### ✅ 检查清单
+
 - [x] 代码遵循项目规范
 - [x] 添加了必要的测试
 - [x] 更新了相关文档
 - [x] 通过了所有现有测试
-```
+
+```bash
+
 ## 🎯 最佳实践
 
 ### 1. 错误处理
@@ -634,8 +701,8 @@ Closes #{issue_number}
 3. **提交信息**: 使用清晰的描述性信息
 4. **代码审查**: 提交前自我审查代码质量
 
----
+- --
 
-**感谢您为 TradingAgentsCN 项目贡献新的大模型支持！** 🎉
+- *感谢您为 TradingAgentsCN 项目贡献新的大模型支持！** 🎉
 
 通过遵循本指南，您的贡献将更容易被审查和合并，同时也为其他开发者提供了良好的参考示例。

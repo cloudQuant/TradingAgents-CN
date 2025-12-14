@@ -1,22 +1,24 @@
 # 统一数据标准与实施路径：行业分类、市场交易所、标识、单位时区、指标定义、冲突仲裁
 
-日期：2025-10-19  
-项目：TradingAgents-CN  
+日期：2025-10-19
+项目：TradingAgents-CN
 用途：数据一致性标准（PIT）与跨源融合的工程指南
 
 ## 1. 核心问题拆解
+
 - 行业分类不统一：中文/英文/GICS/NAICS/自定义口径不一致，层级不同。
 - 市场与交易所不统一：CN/HK/US 与 SSE/SZSE/HKEX/NASDAQ/NYSE 字段与符号不一。
-- 标识不统一：`ts_code`、`symbol`、`full_symbol`、`yfinance` 规范不同，港股是否补零、A股是否带后缀不一致。
+- 标识不统一：`ts_code`、`symbol`、`full_symbol`、`yfinance` 规范不同，港股是否补零、A 股是否带后缀不一致。
 - 单位与时区不统一：币种（CNY/HKD/USD）、金额单位（元/百万/亿）、时间与时区格式不统一。
 - 字段定义差异：财务指标口径（GAAP/IFRS/CAS），“行业/板块”语义层级不同。
 - 值冲突：不同源给出名称/行业/财务数据不一致，需要仲裁与置信度规则。
 
 ## 2. 统一数据模型（Canonical Schema）
+
 - 标识与命名（Identity）
   - 采用 `full_symbol = exchange_mic:symbol` 作为主键；`exchange_mic` 使用 ISO 10383（如 `XSHG`、`XSHE`、`XHKG`、`XNAS`、`XNYS`）。
   - `symbol` 规则：
-    - A股：不带后缀的 6 位数字（如 `600519`）；`full_symbol` 形如 `XSHG:600519` 或 `XSHE:000001`。
+    - A 股：不带后缀的 6 位数字（如 `600519`）；`full_symbol` 形如 `XSHG:600519` 或 `XSHE:000001`。
     - 港股：不做左侧补零的纯数字字符串（如 `5`、`0005`、`2388`）；`full_symbol` 形如 `XHKG:0005`。保留 `vendor_symbols.hk_pad_left=4` 的适配能力（如 `yfinance: 0005.HK`）。
     - 美股：字母代码（如 `AAPL`）；`full_symbol` 形如 `XNAS:AAPL` 或 `XNYS:MSFT`。
   - 扩展标识：`isin`（推荐）、`country`（ISO 3166-1）、`currency`（ISO 4217）。
@@ -43,6 +45,7 @@
   - 提供人工覆盖台帐：`manual_override`，含审计字段与过期策略。
 
 ## 3. 实施路径（Phased Plan）
+
 - Phase 0：字典与规范
   - 产出 `exchange_mic`、`market`、`timezone` 枚举字典；确定 `full_symbol` 规则与港股补零适配选项。
   - 行业映射初稿：CN/自定义 → GICS；定义不可映射与近似映射标记。
@@ -65,18 +68,21 @@
   - 文档与版本：发布标准与字典文件；冻结 `data_version/feature_version` 与兼容策略。
 
 ## 4. 关键枚举与规则（摘要）
+
 - `market`：`CN`、`HK`、`US`。
 - `exchange_mic`：`XSHG`（SSE）、`XSHE`（SZSE）、`XHKG`（HKEX）、`XNAS`（NASDAQ）、`XNYS`（NYSE）。
-- `full_symbol`：`exchange_mic:symbol`；A股不带后缀、港股不强制补零、美股字母代码。
+- `full_symbol`：`exchange_mic:symbol`；A 股不带后缀、港股不强制补零、美股字母代码。
 - `timezone`：IANA 时区；所有时间戳以 `UTC` 存储。
 - 行业：采用 GICS 四级，保留来源字段与映射置信度。
 
 ## 5. 快速示例
+
 - 美股 AAPL：`symbol=AAPL`，`full_symbol=XNAS:AAPL`，`yfinance=AAPL`。
-- A股 贵州茅台：`symbol=600519`，`full_symbol=XSHG:600519`，`tushare=600519.SH`，`yfinance=600519.SS`。
+- A 股 贵州茅台：`symbol=600519`，`full_symbol=XSHG:600519`，`tushare=600519.SH`，`yfinance=600519.SS`。
 - 港股 长江和记：`symbol=0005`，`full_symbol=XHKG:0005`，`yfinance=0005.HK`（适配器支持左补零 4）。
 
 ## 6. 落地检查清单（Checklist）
+
 - 明确 `full_symbol` 与 `exchange_mic` 作为唯一主键，完成字典发布。
 - 完成 CN/HK/US 的符号解析与来源映射适配器。
 - 发布 GICS 映射表与 `map_confidence` 规则；标注不可映射场景。

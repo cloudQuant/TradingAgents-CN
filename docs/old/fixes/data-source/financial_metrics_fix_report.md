@@ -12,25 +12,28 @@
 
 ### 1. 重构 `_estimate_financial_metrics` 函数
 
-- **优先使用真实数据**：首先尝试从Tushare获取真实财务数据
+- **优先使用真实数据**：首先尝试从 Tushare 获取真实财务数据
 - **智能降级机制**：当无法获取真实数据时，使用估算值并明确标注
 - **数据来源透明**：在报告中明确标注数据来源
 
 ### 2. 新增真实财务数据处理功能
 
 #### `_get_real_financial_metrics(symbol, price_value)`
-- 连接Tushare数据源
+
+- 连接 Tushare 数据源
 - 获取资产负债表、利润表、现金流量表
 - 基于真实数据计算财务指标
 
 #### `_parse_financial_data(financial_data, stock_info, price_value)`
-- 解析Tushare财务数据
-- 计算PE、PB、PS、ROE、ROA等关键指标
+
+- 解析 Tushare 财务数据
+- 计算 PE、PB、PS、ROE、ROA 等关键指标
 - 基于真实数据进行评分
 
 #### 新增评分算法
-- `_calculate_fundamental_score()`: 基于ROE、净利率等计算基本面评分
-- `_calculate_valuation_score()`: 基于PE、PB等计算估值评分
+
+- `_calculate_fundamental_score()`: 基于 ROE、净利率等计算基本面评分
+- `_calculate_valuation_score()`: 基于 PE、PB 等计算估值评分
 - `_calculate_growth_score()`: 基于行业特征计算成长性评分
 - `_calculate_risk_level()`: 基于负债率等计算风险等级
 
@@ -38,7 +41,7 @@
 
 - **数据来源说明**：在报告中添加数据来源标注
 - **估算值标识**：对估算值添加"（估算值）"标识
-- **真实数据标识**：对真实数据添加"基于Tushare真实财务数据计算"说明
+- **真实数据标识**：对真实数据添加"基于 Tushare 真实财务数据计算"说明
 
 ## 修复效果
 
@@ -46,25 +49,26 @@
 
 通过 `test_financial_metrics_fix.py` 测试脚本验证：
 
-```
+```bash
 📊 测试股票: 000001
 ✅ 000001: 使用真实财务数据
-  PE: 4.8倍
-  PB: 0.52倍
+  PE: 4.8 倍
+  PB: 0.52 倍
   ROE: 10.8%
 
 📊 测试股票: 000002
 ✅ 000002: 使用真实财务数据
-  PE: 0.0倍
-  PB: 0.00倍
+  PE: 0.0 倍
+  PB: 0.00 倍
   ROE: 12.5%
 
 📊 测试股票: 600519
 ✅ 600519: 使用真实财务数据
-  PE: 0.0倍
-  PB: 0.00倍
+  PE: 0.0 倍
+  PB: 0.00 倍
   ROE: 35.9%
-```
+
+```bash
 
 ### 主要改进
 
@@ -77,24 +81,29 @@
 
 ### 数据获取流程
 
-```
+```bash
+
 1. 调用 _estimate_financial_metrics()
 2. 尝试 _get_real_financial_metrics()
-   ├── 连接Tushare
+
+   ├── 连接 Tushare
    ├── 获取财务数据
    ├── 解析并计算指标
    └── 返回真实指标
-3. 如果失败，使用 _get_estimated_financial_metrics()
+
+1. 如果失败，使用 _get_estimated_financial_metrics()
+
    ├── 使用原有分类方法
    ├── 添加"（估算值）"标识
    └── 返回估算指标
-```
+
+```bash
 
 ### 指标计算方法
 
-- **PE比率**: 市值 / 净利润
-- **PB比率**: 市值 / 净资产
-- **PS比率**: 市值 / 营业收入
+- **PE 比率**: 市值 / 净利润
+- **PB 比率**: 市值 / 净资产
+- **PS 比率**: 市值 / 营业收入
 - **ROE**: 净利润 / 净资产 × 100%
 - **ROA**: 净利润 / 总资产 × 100%
 - **净利率**: 净利润 / 营业收入 × 100%
@@ -104,20 +113,21 @@
 
 ### 环境要求
 
-- Tushare Pro账户和Token
+- Tushare Pro 账户和 Token
 - 网络连接正常
-- Python环境配置正确
+- Python 环境配置正确
 
 ### 降级机制
 
-当Tushare不可用时：
+当 Tushare 不可用时：
+
 - 自动使用估算值
 - 在报告中明确标注
 - 保证系统正常运行
 
 ## 后续优化建议
 
-1. **增加更多数据源**：集成Wind、同花顺等数据源
+1. **增加更多数据源**：集成 Wind、同花顺等数据源
 2. **完善指标计算**：添加更多财务比率
 3. **历史数据分析**：支持多期财务数据对比
 4. **行业对比**：添加行业平均值对比功能
@@ -126,12 +136,14 @@
 ## 文件变更
 
 ### 修改文件
+
 - `tradingagents/dataflows/optimized_china_data.py`
   - 重构 `_estimate_financial_metrics()` 函数
   - 新增真实财务数据处理功能
   - 改进报告生成逻辑
 
 ### 新增文件
+
 - `test_financial_metrics_fix.py`: 测试脚本
 - `docs/financial_metrics_fix_report.md`: 本修复报告
 

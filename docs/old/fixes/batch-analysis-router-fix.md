@@ -4,7 +4,7 @@
 
 用户提交批量分析成功后，弹窗显示成功提示，但点击"前往任务中心"按钮没有反应，无法跳转到任务中心页面。
 
-**期望行为**：点击"前往任务中心"按钮后，应该跳转到 `http://127.0.0.1:3000/tasks?batch_id=xxx`
+- *期望行为**：点击"前往任务中心"按钮后，应该跳转到 `<http://127.0.0.1:3000/tasks?batch_id=xxx`>
 
 ## 根本原因
 
@@ -18,17 +18,18 @@ ElMessageBox.confirm(...).then(() => {
   const router = useRouter()  // ❌ 不能在回调中调用 Composition API
   router.push({ path: '/tasks', query: { batch_id } })
 })
-```
+
+```bash
 
 ### Vue 3 Composition API 规则
 
-**Composition API 的钩子函数（如 `useRouter`、`useRoute`、`useStore` 等）必须在以下位置调用**：
+- *Composition API 的钩子函数（如 `useRouter`、`useRoute`、`useStore` 等）必须在以下位置调用**：
 
 1. ✅ `<script setup>` 的顶层
 2. ✅ `setup()` 函数的顶层
 3. ❌ **不能在异步回调、事件处理器、定时器等异步上下文中调用**
 
-**原因**：Vue 需要在组件初始化时建立响应式上下文，异步回调中调用会导致上下文丢失。
+- *原因**：Vue 需要在组件初始化时建立响应式上下文，异步回调中调用会导致上下文丢失。
 
 ## 解决方案
 
@@ -45,7 +46,8 @@ const route = useRoute()
 
 // ... 其他代码 ...
 </script>
-```
+
+```bash
 
 ### 2. 在回调中直接使用 `router` 实例
 
@@ -54,7 +56,8 @@ const route = useRoute()
 ElMessageBox.confirm(...).then(() => {
   router.push({ path: '/tasks', query: { batch_id } })
 })
-```
+
+```bash
 
 ### 3. 移除重复定义
 
@@ -70,7 +73,8 @@ const route = useRoute()  // 顶层定义
 onMounted(async () => {
   const q = route.query  // 直接使用顶层定义的 route
 })
-```
+
+```bash
 
 ## 修改的文件
 
@@ -94,7 +98,8 @@ const route = useRoute()
 
 const submitting = ref(false)
 // ... 其他代码 ...
-```
+
+```bash
 
 #### 2. 移除回调中的 useRouter() 调用（第 482-501 行）
 
@@ -109,7 +114,8 @@ ElMessageBox.confirm(...).then(() => {
 ElMessageBox.confirm(...).then(() => {
   router.push({ path: '/tasks', query: { batch_id } })  // ✅ 正确
 })
-```
+
+```bash
 
 #### 3. 移除 onMounted 前的重复定义（第 372-377 行）
 
@@ -126,7 +132,8 @@ onMounted(async () => {
   const q = route.query  // ✅ 使用顶层定义的 route
   // ...
 })
-```
+
+```bash
 
 ## 验证
 
@@ -137,17 +144,17 @@ onMounted(async () => {
    - 填写批次标题
    - 点击"提交分析"
 
-2. **验证成功提示**：
+1. **验证成功提示**：
    - ✅ 显示成功弹窗
    - ✅ 显示股票数量和批次 ID
    - ✅ 显示"前往任务中心"和"留在当前页面"按钮
 
-3. **验证跳转功能**：
+1. **验证跳转功能**：
    - ✅ 点击"前往任务中心"按钮
    - ✅ 页面跳转到 `/tasks?batch_id=xxx`
    - ✅ 任务中心显示批量分析任务
 
-4. **验证取消功能**：
+1. **验证取消功能**：
    - ✅ 点击"留在当前页面"按钮
    - ✅ 显示提示信息："任务正在后台执行，您可以随时前往任务中心查看进度"
    - ✅ 停留在批量分析页面
@@ -157,37 +164,40 @@ onMounted(async () => {
 ### Vue 3 Composition API 最佳实践
 
 1. **在顶层调用 Composition API**：
+
    ```typescript
    // ✅ 正确
    const router = useRouter()
    const store = useStore()
    const route = useRoute()
-   
+
    const handleClick = () => {
      router.push('/home')  // 使用顶层定义的 router
    }
    ```
 
-2. **不要在异步回调中调用**：
+1. **不要在异步回调中调用**：
+
    ```typescript
    // ❌ 错误
    setTimeout(() => {
      const router = useRouter()  // 错误！
    }, 1000)
-   
+
    // ❌ 错误
    fetch('/api/data').then(() => {
      const store = useStore()  // 错误！
    })
    ```
 
-3. **不要在条件语句中调用**：
+1. **不要在条件语句中调用**：
+
    ```typescript
    // ❌ 错误
    if (condition) {
      const router = useRouter()  // 错误！
    }
-   
+
    // ✅ 正确
    const router = useRouter()
    if (condition) {
@@ -210,4 +220,3 @@ Vue 3 的 Composition API 依赖于**组件实例上下文**来建立响应式�
 3. ✅ **避免重复定义**：同一个 Composition API 只在顶层调用一次
 
 遵循这些规则可以避免很多常见的 Vue 3 错误。
-

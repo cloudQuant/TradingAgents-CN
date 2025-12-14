@@ -39,7 +39,8 @@ const handleDataTypeChange = (tabName: string) => {
   page.value = 1
   loadData()
 }
-```
+
+```bash
 
 ### 4. 统计数据展示
 
@@ -55,16 +56,16 @@ const handleDataTypeChange = (tabName: string) => {
 
 ### 用户操作流程
 
-1. **访问集合页面**：打开 `http://localhost:3000/funds/collections/fund_hk_hist_em`
+1. **访问集合页面**：打开 `<http://localhost:3000/funds/collections/fund_hk_hist_em`>
 
 2. **选择数据类型**：
    - 点击"全部数据"标签：查看所有数据
    - 点击"历史净值明细"标签：只查看净值数据
    - 点击"分红送配详情"标签：只查看分红数据
 
-3. **查看数据**：数据表格会根据选择的标签自动筛选并显示对应类型的数据
+1. **查看数据**：数据表格会根据选择的标签自动筛选并显示对应类型的数据
 
-4. **其他功能**：仍然可以使用搜索、排序、分页等标准功能
+2. **其他功能**：仍然可以使用搜索、排序、分页等标准功能
 
 ## 技术实现
 
@@ -74,7 +75,7 @@ const handleDataTypeChange = (tabName: string) => {
 <template>
   <!-- 页面头部 -->
   <CollectionPageHeader ... />
-  
+
   <div class="content">
     <!-- 数据类型筛选标签页 -->
     <el-card>
@@ -84,21 +85,24 @@ const handleDataTypeChange = (tabName: string) => {
         <el-tab-pane label="分红送配详情" name="分红送配详情" />
       </el-tabs>
     </el-card>
-    
+
     <!-- 数据表格 -->
     <CollectionDataTable ... />
   </div>
 </template>
-```
+
+```bash
 
 ### 关键代码
 
 1. **数据类型状态管理**：
+
    ```typescript
    const activeDataType = ref<string>('all')
    ```
 
-2. **筛选条件更新**：
+1. **筛选条件更新**：
+
    ```typescript
    const handleDataTypeChange = (tabName: string) => {
      if (tabName === 'all') {
@@ -113,7 +117,8 @@ const handleDataTypeChange = (tabName: string) => {
    }
    ```
 
-3. **统计数据加载**：
+1. **统计数据加载**：
+
    ```typescript
    const loadStats = async () => {
      // 获取各类型数据的统计数量
@@ -124,14 +129,17 @@ const handleDataTypeChange = (tabName: string) => {
 ## 数据展示效果
 
 ### 全部数据视图
+
 - 显示所有记录，包括净值数据和分红数据
 - 可以通过 `symbol` 列区分数据类型
 
 ### 历史净值明细视图
+
 - 只显示 `symbol="历史净值明细"` 的记录
 - 包含字段：净值日期、单位净值、日增长值、日增长率等
 
 ### 分红送配详情视图
+
 - 只显示 `symbol="分红送配详情"` 的记录
 - 包含字段：权益登记日、除息日期、分红金额等
 
@@ -148,5 +156,3 @@ const handleDataTypeChange = (tabName: string) => {
 2. **添加导出功能**：支持按数据类型导出数据
 3. **添加日期范围筛选**：支持按日期范围筛选数据
 4. **添加基金代码筛选**：支持按基金代码筛选数据
-
-

@@ -1,14 +1,16 @@
 # 基金历史行情-新浪 实现说明
 
 ## 概述
+
 `fund_hist_sina` 数据集合已完整实现基金代码字段和唯一标识功能。
 
 ## 数据结构
 
 ### AKShare API
+
 - **接口**: `ak.fund_etf_hist_sina(symbol='sh510050')`
 - **参数**: symbol - 基金代码（如 sh510050）
-- **返回字段**: 
+- **返回字段**:
   - `date` - 日期
   - `open` - 开盘价
   - `high` - 最高价
@@ -18,6 +20,7 @@
 - **注意**: API 不返回基金代码，需要手动添加
 
 ### 数据库存储字段
+
 - `code` - 基金代码（手动添加）
 - `date` - 日期
 - `open` - 开盘价
@@ -27,61 +30,70 @@
 - `volume` - 成交量
 
 ### 唯一标识
+
 - **组合键**: `code + date`
 - **MongoDB 索引**: `{code: 1, date: 1}` (unique)
 
 ## 实现细节
 
 ### 1. 数据获取（刷新服务）
-**文件**: `app/services/fund_refresh_service.py`
+
+- *文件**: `app/services/fund_refresh_service.py`
 
 ```python
+
 # 单个基金更新
+
 async def _refresh_fund_hist_sina(self, task_id: str, params: Dict[str, Any]):
     symbol = params.get('symbol')  # 如 'sh510050'
-    
-    # 调用 AKShare API
+
+# 调用 AKShare API
     df = await loop.run_in_executor(executor, self._fetch_fund_hist_sina, symbol)
-    
-    # ⭐ 关键步骤：添加基金代码字段
+
+# ⭐ 关键步骤：添加基金代码字段
     df = df.copy()
     df["代码"] = symbol  # 添加中文列名
-    
-    # 保存数据
+
+# 保存数据
     await self.data_service.save_fund_hist_sina_data(df)
-```
+
+```bash
 
 ### 2. 数据保存（数据服务）
-**文件**: `app/services/fund_data_service.py`
+
+- *文件**: `app/services/fund_data_service.py`
 
 ```python
 async def save_fund_hist_sina_data(self, df: pd.DataFrame):
-    # 字段映射：将中文列名转换为英文
+
+# 字段映射：将中文列名转换为英文
     field_mapping = {
         "代码": "code",  # ⭐ 关键映射
         "date": "date",
         "日期": "date",
-        # ... 其他字段映射
+
+# ... 其他字段映射
     }
-    
+
     df = df.rename(columns=field_mapping)
-    
-    # 检查必需字段
+
+# 检查必需字段
     required_fields = ["date", "open", "high", "low", "close", "volume", "code"]
-    
-    # 构建 MongoDB 更新操作
+
+# 构建 MongoDB 更新操作
     for idx, row in df.iterrows():
         code = str(row.get("code"))
         date_str = str(row.get("date"))
-        
+
         record = {
             "code": code,
             "date": date_str,
             "open": float(row["open"]),
-            # ... 其他字段
+
+# ... 其他字段
         }
-        
-        # ⭐ 关键：使用 code + date 作为唯一键
+
+# ⭐ 关键：使用 code + date 作为唯一键
         ops.append(
             UpdateOne(
                 {"code": code, "date": date_str},  # 唯一标识
@@ -89,13 +101,15 @@ async def save_fund_hist_sina_data(self, df: pd.DataFrame):
                 upsert=True
             )
         )
-    
-    # 批量写入
+
+# 批量写入
     await self.col_fund_hist_sina.bulk_write(ops, ordered=False)
-```
+
+```bash
 
 ### 3. 路由定义
-**文件**: `app/routers/funds.py`
+
+- *文件**: `app/routers/funds.py`
 
 ```python
 {
@@ -111,55 +125,79 @@ async def save_fund_hist_sina_data(self, df: pd.DataFrame):
         "volume",
     ],
 }
-```
+
+```bash
 
 ## 数据流程
 
-```
+```bash
+
 1. 用户请求更新 (symbol='sh510050')
+
    ↓
-2. 调用 AKShare API
+
+1. 调用 AKShare API
+
    ↓ 返回 [date, open, high, low, close, volume]
-3. 添加基金代码字段
+
+1. 添加基金代码字段
+
    ↓ 添加列 '代码' = 'sh510050'
-4. 字段映射
+
+1. 字段映射
+
    ↓ '代码' → 'code'
-5. 数据验证
+
+1. 数据验证
+
    ↓ 检查必需字段：code, date, ...
-6. 构建 MongoDB 操作
+
+1. 构建 MongoDB 操作
+
    ↓ UpdateOne({code, date}, {$set: record}, upsert=True)
-7. 批量写入数据库
+
+1. 批量写入数据库
+
    ↓ code + date 唯一标识，自动去重
-8. 完成
-```
+
+1. 完成
+
+```bash
 
 ## 更新方式
 
 ### 单个基金更新
+
 ```json
 POST /api/funds/collections/fund_hist_sina/refresh
 {
   "symbol": "sh510050"
 }
-```
+
+```bash
 
 ### 批量更新
+
 ```json
 POST /api/funds/collections/fund_hist_sina/refresh
 {
   "symbols": ["sh510050", "sh510300", "sh510500"]
 }
-```
+
+```bash
 
 ## 测试验证
 
 ### 运行测试
+
 ```bash
 cd f:\source_code\TradingAgents-CN
 python tests\funds\test_fund_hist_sina_code_date.py
-```
+
+```bash
 
 ### 测试覆盖
+
 1. ✓ AKShare API 数据结构
 2. ✓ 添加基金代码字段
 3. ✓ 字段映射（代码 → code）
@@ -175,7 +213,8 @@ python tests\funds\test_fund_hist_sina_code_date.py
 db.fund_hist_sina.createIndex({ code: 1, date: 1 }, { unique: true })
 db.fund_hist_sina.createIndex({ code: 1 })
 db.fund_hist_sina.createIndex({ date: 1 })
-```
+
+```bash
 
 ## 注意事项
 
@@ -183,16 +222,16 @@ db.fund_hist_sina.createIndex({ date: 1 })
    - AKShare API 不返回基金代码
    - 刷新服务在获取数据后立即添加
 
-2. **字段映射**
+1. **字段映射**
    - 中文字段 "代码" → 英文字段 "code"
    - 便于前端统一处理
 
-3. **唯一标识**
+1. **唯一标识**
    - 使用 code + date 组合键
    - 支持数据更新（upsert=True）
    - 同一基金同一日期只保留一条记录
 
-4. **数据完整性**
+1. **数据完整性**
    - 必须包含所有必需字段
    - code 和 date 不能为空
    - 数值字段自动处理 NaN/Inf
@@ -208,6 +247,7 @@ db.fund_hist_sina.createIndex({ date: 1 })
 ## 验收标准
 
 ✅ **已完成**:
+
 1. 基金代码字段已添加
 2. 使用 code + date 作为唯一标识
 3. 数据保存逻辑正确
@@ -217,6 +257,7 @@ db.fund_hist_sina.createIndex({ date: 1 })
 ## 总结
 
 当前实现已完全符合需求：
+
 - ✓ 增加基金代码字段
 - ✓ 使用基金代码和日期作为唯一标识
 - ✓ 支持数据去重和更新

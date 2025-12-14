@@ -11,11 +11,11 @@
 7. [常见问题](#常见问题)
 8. [测试验证](#测试验证)
 
----
+- --
 
 ## 概述
 
-本文档详细说明如何在基金模块中新增一个数据集合。基金模块采用 **Provider-Service** 架构，实现了数据获取与业务逻辑的分离，支持自动注册、类型安全、统一错误处理等功能。
+本文档详细说明如何在基金模块中新增一个数据集合。基金模块采用 **Provider-Service**架构，实现了数据获取与业务逻辑的分离，支持自动注册、类型安全、统一错误处理等功能。
 
 ### 核心概念
 
@@ -23,24 +23,28 @@
 - **Service（数据服务）**: 负责数据存储、批量更新、增量判断等业务逻辑
 - **Collection（数据集合）**: MongoDB 中的一个集合，存储特定类型的数据
 
----
+- --
 
 ## 架构说明
 
 ### 目录结构
 
-```
+```bash
 app/services/data_sources/funds/
 ├── providers/              # 数据提供者目录
+
 │   ├── fund_name_em_provider.py
 │   ├── fund_basic_info_provider.py
 │   └── ...
 ├── services/               # 数据服务目录
+
 │   ├── fund_basic_info_service.py
 │   ├── fund_etf_spot_em_service.py
 │   └── ...
 ├── collection_metadata.py  # 集合元信息（显示名称、描述、路由等）
+
 ├── provider_registry.py     # Provider 自动注册机制
+
 └── README.md
 
 app/config/
@@ -48,19 +52,25 @@ app/config/
 
 frontend/src/
 ├── views/Funds/collections/  # 前端页面组件
+
 │   ├── index.vue            # 动态路由入口
+
 │   ├── DefaultCollection.vue # 默认集合页面
+
 │   └── [CollectionName].vue # 特定集合页面（可选）
+
 └── types/funds.ts           # TypeScript 类型定义
-```
+
+```bash
 
 ### 数据流
 
-```
+```bash
 用户请求 → API Router → Service → Provider → akshare → 数据清洗 → MongoDB
                 ↓
            前端页面 ← API Response ← MongoDB
-```
+
+```bash
 
 ### 自动注册机制
 
@@ -73,27 +83,41 @@ frontend/src/
 
 系统会自动识别并注册，无需手动导入。
 
----
+- --
 
 ## 新增数据集合完整流程
 
 ### 流程图
 
-```
+```bash
+
 1. 确定数据源和接口
+
    ↓
-2. 创建 Provider 类
+
+1. 创建 Provider 类
+
    ↓
-3. 创建 Service 类
+
+1. 创建 Service 类
+
    ↓
-4. 添加集合元信息
+
+1. 添加集合元信息
+
    ↓
-5. 配置更新参数
+
+1. 配置更新参数
+
    ↓
-6. （可选）创建前端组件
+
+1. （可选）创建前端组件
+
    ↓
-7. 测试验证
-```
+
+1. 测试验证
+
+```bash
 
 ### 快速检查清单
 
@@ -105,7 +129,7 @@ frontend/src/
 - [ ] 测试了批量更新功能
 - [ ] 前端页面可以正常显示数据
 
----
+- --
 
 ## 详细步骤说明
 
@@ -119,12 +143,15 @@ frontend/src/
 import akshare as ak
 
 # 查看接口文档
+
 help(ak.fund_name_em)
 
 # 测试接口
+
 df = ak.fund_name_em()
 print(df.head())
-```
+
+```bash
 
 #### 1.2 分析接口参数
 
@@ -142,7 +169,7 @@ print(df.head())
 - 多字段组合唯一: `["基金代码", "净值日期"]`
 - 多字段组合唯一: `["基金代码", "股票代码", "季度"]`
 
----
+- --
 
 ### 步骤 2: 创建 Provider 类
 
@@ -157,13 +184,13 @@ print(df.head())
 
 在 `app/services/data_sources/funds/providers/` 目录下创建文件：
 
-**文件命名规范**: `{collection_name}_provider.py`
+- *文件命名规范**: `{collection_name}_provider.py`
 
 例如: `fund_new_example_provider.py`
 
 #### 2.3 编写 Provider 代码
 
-**示例 1: 无参数接口（使用 SimpleProvider）**
+- *示例 1: 无参数接口（使用 SimpleProvider）**
 
 ```python
 """
@@ -174,37 +201,38 @@ from app.services.data_sources.base_provider import SimpleProvider
 
 class FundNewExampleProvider(SimpleProvider):
     """新基金示例-数据提供者"""
-    
-    # 集合名称（必须，用于 MongoDB 集合名）
+
+# 集合名称（必须，用于 MongoDB 集合名）
     collection_name = "fund_new_example"
-    
-    # 显示名称（前端显示）
+
+# 显示名称（前端显示）
     display_name = "新基金示例"
-    
-    # akshare 函数名（必须）
+
+# akshare 函数名（必须）
     akshare_func = "fund_name_em"  # 替换为实际的 akshare 函数名
-    
-    # 唯一键（用于去重）
+
+# 唯一键（用于去重）
     unique_keys = ["基金代码"]
-    
-    # 集合描述（可选，会显示在前端）
+
+# 集合描述（可选，会显示在前端）
     collection_description = "新基金示例数据，包括基金代码、名称等信息"
-    
-    # 路由路径（可选，默认 /funds/collections/{collection_name}）
+
+# 路由路径（可选，默认 /funds/collections/{collection_name}）
     collection_route = "/funds/collections/fund_new_example"
-    
-    # 排序顺序（可选，默认 100）
+
+# 排序顺序（可选，默认 100）
     collection_order = 100
-    
-    # 字段信息（可选，用于前端显示字段说明）
+
+# 字段信息（可选，用于前端显示字段说明）
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金唯一标识"},
         {"name": "基金简称", "type": "string", "description": "基金简称"},
         {"name": "基金类型", "type": "string", "description": "基金类型"},
     ]
-```
 
-**示例 2: 单参数接口（使用 BaseProvider）**
+```bash
+
+- *示例 2: 单参数接口（使用 BaseProvider）**
 
 ```python
 """
@@ -215,39 +243,40 @@ from app.services.data_sources.base_provider import BaseProvider
 
 class FundDetailExampleProvider(BaseProvider):
     """基金详情示例-数据提供者"""
-    
+
     collection_name = "fund_detail_example"
     display_name = "基金详情示例"
     akshare_func = "fund_individual_basic_info_xq"  # 替换为实际的函数名
     unique_keys = ["基金代码"]
-    
+
     collection_description = "基金详细信息，包括成立时间、规模、基金经理等"
     collection_route = "/funds/collections/fund_detail_example"
     collection_order = 101
-    
-    # 参数映射：将前端传入的参数映射到 akshare 函数参数
+
+# 参数映射：将前端传入的参数映射到 akshare 函数参数
     param_mapping = {
         "fund_code": "symbol",  # 前端传 fund_code，映射到 akshare 的 symbol
         "symbol": "symbol",     # 也支持直接传 symbol
         "code": "symbol",       # 也支持直接传 code
     }
-    
-    # 必填参数
+
+# 必填参数
     required_params = ["symbol"]
-    
-    # 自动添加参数列：将参数值写入数据中的指定列
+
+# 自动添加参数列：将参数值写入数据中的指定列
     add_param_columns = {
         "symbol": "基金代码",  # 将 symbol 参数值写入 "基金代码" 列
     }
-    
+
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金唯一标识"},
         {"name": "基金名称", "type": "string", "description": "基金全称"},
         {"name": "成立日期", "type": "date", "description": "基金成立日期"},
     ]
-```
 
-**示例 3: 多参数接口（使用 BaseProvider）**
+```bash
+
+- *示例 3: 多参数接口（使用 BaseProvider）**
 
 ```python
 """
@@ -258,17 +287,17 @@ from app.services.data_sources.base_provider import BaseProvider
 
 class FundHoldExampleProvider(BaseProvider):
     """基金持仓示例-数据提供者"""
-    
+
     collection_name = "fund_hold_example"
     display_name = "基金持仓示例"
     akshare_func = "fund_portfolio_hold_em"  # 替换为实际的函数名
     unique_keys = ["基金代码", "股票代码", "季度"]  # 多字段组合唯一
-    
+
     collection_description = "基金持仓股票信息，包括股票代码、持仓比例等"
     collection_route = "/funds/collections/fund_hold_example"
     collection_order = 102
-    
-    # 参数映射
+
+# 参数映射
     param_mapping = {
         "fund_code": "symbol",
         "symbol": "symbol",
@@ -276,62 +305,75 @@ class FundHoldExampleProvider(BaseProvider):
         "date": "date",        # 日期参数，格式：YYYYMMDD
         "year": "date",        # 也支持传年份，会自动转换为日期
     }
-    
-    # 必填参数
+
+# 必填参数
     required_params = ["symbol", "date"]
-    
-    # 自动添加参数列
+
+# 自动添加参数列
     add_param_columns = {
         "symbol": "基金代码",
         "date": "季度",  # 将日期参数写入 "季度" 列
     }
-    
-    # 数据转换（可选）：在保存前对数据进行处理
+
+# 数据转换（可选）：在保存前对数据进行处理
     def transform_data(self, df, params=None):
         """
         数据转换
-        
+
         Args:
             df: pandas DataFrame
             params: 调用参数
-            
+
         Returns:
             转换后的 DataFrame
         """
         if df is None or df.empty:
             return df
-        
-        # 示例：添加计算列
+
+# 示例：添加计算列
         if "持仓市值" in df.columns and "持仓数量" in df.columns:
-            df["持仓比例"] = df["持仓市值"] / df["持仓市值"].sum() * 100
-        
+            df["持仓比例"] = df["持仓市值"] / df["持仓市值"].sum() *100
+
         return df
-    
+
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金唯一标识"},
         {"name": "股票代码", "type": "string", "description": "持仓股票代码"},
         {"name": "季度", "type": "string", "description": "数据所属季度"},
         {"name": "持仓比例", "type": "float", "description": "持仓占比"},
     ]
-```
+
+```bash
 
 #### 2.4 Provider 类属性说明
 
 | 属性 | 类型 | 必填 | 说明 |
+
 |------|------|------|------|
+
 | `collection_name` | str | ✅ | 集合名称，用于 MongoDB 集合名 |
+
 | `akshare_func` | str | ✅ | akshare 函数名 |
+
 | `unique_keys` | List[str] | ✅ | 唯一键列表，用于去重 |
+
 | `display_name` | str | ❌ | 显示名称，默认从 metadata 读取 |
+
 | `collection_description` | str | ❌ | 集合描述 |
+
 | `collection_route` | str | ❌ | 路由路径 |
+
 | `collection_order` | int | ❌ | 排序顺序，默认 100 |
+
 | `param_mapping` | Dict[str, str] | ❌ | 参数映射字典 |
+
 | `required_params` | List[str] | ❌ | 必填参数列表 |
+
 | `add_param_columns` | Dict[str, str] | ❌ | 自动添加参数列 |
+
 | `field_info` | List[Dict] | ❌ | 字段信息列表 |
 
----
+- --
 
 ### 步骤 3: 创建 Service 类
 
@@ -339,13 +381,13 @@ class FundHoldExampleProvider(BaseProvider):
 
 在 `app/services/data_sources/funds/services/` 目录下创建文件：
 
-**文件命名规范**: `{collection_name}_service.py`
+- *文件命名规范**: `{collection_name}_service.py`
 
 例如: `fund_new_example_service.py`
 
 #### 3.2 编写 Service 代码
 
-**示例 1: 简单 Service（无批量更新）**
+- *示例 1: 简单 Service（无批量更新）**
 
 ```python
 """
@@ -357,21 +399,22 @@ from ..providers.fund_new_example_provider import FundNewExampleProvider
 
 class FundNewExampleService(BaseService):
     """新基金示例-数据服务"""
-    
-    # 集合名称（必须）
-    collection_name = "fund_new_example"
-    
-    # Provider 类（必须）
-    provider_class = FundNewExampleProvider
-    
-    # 并发控制（可选）
-    batch_concurrency = 3  # 批量更新时的并发数
-    
-    # 进度更新间隔（可选）
-    batch_progress_interval = 10  # 每处理 10 条更新一次进度
-```
 
-**示例 2: 需要批量更新的 Service（从其他集合获取数据源）**
+# 集合名称（必须）
+    collection_name = "fund_new_example"
+
+# Provider 类（必须）
+    provider_class = FundNewExampleProvider
+
+# 并发控制（可选）
+    batch_concurrency = 3  # 批量更新时的并发数
+
+# 进度更新间隔（可选）
+    batch_progress_interval = 10  # 每处理 10 条更新一次进度
+
+```bash
+
+- *示例 2: 需要批量更新的 Service（从其他集合获取数据源）**
 
 ```python
 """
@@ -384,37 +427,38 @@ from ..providers.fund_detail_example_provider import FundDetailExampleProvider
 
 class FundDetailExampleService(BaseService):
     """基金详情示例-数据服务"""
-    
+
     collection_name = "fund_detail_example"
     provider_class = FundDetailExampleProvider
-    
-    # 批量更新配置：从其他集合获取数据源
+
+# 批量更新配置：从其他集合获取数据源
     batch_source_collection = "fund_name_em"  # 数据源集合
     batch_source_field = "基金代码"            # 数据源字段
-    
-    # 并发控制
+
+# 并发控制
     batch_concurrency = 5
     batch_progress_interval = 20
-    
-    # 增量更新：根据基金代码检查是否已存在
+
+# 增量更新：根据基金代码检查是否已存在
     incremental_check_fields = ["基金代码"]
-    
+
     def get_batch_params(self, *args) -> Dict[str, Any]:
         """
         构建批量更新参数
-        
+
         Args:
             args[0]: 基金代码（从 batch_source_collection 获取）
-            
+
         Returns:
             provider 调用参数
         """
         if len(args) >= 1:
             return {"symbol": args[0]}
         return {}
-```
 
-**示例 3: 需要多参数的批量更新 Service**
+```bash
+
+- *示例 3: 需要多参数的批量更新 Service**
 
 ```python
 """
@@ -427,37 +471,38 @@ from ..providers.fund_hold_example_provider import FundHoldExampleProvider
 
 class FundHoldExampleService(BaseService):
     """基金持仓示例-数据服务"""
-    
+
     collection_name = "fund_hold_example"
     provider_class = FundHoldExampleProvider
-    
-    # 批量更新配置
+
+# 批量更新配置
     batch_source_collection = "fund_name_em"
     batch_source_field = "基金代码"
-    
-    # 年份范围配置
+
+# 年份范围配置
     batch_years_range = (2010, None)  # 从 2010 年到今年
-    
-    # 并发控制
+
+# 并发控制
     batch_concurrency = 3
     batch_progress_interval = 10
-    
-    # 增量更新：根据基金代码、股票代码、季度检查
+
+# 增量更新：根据基金代码、股票代码、季度检查
     incremental_check_fields = ["基金代码", "股票代码", "季度"]
-    
+
     def get_batch_params(self, *args) -> Dict[str, Any]:
         """
         构建批量更新参数
-        
+
         Args:
             args[0]: 基金代码
             args[1]: 年份
-            
+
         Returns:
             provider 调用参数
         """
         if len(args) >= 2:
-            # 将年份转换为日期格式（季度末日期）
+
+# 将年份转换为日期格式（季度末日期）
             year = args[1]
             date = f"{year}1231"  # 假设使用年末日期
             return {
@@ -465,22 +510,32 @@ class FundHoldExampleService(BaseService):
                 "date": date
             }
         return {}
-```
+
+```bash
 
 #### 3.3 Service 类属性说明
 
 | 属性 | 类型 | 必填 | 说明 |
+
 |------|------|------|------|
+
 | `collection_name` | str | ✅ | 集合名称，必须与 Provider 一致 |
+
 | `provider_class` | Type[BaseProvider] | ✅ | Provider 类 |
+
 | `batch_source_collection` | str | ❌ | 批量更新数据源集合 |
+
 | `batch_source_field` | str | ❌ | 批量更新数据源字段 |
+
 | `batch_years_range` | Tuple[int, Optional[int]] | ❌ | 年份范围，如 (2010, None) |
+
 | `batch_concurrency` | int | ❌ | 并发数，默认 3 |
+
 | `batch_progress_interval` | int | ❌ | 进度更新间隔，默认 10 |
+
 | `incremental_check_fields` | List[str] | ❌ | 增量更新检查字段 |
 
----
+- --
 
 ### 步骤 4: 添加集合元信息
 
@@ -488,8 +543,9 @@ class FundHoldExampleService(BaseService):
 
 ```python
 FUND_COLLECTION_METADATA = {
-    # ... 其他集合 ...
-    
+
+# ... 其他集合 ...
+
     'fund_new_example': {
         'display_name': '新基金示例',
         'description': '新基金示例数据，包括基金代码、名称等信息',
@@ -497,15 +553,16 @@ FUND_COLLECTION_METADATA = {
         'order': 100,  # 设置合适的排序值
     },
 }
-```
 
-**注意**: 
+```bash
+
+- *注意**:
 - `display_name`: 前端显示的名称
 - `description`: 集合描述，会显示在前端
 - `route`: 前端路由路径
 - `order`: 排序顺序，数字越小越靠前
 
----
+- --
 
 ### 步骤 5: 配置更新参数
 
@@ -515,8 +572,9 @@ FUND_COLLECTION_METADATA = {
 
 ```python
 FUND_UPDATE_CONFIGS = {
-    # ... 其他配置 ...
-    
+
+# ... 其他配置 ...
+
     "fund_new_example": {
         "display_name": "新基金示例",
         "update_description": "将从数据源获取所有新基金示例数据",
@@ -532,7 +590,8 @@ FUND_UPDATE_CONFIGS = {
         }
     },
 }
-```
+
+```bash
 
 #### 5.2 单参数接口配置
 
@@ -560,7 +619,8 @@ FUND_UPDATE_CONFIGS = {
         "params": []  # 批量更新时从 batch_source_collection 获取参数
     }
 },
-```
+
+```bash
 
 #### 5.3 多参数接口配置
 
@@ -615,17 +675,22 @@ FUND_UPDATE_CONFIGS = {
         ]
     }
 },
-```
+
+```bash
 
 #### 5.4 参数类型说明
 
 | 类型 | 说明 | 示例 |
+
 |------|------|------|
+
 | `text` | 文本输入 | 基金代码、日期字符串 |
+
 | `number` | 数字输入 | 年份、数量 |
+
 | `select` | 下拉选择 | 需要提供 `options` 字段 |
 
-**select 类型示例**:
+- *select 类型示例**:
 
 ```python
 {
@@ -639,9 +704,10 @@ FUND_UPDATE_CONFIGS = {
         {"label": "混合型", "value": "混合型"},
     ]
 }
-```
 
----
+```bash
+
+- --
 
 ### 步骤 6: （可选）创建前端组件
 
@@ -653,7 +719,7 @@ FUND_UPDATE_CONFIGS = {
 
 如果需要自定义功能（如特殊图表、筛选器等），在 `frontend/src/views/Funds/collections/` 目录下创建组件：
 
-**文件命名规范**: `{PascalCase(collection_name)}.vue`
+- *文件命名规范**: `{PascalCase(collection_name)}.vue`
 
 例如: `FundNewExample.vue`
 
@@ -693,9 +759,10 @@ const customFilter = ref('')
 <style lang="scss" scoped>
 @use '@/styles/collection.scss' as *;
 </style>
-```
 
----
+```bash
+
+- --
 
 ## 代码示例
 
@@ -712,34 +779,35 @@ from app.services.data_sources.base_provider import BaseProvider
 
 class FundRatingExampleProvider(BaseProvider):
     """基金评级示例-数据提供者"""
-    
+
     collection_name = "fund_rating_example"
     display_name = "基金评级示例"
     akshare_func = "fund_rating_all_em"  # 假设的 akshare 函数
     unique_keys = ["基金代码", "评级日期"]
-    
+
     collection_description = "基金评级数据，包括评级机构、评级等级等"
     collection_route = "/funds/collections/fund_rating_example"
     collection_order = 103
-    
+
     param_mapping = {
         "date": "date",
         "rating_date": "date",
     }
-    
+
     required_params = ["date"]
-    
+
     add_param_columns = {
         "date": "评级日期",
     }
-    
+
     field_info = [
         {"name": "基金代码", "type": "string", "description": "基金唯一标识"},
         {"name": "评级日期", "type": "string", "description": "评级日期"},
         {"name": "评级机构", "type": "string", "description": "评级机构名称"},
         {"name": "评级等级", "type": "string", "description": "评级等级"},
     ]
-```
+
+```bash
 
 #### 2. Service (`fund_rating_example_service.py`)
 
@@ -754,23 +822,24 @@ from ..providers.fund_rating_example_provider import FundRatingExampleProvider
 
 class FundRatingExampleService(BaseService):
     """基金评级示例-数据服务"""
-    
+
     collection_name = "fund_rating_example"
     provider_class = FundRatingExampleProvider
-    
+
     batch_source_collection = "fund_name_em"
     batch_source_field = "基金代码"
-    
+
     batch_concurrency = 5
     batch_progress_interval = 20
-    
+
     incremental_check_fields = ["基金代码", "评级日期"]
-    
+
     def get_batch_params(self, *args) -> Dict[str, Any]:
         """构建批量更新参数"""
         if len(args) >= 1:
             fund_code = args[0]
-            # 假设需要当前日期作为评级日期
+
+# 假设需要当前日期作为评级日期
             from datetime import datetime
             date = datetime.now().strftime("%Y%m%d")
             return {
@@ -778,7 +847,8 @@ class FundRatingExampleService(BaseService):
                 "date": date
             }
         return {}
-```
+
+```bash
 
 #### 3. 元信息配置 (`collection_metadata.py`)
 
@@ -789,7 +859,8 @@ class FundRatingExampleService(BaseService):
     'route': '/funds/collections/fund_rating_example',
     'order': 103,
 },
-```
+
+```bash
 
 #### 4. 更新参数配置 (`fund_update_config.py`)
 
@@ -823,9 +894,10 @@ class FundRatingExampleService(BaseService):
         "params": []
     }
 },
-```
 
----
+```bash
+
+- --
 
 ## 最佳实践
 
@@ -874,26 +946,32 @@ class FundRatingExampleService(BaseService):
 - 说明参数含义和返回值
 - 提供使用示例
 
----
+- --
 
 ## 常见问题
 
 ### Q1: 如何测试新创建的 Provider？
 
 ```python
+
 # 在 Python 交互环境中测试
+
 from app.services.data_sources.funds.providers.fund_new_example_provider import FundNewExampleProvider
 
 provider = FundNewExampleProvider()
 params = {}  # 或 {"symbol": "000001"}
+
 df = provider.fetch_data(params)
 print(df.head())
-```
+
+```bash
 
 ### Q2: 如何测试新创建的 Service？
 
 ```python
+
 # 在 Python 交互环境中测试
+
 from app.services.data_sources.funds.services.fund_new_example_service import FundNewExampleService
 from app.core.database import get_mongo_db
 
@@ -901,11 +979,14 @@ db = get_mongo_db()
 service = FundNewExampleService(db)
 
 # 测试单条更新
+
 result = await service.update_single_data("task_id", {"fund_code": "000001"})
 
 # 测试批量更新
+
 result = await service.update_batch_data("task_id", {})
-```
+
+```bash
 
 ### Q3: 前端页面不显示新集合？
 
@@ -936,21 +1017,22 @@ def transform_data(self, df, params=None):
     """自定义数据转换"""
     if df is None or df.empty:
         return df
-    
-    # 添加自定义列
+
+# 添加自定义列
     df["自定义列"] = df["原列"] * 2
-    
-    # 数据清洗
+
+# 数据清洗
     df = df.dropna(subset=["重要字段"])
-    
+
     return df
-```
+
+```bash
 
 ### Q7: 如何支持文件上传导入？
 
 如果集合支持文件上传，需要在路由中添加对应的上传接口。参考 `app/routers/funds.py` 中的 `upload_fund_etf_dividend_sina` 函数。
 
----
+- --
 
 ## 测试验证
 
@@ -976,16 +1058,19 @@ def test_provider_fetch_data():
 @pytest.mark.asyncio
 async def test_service_update_single():
     """测试 Service 单条更新"""
-    # 实现测试逻辑
+
+# 实现测试逻辑
     pass
 
 
 @pytest.mark.asyncio
 async def test_service_update_batch():
     """测试 Service 批量更新"""
-    # 实现测试逻辑
+
+# 实现测试逻辑
     pass
-```
+
+```bash
 
 ### 2. 集成测试
 
@@ -995,7 +1080,7 @@ async def test_service_update_batch():
    - 测试单条更新接口
    - 测试批量更新接口
 
-2. **测试前端页面**:
+1. **测试前端页面**:
    - 验证页面可以正常加载
    - 验证数据可以正常显示
    - 验证更新功能可以正常使用
@@ -1007,12 +1092,12 @@ async def test_service_update_batch():
    - 检查数据格式是否正确
    - 检查唯一键是否唯一
 
-2. **数据准确性**:
+1. **数据准确性**:
    - 对比 akshare 原始数据
    - 验证数据转换是否正确
    - 验证计算字段是否正确
 
----
+- --
 
 ## 总结
 
@@ -1028,7 +1113,7 @@ async def test_service_update_batch():
 
 按照本文档的步骤，你可以快速、规范地新增一个基金数据集合。如有问题，请参考常见问题部分或联系团队。
 
----
+- --
 
 ## 附录
 

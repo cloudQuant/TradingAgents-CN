@@ -1,4 +1,5 @@
 # 货币单位使用指南
+
 # Currency Unit Guide
 
 ## 📋 概述 / Overview
@@ -11,34 +12,50 @@ TradingAgents-CN supports multiple currency units for model pricing. Different L
 
 ### 国内厂家 / Domestic Providers
 
-以下厂家使用 **人民币（CNY）** 计费：
+以下厂家使用 **人民币（CNY）**计费：
 
-The following providers use **Chinese Yuan (CNY)** for billing:
+The following providers use**Chinese Yuan (CNY)**for billing:
 
 | 厂家 Provider | 货币 Currency | 说明 Notes |
+
 |--------------|---------------|-----------|
+
 | 阿里百炼 (DashScope) | CNY | 通义千问系列模型 |
+
 | DeepSeek | CNY | DeepSeek 系列模型 |
-| 智谱AI (Zhipu) | CNY | GLM 系列模型 |
+
+| 智谱 AI (Zhipu) | CNY | GLM 系列模型 |
+
 | 百度千帆 (Qianfan) | CNY | 文心一言系列 |
+
 | 腾讯混元 (Tencent) | CNY | 混元系列模型 |
+
 | 月之暗面 (Moonshot) | CNY | Kimi 系列模型 |
+
 | 零一万物 (01.AI) | CNY | Yi 系列模型 |
 
 ### 国际厂家 / International Providers
 
-以下厂家使用 **美元（USD）** 计费：
+以下厂家使用**美元（USD）**计费：
 
-The following providers use **US Dollar (USD)** for billing:
+The following providers use**US Dollar (USD)** for billing:
 
 | 厂家 Provider | 货币 Currency | 说明 Notes |
+
 |--------------|---------------|-----------|
+
 | OpenAI | USD | GPT 系列模型 |
+
 | Google | USD | Gemini 系列模型 |
+
 | Anthropic | USD | Claude 系列模型 |
+
 | Mistral AI | USD | Mistral 系列模型 |
+
 | Cohere | USD | Command 系列模型 |
+
 | OpenRouter | USD | 多模型聚合平台 |
+
 | SiliconFlow | USD | 硅基流动平台 |
 
 ## 💰 定价示例 / Pricing Examples
@@ -53,9 +70,10 @@ The following providers use **US Dollar (USD)** for billing:
   "output_price_per_1k": 0.0006,
   "currency": "CNY"
 }
-```
 
-**说明 / Explanation**:
+```bash
+
+- *说明 / Explanation**:
 - 输入：0.0003 元/1000 tokens
 - 输出：0.0006 元/1000 tokens
 - Input: ¥0.0003 per 1K tokens
@@ -71,9 +89,10 @@ The following providers use **US Dollar (USD)** for billing:
   "output_price_per_1k": 0.015,
   "currency": "USD"
 }
-```
 
-**说明 / Explanation**:
+```bash
+
+- *说明 / Explanation**:
 - 输入：0.005 美元/1000 tokens
 - 输出：0.015 美元/1000 tokens
 - Input: $0.005 per 1K tokens
@@ -83,10 +102,11 @@ The following providers use **US Dollar (USD)** for billing:
 
 ### 当前汇率参考 / Current Exchange Rate Reference
 
-```
-1 USD ≈ 7.2 CNY (2025年参考汇率)
+```bash
+1 USD ≈ 7.2 CNY (2025 年参考汇率)
 1 USD ≈ 7.2 CNY (2025 Reference Rate)
-```
+
+```bash
 
 ### 成本对比示例 / Cost Comparison Example
 
@@ -94,17 +114,21 @@ The following providers use **US Dollar (USD)** for billing:
 
 Assuming 10,000 input tokens and 2,000 output tokens:
 
-**通义千问 Turbo (CNY)**:
-```
+- *通义千问 Turbo (CNY)**:
+
+```bash
 成本 = (10 × 0.0003) + (2 × 0.0006) = 0.0042 元
 Cost = (10 × 0.0003) + (2 × 0.0006) = ¥0.0042
-```
 
-**GPT-4o (USD)**:
-```
+```bash
+
+- *GPT-4o (USD)**:
+
+```bash
 成本 = (10 × 0.005) + (2 × 0.015) = 0.08 美元 ≈ 0.576 元
 Cost = (10 × 0.005) + (2 × 0.015) = $0.08 ≈ ¥0.576
-```
+
+```bash
 
 ## 📊 前端显示规范 / Frontend Display Standards
 
@@ -122,7 +146,8 @@ In the frontend interface, prices should clearly display the currency unit:
 <!-- 错误示例 / Wrong Example -->
 <span>¥{{ price }}/1K tokens</span>
 <!-- 不应该硬编码货币符号 / Should not hardcode currency symbol -->
-```
+
+```bash
 
 ### 货币符号映射 / Currency Symbol Mapping
 
@@ -134,7 +159,8 @@ const currencySymbols = {
   'GBP': '£',
   'JPY': '¥'
 }
-```
+
+```bash
 
 ## ⚙️ 配置说明 / Configuration Guide
 
@@ -145,13 +171,16 @@ const currencySymbols = {
 When configuring a new model, ensure the currency unit is set correctly:
 
 ```python
+
 # Python 配置示例
+
 PricingConfig(
     provider="openai",
     model_name="gpt-4o-mini",
     input_price_per_1k=0.00015,
     output_price_per_1k=0.0006,
     currency="USD"  # 国际厂家使用 USD
+
 )
 
 PricingConfig(
@@ -160,8 +189,10 @@ PricingConfig(
     input_price_per_1k=0.02,
     output_price_per_1k=0.06,
     currency="CNY"  # 国内厂家使用 CNY
+
 )
-```
+
+```bash
 
 ### 前端配置示例 / Frontend Configuration Example
 
@@ -174,7 +205,8 @@ const modelConfig = {
   output_price_per_1k: 0.005,
   currency: 'USD'  // Google 使用 USD
 }
-```
+
+```bash
 
 ## ⚠️ 注意事项 / Important Notes
 
@@ -218,10 +250,10 @@ const modelConfig = {
 For currency-related questions, please contact:
 
 - 📧 邮箱 / Email: hsliup@163.com
-- 💬 QQ群 / QQ Group: 782124367
-- 🌐 GitHub: https://github.com/hsliuping/TradingAgents-CN
+- 💬 QQ 群 / QQ Group: 782124367
+- 🌐 GitHub: <https://github.com/hsliuping/TradingAgents-CN>
 
----
+- --
 
-**最后更新 / Last Updated**: 2025年10月 / October 2025  
-**版本 / Version**: v1.0
+- *最后更新 / Last Updated**: 2025 年 10 月 / October 2025
+- *版本 / Version**: v1.0

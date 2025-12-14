@@ -1,23 +1,23 @@
 # 多市场数据架构 - 代码模板补充
 
-> **配套文档**: [多市场数据架构开发指南](./2025-10-21-multi-market-data-architecture-guide.md)  
-> **文档版本**: v1.0  
+> **配套文档**: [多市场数据架构开发指南](./2025-10-21-multi-market-data-architecture-guide.md)
+> **文档版本**: v1.0
 > **创建日期**: 2025-10-21
 
-本文档提供多市场数据架构的详细代码模板，包括服务层、API层、测试等。
+本文档提供多市场数据架构的详细代码模板，包括服务层、API 层、测试等。
 
----
+- --
 
 ## 目录
 
 - [1. 统一数据服务](#1-统一数据服务)
 - [2. 港股数据服务](#2-港股数据服务)
 - [3. 美股数据服务](#3-美股数据服务)
-- [4. 统一API端点](#4-统一api端点)
+- [4. 统一 API 端点](#4-统一 api 端点)
 - [5. 数据迁移脚本](#5-数据迁移脚本)
 - [6. 测试代码](#6-测试代码)
 
----
+- --
 
 ## 1. 统一数据服务
 
@@ -40,20 +40,21 @@ logger = logging.getLogger("webapi")
 
 class UnifiedMarketDataService:
     """统一市场数据服务"""
-    
+
     def __init__(self):
-        # 延迟导入，避免循环依赖
+
+# 延迟导入，避免循环依赖
         self._cn_service = None
         self._hk_service = None
         self._us_service = None
-    
+
     @property
     def cn_service(self):
-        """A股数据服务"""
+        """A 股数据服务"""
         if self._cn_service is None:
             self._cn_service = get_stock_data_service()
         return self._cn_service
-    
+
     @property
     def hk_service(self):
         """港股数据服务"""
@@ -61,7 +62,7 @@ class UnifiedMarketDataService:
             from app.services.hk_stock_data_service import get_hk_stock_data_service
             self._hk_service = get_hk_stock_data_service()
         return self._hk_service
-    
+
     @property
     def us_service(self):
         """美股数据服务"""
@@ -69,14 +70,14 @@ class UnifiedMarketDataService:
             from app.services.us_stock_data_service import get_us_stock_data_service
             self._us_service = get_us_stock_data_service()
         return self._us_service
-    
+
     async def get_stock_info(self, full_symbol: str) -> Optional[Dict]:
         """
         统一获取股票信息
-        
+
         Args:
             full_symbol: 完整标识符（如 "XSHE:000001", "XHKG:0700", "XNAS:AAPL"）
-        
+
         Returns:
             标准化的股票信息
         """
@@ -84,9 +85,9 @@ class UnifiedMarketDataService:
             parsed = parse_full_symbol(full_symbol)
             market = parsed["market"]
             symbol = parsed["symbol"]
-            
+
             logger.info(f"📊 获取股票信息: {full_symbol} (市场: {market}, 代码: {symbol})")
-            
+
             if market == "CN":
                 return await self.cn_service.get_stock_info(symbol)
             elif market == "HK":
@@ -95,11 +96,11 @@ class UnifiedMarketDataService:
                 return await self.us_service.get_stock_info(symbol)
             else:
                 raise ValueError(f"不支持的市场: {market}")
-        
+
         except Exception as e:
             logger.error(f"❌ 获取股票信息失败: {full_symbol}, 错误: {e}")
             raise
-    
+
     async def get_historical_data(
         self,
         full_symbol: str,
@@ -109,23 +110,23 @@ class UnifiedMarketDataService:
     ) -> pd.DataFrame:
         """
         统一获取历史数据
-        
+
         Args:
             full_symbol: 完整标识符
             start_date: 开始日期 (YYYY-MM-DD)
             end_date: 结束日期 (YYYY-MM-DD)
             period: 数据周期 (daily/weekly/monthly)
-        
+
         Returns:
-            标准化的历史数据DataFrame
+            标准化的历史数据 DataFrame
         """
         try:
             parsed = parse_full_symbol(full_symbol)
             market = parsed["market"]
             symbol = parsed["symbol"]
-            
+
             logger.info(f"📈 获取历史数据: {full_symbol} ({start_date} ~ {end_date})")
-            
+
             if market == "CN":
                 data = await self.cn_service.get_historical_data(symbol, start_date, end_date, period)
             elif market == "HK":
@@ -134,14 +135,14 @@ class UnifiedMarketDataService:
                 data = await self.us_service.get_historical_data(symbol, start_date, end_date, period)
             else:
                 raise ValueError(f"不支持的市场: {market}")
-            
-            # 标准化DataFrame字段
+
+# 标准化 DataFrame 字段
             return self._normalize_dataframe(data, market)
-        
+
         except Exception as e:
             logger.error(f"❌ 获取历史数据失败: {full_symbol}, 错误: {e}")
             raise
-    
+
     async def search_stocks(
         self,
         keyword: str,
@@ -150,69 +151,72 @@ class UnifiedMarketDataService:
     ) -> List[Dict]:
         """
         跨市场搜索股票
-        
+
         Args:
             keyword: 搜索关键词（代码或名称）
-            market: 市场筛选（CN/HK/US），None表示全市场
+            market: 市场筛选（CN/HK/US），None 表示全市场
             limit: 返回数量限制
-        
+
         Returns:
             股票列表
         """
         results = []
-        
+
         try:
             if market is None or market == "CN":
                 cn_results = await self.cn_service.search_stocks(keyword, limit)
                 results.extend(cn_results)
-            
+
             if market is None or market == "HK":
                 hk_results = await self.hk_service.search_stocks(keyword, limit)
                 results.extend(hk_results)
-            
+
             if market is None or market == "US":
                 us_results = await self.us_service.search_stocks(keyword, limit)
                 results.extend(us_results)
-            
-            # 按相关度排序并限制数量
+
+# 按相关度排序并限制数量
             return results[:limit]
-        
+
         except Exception as e:
             logger.error(f"❌ 搜索股票失败: {keyword}, 错误: {e}")
             return []
-    
+
     def _normalize_dataframe(self, df: pd.DataFrame, market: str) -> pd.DataFrame:
         """
-        标准化DataFrame字段
-        
+        标准化 DataFrame 字段
+
         确保所有市场返回统一的字段名：
+
         - date: 交易日期
         - open, high, low, close: OHLC
         - volume: 成交量
         - amount: 成交额
+
         """
         if df is None or df.empty:
             return df
-        
-        # 字段映射（根据市场调整）
+
+# 字段映射（根据市场调整）
         column_mapping = {
             "trade_date": "date",
             "vol": "volume",
             "turnover": "amount"
         }
-        
+
         df = df.rename(columns=column_mapping)
-        
-        # 确保必需字段存在
+
+# 确保必需字段存在
         required_columns = ["date", "open", "high", "low", "close", "volume"]
         for col in required_columns:
             if col not in df.columns:
                 df[col] = None
-        
+
         return df
 
 
 # 全局服务实例
+
 _unified_service = None
 
 def get_unified_market_data_service() -> UnifiedMarketDataService:
@@ -221,9 +225,10 @@ def get_unified_market_data_service() -> UnifiedMarketDataService:
     if _unified_service is None:
         _unified_service = UnifiedMarketDataService()
     return _unified_service
-```
 
----
+```bash
+
+- --
 
 ## 2. 港股数据服务
 
@@ -246,13 +251,13 @@ logger = logging.getLogger("webapi")
 
 class HKStockDataService:
     """港股数据服务"""
-    
+
     def __init__(self):
         self.db = None
         self.basic_info_collection = None
         self.daily_quotes_collection = None
         self.market_quotes_collection = None
-    
+
     async def initialize(self):
         """初始化数据库连接"""
         if self.db is None:
@@ -261,36 +266,36 @@ class HKStockDataService:
             self.daily_quotes_collection = self.db.stock_daily_quotes_hk
             self.market_quotes_collection = self.db.market_quotes_hk
             logger.info("✅ 港股数据服务初始化完成")
-    
+
     async def get_stock_info(self, symbol: str) -> Optional[Dict]:
         """
         获取港股基础信息
-        
+
         Args:
             symbol: 港股代码（如 "0700"）
-        
+
         Returns:
             股票基础信息
         """
         await self.initialize()
-        
-        # 标准化代码
+
+# 标准化代码
         normalized = normalize_symbol("yfinance", symbol, "HK")
         symbol = normalized["symbol"]
-        
+
         logger.info(f"📊 查询港股信息: {symbol}")
-        
-        # 查询数据库
+
+# 查询数据库
         doc = await self.basic_info_collection.find_one({"symbol": symbol})
-        
+
         if doc:
             doc["_id"] = str(doc["_id"])
             logger.info(f"✅ 找到港股信息: {symbol} - {doc.get('name', 'N/A')}")
             return doc
-        
+
         logger.warning(f"⚠️ 未找到港股信息: {symbol}")
         return None
-    
+
     async def get_historical_data(
         self,
         symbol: str,
@@ -300,25 +305,25 @@ class HKStockDataService:
     ) -> pd.DataFrame:
         """
         获取港股历史数据
-        
+
         Args:
             symbol: 港股代码
             start_date: 开始日期 (YYYY-MM-DD)
             end_date: 结束日期 (YYYY-MM-DD)
             period: 数据周期
-        
+
         Returns:
-            历史数据DataFrame
+            历史数据 DataFrame
         """
         await self.initialize()
-        
-        # 标准化代码
+
+# 标准化代码
         normalized = normalize_symbol("yfinance", symbol, "HK")
         symbol = normalized["symbol"]
-        
+
         logger.info(f"📈 查询港股历史数据: {symbol} ({start_date} ~ {end_date})")
-        
-        # 构建查询条件
+
+# 构建查询条件
         query = {
             "symbol": symbol,
             "period": period,
@@ -327,39 +332,39 @@ class HKStockDataService:
                 "$lte": end_date.replace("-", "")
             }
         }
-        
-        # 查询数据
+
+# 查询数据
         cursor = self.daily_quotes_collection.find(query).sort("trade_date", 1)
         docs = await cursor.to_list(length=None)
-        
+
         if not docs:
             logger.warning(f"⚠️ 港股历史数据为空: {symbol}")
             return pd.DataFrame()
-        
+
         logger.info(f"✅ 获取港股历史数据: {symbol}, {len(docs)}条记录")
-        
-        # 转换为DataFrame
+
+# 转换为 DataFrame
         df = pd.DataFrame(docs)
         df = df.drop(columns=["_id"], errors="ignore")
-        
+
         return df
-    
+
     async def search_stocks(self, keyword: str, limit: int = 20) -> List[Dict]:
         """
         搜索港股
-        
+
         Args:
             keyword: 搜索关键词
             limit: 返回数量
-        
+
         Returns:
             股票列表
         """
         await self.initialize()
-        
+
         logger.info(f"🔍 搜索港股: {keyword}")
-        
-        # 构建查询条件（代码或名称）
+
+# 构建查询条件（代码或名称）
         query = {
             "$or": [
                 {"symbol": {"$regex": keyword, "$options": "i"}},
@@ -367,31 +372,34 @@ class HKStockDataService:
                 {"name_en": {"$regex": keyword, "$options": "i"}}
             ]
         }
-        
+
         cursor = self.basic_info_collection.find(query).limit(limit)
         docs = await cursor.to_list(length=limit)
-        
-        # 转换_id
+
+# 转换_id
         for doc in docs:
             doc["_id"] = str(doc["_id"])
-        
+
         logger.info(f"✅ 搜索港股结果: {len(docs)}条")
         return docs
-    
+
     async def sync_basic_info(self):
         """同步港股基础信息"""
         logger.info("🔄 开始同步港股基础信息...")
-        # TODO: 实现从Yahoo Finance同步
+
+# TODO: 实现从 Yahoo Finance 同步
         pass
-    
+
     async def sync_historical_data(self, symbol: str, start_date: str, end_date: str):
         """同步港股历史数据"""
         logger.info(f"🔄 开始同步港股历史数据: {symbol}")
-        # TODO: 实现从Yahoo Finance同步
+
+# TODO: 实现从 Yahoo Finance 同步
         pass
 
 
 # 全局服务实例
+
 _hk_service = None
 
 def get_hk_stock_data_service() -> HKStockDataService:
@@ -400,9 +408,10 @@ def get_hk_stock_data_service() -> HKStockDataService:
     if _hk_service is None:
         _hk_service = HKStockDataService()
     return _hk_service
-```
 
----
+```bash
+
+- --
 
 ## 3. 美股数据服务
 
@@ -425,13 +434,13 @@ logger = logging.getLogger("webapi")
 
 class USStockDataService:
     """美股数据服务"""
-    
+
     def __init__(self):
         self.db = None
         self.basic_info_collection = None
         self.daily_quotes_collection = None
         self.market_quotes_collection = None
-    
+
     async def initialize(self):
         """初始化数据库连接"""
         if self.db is None:
@@ -440,26 +449,26 @@ class USStockDataService:
             self.daily_quotes_collection = self.db.stock_daily_quotes_us
             self.market_quotes_collection = self.db.market_quotes_us
             logger.info("✅ 美股数据服务初始化完成")
-    
+
     async def get_stock_info(self, symbol: str) -> Optional[Dict]:
         """获取美股基础信息"""
         await self.initialize()
-        
+
         normalized = normalize_symbol("yfinance", symbol, "US")
         symbol = normalized["symbol"]
-        
+
         logger.info(f"📊 查询美股信息: {symbol}")
-        
+
         doc = await self.basic_info_collection.find_one({"symbol": symbol})
-        
+
         if doc:
             doc["_id"] = str(doc["_id"])
             logger.info(f"✅ 找到美股信息: {symbol} - {doc.get('name', 'N/A')}")
             return doc
-        
+
         logger.warning(f"⚠️ 未找到美股信息: {symbol}")
         return None
-    
+
     async def get_historical_data(
         self,
         symbol: str,
@@ -469,12 +478,12 @@ class USStockDataService:
     ) -> pd.DataFrame:
         """获取美股历史数据"""
         await self.initialize()
-        
+
         normalized = normalize_symbol("yfinance", symbol, "US")
         symbol = normalized["symbol"]
-        
+
         logger.info(f"📈 查询美股历史数据: {symbol} ({start_date} ~ {end_date})")
-        
+
         query = {
             "symbol": symbol,
             "period": period,
@@ -483,45 +492,46 @@ class USStockDataService:
                 "$lte": end_date.replace("-", "")
             }
         }
-        
+
         cursor = self.daily_quotes_collection.find(query).sort("trade_date", 1)
         docs = await cursor.to_list(length=None)
-        
+
         if not docs:
             logger.warning(f"⚠️ 美股历史数据为空: {symbol}")
             return pd.DataFrame()
-        
+
         logger.info(f"✅ 获取美股历史数据: {symbol}, {len(docs)}条记录")
-        
+
         df = pd.DataFrame(docs)
         df = df.drop(columns=["_id"], errors="ignore")
-        
+
         return df
-    
+
     async def search_stocks(self, keyword: str, limit: int = 20) -> List[Dict]:
         """搜索美股"""
         await self.initialize()
-        
+
         logger.info(f"🔍 搜索美股: {keyword}")
-        
+
         query = {
             "$or": [
                 {"symbol": {"$regex": keyword, "$options": "i"}},
                 {"name": {"$regex": keyword, "$options": "i"}}
             ]
         }
-        
+
         cursor = self.basic_info_collection.find(query).limit(limit)
         docs = await cursor.to_list(length=limit)
-        
+
         for doc in docs:
             doc["_id"] = str(doc["_id"])
-        
+
         logger.info(f"✅ 搜索美股结果: {len(docs)}条")
         return docs
 
 
 # 全局服务实例
+
 _us_service = None
 
 def get_us_stock_data_service() -> USStockDataService:
@@ -530,17 +540,18 @@ def get_us_stock_data_service() -> USStockDataService:
     if _us_service is None:
         _us_service = USStockDataService()
     return _us_service
-```
 
----
+```bash
 
-## 4. 统一API端点
+- --
+
+## 4. 统一 API 端点
 
 文件：`app/routers/unified_market.py`
 
 请参考主文档中的完整代码模板。
 
----
+- --
 
 ## 5. 数据迁移脚本
 
@@ -548,7 +559,7 @@ def get_us_stock_data_service() -> USStockDataService:
 
 请参考主文档中的完整代码模板。
 
----
+- --
 
 ## 6. 测试代码
 
@@ -575,7 +586,7 @@ class TestUnifiedMarketService:
     """测试统一市场数据服务"""
 
     async def test_get_cn_stock_info(self):
-        """测试获取A股信息"""
+        """测试获取 A 股信息"""
         service = get_unified_market_data_service()
 
         info = await service.get_stock_info("XSHE:000001")
@@ -606,7 +617,7 @@ class TestUnifiedMarketService:
         assert info["market"] == "US"
 
     async def test_get_historical_data_cn(self):
-        """测试获取A股历史数据"""
+        """测试获取 A 股历史数据"""
         service = get_unified_market_data_service()
 
         df = await service.get_historical_data(
@@ -621,7 +632,7 @@ class TestUnifiedMarketService:
         assert "close" in df.columns
 
     async def test_search_stocks_cn(self):
-        """测试搜索A股"""
+        """测试搜索 A 股"""
         service = get_unified_market_data_service()
 
         results = await service.search_stocks("平安", market="CN", limit=10)
@@ -636,16 +647,18 @@ class TestUnifiedMarketService:
         results = await service.search_stocks("银行", market=None, limit=20)
 
         assert len(results) > 0
-        # 可能包含多个市场的结果
-```
 
-### 6.3 API端点测试
+# 可能包含多个市场的结果
+
+```bash
+
+### 6.3 API 端点测试
 
 文件：`tests/test_unified_market_api.py`
 
 ```python
 """
-测试统一市场API端点
+测试统一市场 API 端点
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -655,10 +668,10 @@ client = TestClient(app)
 
 
 class TestUnifiedMarketAPI:
-    """测试统一市场API"""
+    """测试统一市场 API"""
 
     def test_get_stock_info_cn(self):
-        """测试获取A股信息API"""
+        """测试获取 A 股信息 API"""
         response = client.get(
             "/api/markets/CN/stocks/000001",
             headers={"Authorization": "Bearer test_token"}
@@ -670,7 +683,7 @@ class TestUnifiedMarketAPI:
         assert data["data"]["symbol"] == "000001"
 
     def test_get_historical_data_cn(self):
-        """测试获取A股历史数据API"""
+        """测试获取 A 股历史数据 API"""
         response = client.get(
             "/api/markets/CN/stocks/000001/history",
             params={
@@ -687,7 +700,7 @@ class TestUnifiedMarketAPI:
         assert isinstance(data["data"], list)
 
     def test_search_stocks(self):
-        """测试搜索股票API"""
+        """测试搜索股票 API"""
         response = client.get(
             "/api/markets/search",
             params={"keyword": "平安", "market": "CN", "limit": 10},
@@ -700,7 +713,7 @@ class TestUnifiedMarketAPI:
         assert len(data["data"]) > 0
 
     def test_get_market_metadata(self):
-        """测试获取市场元数据API"""
+        """测试获取市场元数据 API"""
         response = client.get(
             "/api/markets/metadata",
             headers={"Authorization": "Bearer test_token"}
@@ -713,9 +726,10 @@ class TestUnifiedMarketAPI:
         assert "CN" in data["data"]["markets"]
         assert "HK" in data["data"]["markets"]
         assert "US" in data["data"]["markets"]
-```
 
----
+```bash
+
+- --
 
 ## 7. 前端工具函数
 
@@ -723,11 +737,13 @@ class TestUnifiedMarketAPI:
 
 ```typescript
 /**
- * 多市场工具函数
- */
+
+ - 多市场工具函数
+ - /
 
 export interface MarketInfo {
   market: 'CN' | 'HK' | 'US'
+
   exchangeMic: string
   exchange: string
   currency: string
@@ -738,16 +754,20 @@ export interface NormalizedSymbol {
   symbol: string
   fullSymbol: string
   market: 'CN' | 'HK' | 'US'
+
   exchangeMic: string
   exchange: string
 }
 
 /**
- * 解析完整标识符
- * @param fullSymbol 完整标识符（如 "XSHE:000001"）
- * @returns 解析结果
- */
+
+ - 解析完整标识符
+ - @param fullSymbol 完整标识符（如 "XSHE:000001"）
+ - @returns 解析结果
+ - /
+
 export function parseFullSymbol(fullSymbol: string): NormalizedSymbol | null {
+
   if (!fullSymbol) return null
 
   if (fullSymbol.includes(':')) {
@@ -779,17 +799,20 @@ export function parseFullSymbol(fullSymbol: string): NormalizedSymbol | null {
 }
 
 /**
- * 推断市场类型
- * @param code 股票代码
- * @returns 市场类型
- */
+
+ - 推断市场类型
+ - @param code 股票代码
+ - @returns 市场类型
+ - /
+
 export function inferMarket(code: string): 'CN' | 'HK' | 'US' {
-  // A股：6位数字
+
+  // A 股：6 位数字
   if (/^\d{6}$/.test(code)) {
     return 'CN'
   }
 
-  // 港股：4-5位数字
+  // 港股：4-5 位数字
   if (/^\d{4,5}$/.test(code)) {
     return 'HK'
   }
@@ -803,6 +826,7 @@ export function inferMarket(code: string): 'CN' | 'HK' | 'US' {
   if (code.includes('.')) {
     const suffix = code.split('.').pop()?.toUpperCase()
     if (['SH', 'SZ', 'BJ', 'SS'].includes(suffix || '')) {
+
       return 'CN'
     }
     if (suffix === 'HK') {
@@ -813,25 +837,31 @@ export function inferMarket(code: string): 'CN' | 'HK' | 'US' {
     }
   }
 
-  return 'CN' // 默认A股
+  return 'CN' // 默认 A 股
 }
 
 /**
- * 推断交易所MIC代码
- * @param symbol 股票代码
- * @param market 市场类型
- * @returns 交易所MIC代码
- */
+
+ - 推断交易所 MIC 代码
+ - @param symbol 股票代码
+ - @param market 市场类型
+ - @returns 交易所 MIC 代码
+ - /
+
 export function inferExchangeMic(symbol: string, market: 'CN' | 'HK' | 'US'): string {
+
   if (market === 'CN') {
-    // A股：根据代码前缀判断
+    // A 股：根据代码前缀判断
     if (symbol.startsWith('60') || symbol.startsWith('68') || symbol.startsWith('90')) {
+
       return 'XSHG' // 上海
     }
     if (symbol.startsWith('00') || symbol.startsWith('30') || symbol.startsWith('20')) {
+
       return 'XSHE' // 深圳
     }
     if (symbol.startsWith('8') || symbol.startsWith('4')) {
+
       return 'XBEJ' // 北京
     }
     return 'XSHG' // 默认上海
@@ -849,12 +879,16 @@ export function inferExchangeMic(symbol: string, market: 'CN' | 'HK' | 'US'): st
 }
 
 /**
- * MIC代码转市场类型
- * @param exchangeMic 交易所MIC代码
- * @returns 市场类型
- */
+
+ - MIC 代码转市场类型
+ - @param exchangeMic 交易所 MIC 代码
+ - @returns 市场类型
+ - /
+
 export function exchangeMicToMarket(exchangeMic: string): 'CN' | 'HK' | 'US' {
+
   const mapping: Record<string, 'CN' | 'HK' | 'US'> = {
+
     XSHG: 'CN',
     XSHE: 'CN',
     XBEJ: 'CN',
@@ -863,13 +897,16 @@ export function exchangeMicToMarket(exchangeMic: string): 'CN' | 'HK' | 'US' {
     XNYS: 'US'
   }
   return mapping[exchangeMic] || 'CN'
+
 }
 
 /**
- * MIC代码转交易所简称
- * @param exchangeMic 交易所MIC代码
- * @returns 交易所简称
- */
+
+ - MIC 代码转交易所简称
+ - @param exchangeMic 交易所 MIC 代码
+ - @returns 交易所简称
+ - /
+
 export function exchangeMicToCode(exchangeMic: string): string {
   const mapping: Record<string, string> = {
     XSHG: 'SSE',
@@ -880,21 +917,25 @@ export function exchangeMicToCode(exchangeMic: string): string {
     XNYS: 'NYSE'
   }
   return mapping[exchangeMic] || 'SSE'
+
 }
 
 /**
- * 格式化股票代码显示
- * @param symbol 股票代码
- * @param market 市场类型
- * @returns 格式化后的代码
- */
+
+ - 格式化股票代码显示
+ - @param symbol 股票代码
+ - @param market 市场类型
+ - @returns 格式化后的代码
+ - /
+
 export function formatSymbolDisplay(symbol: string, market: 'CN' | 'HK' | 'US'): string {
+
   if (market === 'CN') {
-    return symbol // A股直接显示6位代码
+    return symbol // A 股直接显示 6 位代码
   }
 
   if (market === 'HK') {
-    return symbol.padStart(5, '0') // 港股补齐5位
+    return symbol.padStart(5, '0') // 港股补齐 5 位
   }
 
   if (market === 'US') {
@@ -905,58 +946,64 @@ export function formatSymbolDisplay(symbol: string, market: 'CN' | 'HK' | 'US'):
 }
 
 /**
- * 获取市场显示名称
- * @param market 市场类型
- * @returns 显示名称
- */
+
+ - 获取市场显示名称
+ - @param market 市场类型
+ - @returns 显示名称
+ - /
+
 export function getMarketDisplayName(market: 'CN' | 'HK' | 'US'): string {
+
   const names: Record<string, string> = {
-    CN: 'A股',
+    CN: 'A 股',
     HK: '港股',
     US: '美股'
   }
   return names[market] || market
-}
-```
 
----
+}
+
+```bash
+
+- --
 
 ## 8. 总结
 
 本文档提供了多市场数据架构的完整代码模板，包括：
 
-1. **统一数据服务** - 跨市场数据访问的核心服务
-2. **港股/美股数据服务** - 独立的市场数据服务
-3. **统一API端点** - RESTful API接口
-4. **数据迁移脚本** - 数据库初始化和迁移工具
-5. **测试代码** - 单元测试、集成测试、API测试
-6. **前端工具函数** - TypeScript工具函数
+1. **统一数据服务**- 跨市场数据访问的核心服务
+
+2.**港股/美股数据服务**- 独立的市场数据服务
+3.**统一 API 端点**- RESTful API 接口
+4.**数据迁移脚本**- 数据库初始化和迁移工具
+5.**测试代码**- 单元测试、集成测试、API 测试
+6.**前端工具函数**- TypeScript 工具函数
 
 ### 使用建议
 
-1. **按阶段实施**：
+1.**按阶段实施**：
+
    - Phase 0: 创建标准化工具函数
    - Phase 1: 实现港股/美股数据服务
    - Phase 2: 创建统一查询接口
    - Phase 3: 行业分类映射
    - Phase 4: 分析引擎适配
 
-2. **测试驱动开发**：
+1. **测试驱动开发**：
    - 先写测试，再写实现
    - 确保每个功能都有测试覆盖
    - 运行测试确保通过
 
-3. **渐进式迁移**：
-   - 不破坏现有A股数据
+1. **渐进式迁移**：
+   - 不破坏现有 A 股数据
    - 新字段设为可选
    - 保持向后兼容
 
-4. **文档同步更新**：
-   - 更新API文档
+1. **文档同步更新**：
+   - 更新 API 文档
    - 更新用户手册
    - 记录变更日志
 
----
+- --
 
-**文档结束**
-
+- *文档结束**

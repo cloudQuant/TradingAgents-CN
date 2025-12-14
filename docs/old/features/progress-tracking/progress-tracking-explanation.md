@@ -2,13 +2,14 @@
 
 ## 🔍 为什么会看到重复的分析师调用？
 
-### 📋 **正常的LangGraph工作流程**
+### 📋 **正常的 LangGraph 工作流程**
 
-TradingAgents使用LangGraph框架，每个分析师都遵循以下循环流程：
+TradingAgents 使用 LangGraph 框架，每个分析师都遵循以下循环流程：
 
-```
+```bash
 分析师节点 → 条件判断 → 工具节点 → 回到分析师节点 → 条件判断 → ...
-```
+
+```bash
 
 ### 🔄 **具体流程示例**
 
@@ -20,7 +21,7 @@ TradingAgents使用LangGraph框架，每个分析师都遵循以下循环流程�
    - 执行工具获取数据
    - **回到分析师节点**
 
-2. **第二轮**:
+1. **第二轮**:
    - 分析师处理工具返回的数据
    - 生成分析报告
    - 没有更多工具调用
@@ -40,26 +41,30 @@ TradingAgents使用LangGraph框架，每个分析师都遵循以下循环流程�
 我们的异步进度跟踪系统现在能够：
 
 1. **智能步骤检测**: 准确识别所有分析节点的开始和完成
-2. **工具调用处理**: 正确处理LangGraph的工具调用循环
+2. **工具调用处理**: 正确处理 LangGraph 的工具调用循环
 3. **动态步骤生成**: 根据分析师配置和研究深度动态生成步骤
 4. **权重平衡**: 自动平衡各步骤权重，确保进度计算准确
-5. **状态持久化**: 支持Redis和文件两种存储方式
+5. **状态持久化**: 支持 Redis 和文件两种存储方式
 
 ### 📈 **进度显示改进**
 
 #### 🔄 **步骤状态跟踪**
+
 - **模块开始**: "市场分析师 - 开始技术分析和市场趋势评估"
 - **工具调用**: "市场分析师 - 正在获取市场数据和技术指标..."
 - **模块完成**: "市场分析师 - 分析完成，推进到下一步"
 
 #### 📊 **详细进度信息**
+
 - **实时进度百分比**: 基于权重的精确计算
 - **时间预估**: 动态预估剩余时间
 - **步骤描述**: 详细的当前任务说明
 - **配置信息**: 显示分析师选择和研究深度
 
 #### 🎯 **智能节点识别**
+
 支持识别所有分析节点：
+
 - **分析师团队**: market, fundamentals, technical, sentiment, news, social
 - **研究员团队**: bull_researcher, bear_researcher, research_manager
 - **决策团队**: trader, risk_manager
@@ -73,15 +78,19 @@ TradingAgents使用LangGraph框架，每个分析师都遵循以下循环流程�
 ```python
 def _detect_step_from_message(self, message: str):
     if "模块开始" in message:
-        # 推进到对应分析师步骤
+
+# 推进到对应分析师步骤
         return analyst_step_index
     elif "工具调用" in message:
-        # 保持当前步骤，更新描述
+
+# 保持当前步骤，更新描述
         return None
     elif "模块完成" in message:
-        # 推进到下一个分析师
+
+# 推进到下一个分析师
         return next_step_index
-```
+
+```bash
 
 ### 📊 **进度计算**
 
@@ -122,43 +131,53 @@ def _detect_step_from_message(self, message: str):
 
 ### 📋 **测试工具**
 
-1. **基础UI测试**: `python web/test_async_ui.py`
+1. **基础 UI 测试**: `python web/test_async_ui.py`
    - 测试进度显示界面
    - 验证手动刷新功能
    - 模拟分析过程
 
-2. **完整功能测试**: `python test_async_progress_complete.py`
+1. **完整功能测试**: `python test_async_progress_complete.py`
    - 测试步骤检测逻辑
    - 验证进度计算准确性
    - 模拟完整分析流程
 
-3. **记忆系统测试**: `python test_memory_fallback.py`
+1. **记忆系统测试**: `python test_memory_fallback.py`
    - 测试记忆功能降级机制
    - 验证异常处理能力
 
 ### 🔍 **测试场景**
 
 #### 1️⃣ **步骤检测测试**
+
 ```python
+
 # 测试各种分析节点的识别
+
 test_messages = [
     ("📊 [模块开始] market_analyst", "应该检测到市场分析师"),
     ("📊 [工具调用] get_stock_market_data_unified", "不应推进步骤"),
     ("📊 [模块完成] market_analyst", "应该推进到下一步"),
 ]
-```
+
+```bash
 
 #### 2️⃣ **进度计算测试**
+
 ```python
+
 # 测试不同配置的权重分配
+
 configs = [
     {"analysts": ['market'], "research_depth": 1},  # 快速分析
     {"analysts": ['market', 'fundamentals'], "research_depth": 2},  # 标准分析
     {"analysts": ['market', 'fundamentals', 'news'], "research_depth": 3},  # 深度分析
+
 ]
-```
+
+```bash
 
 #### 3️⃣ **完整流程测试**
+
 - 模拟真实的分析消息序列
 - 验证进度平滑推进
 - 测试时间预估准确性
@@ -168,18 +187,22 @@ configs = [
 - [异步进度跟踪器源码](../web/utils/async_progress_tracker.py)
 - [进度显示组件](../web/components/async_progress_display.py)
 - [完整测试脚本](../test_async_progress_complete.py)
-- [LangGraph官方文档](https://langchain-ai.github.io/langgraph/)
+- [LangGraph 官方文档](<https://langchain-ai.github.io/langgraph/)>
 
 ## ❓ **常见问题**
 
 ### Q: 为什么进度有时会停留在某个步骤？
-A: 这通常是因为分析师正在进行复杂的推理或等待API响应。可以点击"刷新进度"查看最新状态。
+
+A: 这通常是因为分析师正在进行复杂的推理或等待 API 响应。可以点击"刷新进度"查看最新状态。
 
 ### Q: 分析失败了怎么办？
-A: 系统会显示详细的错误信息。常见原因包括API限额、网络问题或数据源异常。
+
+A: 系统会显示详细的错误信息。常见原因包括 API 限额、网络问题或数据源异常。
 
 ### Q: 可以同时运行多个分析吗？
+
 A: 目前每个用户会话只支持一个分析任务。如需并行分析，请使用不同的浏览器会话。
 
 ### Q: 进度时间预估准确吗？
-A: 时间预估基于历史数据和当前配置，但实际时间可能因网络状况、API响应速度等因素有所差异。
+
+A: 时间预估基于历史数据和当前配置，但实际时间可能因网络状况、API 响应速度等因素有所差异。

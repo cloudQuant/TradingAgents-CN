@@ -11,17 +11,23 @@
 - 统一走 openai-compatible 基座，支持 function calling、上下文长度、工具绑定等核心能力。
 
 ### 环境变量
+
 ```bash
+
 # .env 文件
+
 QIANFAN_API_KEY=bce-v3/ALTAK-xxxx/xxxx
-```
+
+```bash
 
 ### 代码入口（适配器）
+
 - 适配器类：ChatQianfanOpenAI（位于 openai_compatible_base.py 内部注册）
-- 基础地址：https://qianfan.baidubce.com/v2
+- 基础地址：<https://qianfan.baidubce.com/v2>
 - Provider 名称：qianfan
 
 示例：
+
 ```python
 from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
 
@@ -34,9 +40,11 @@ llm = create_openai_compatible_llm(
 
 resp = llm.invoke("你好，简单自我介绍一下")
 print(resp.content)
-```
+
+```bash
 
 ### 千帆常见模型（兼容模式）
+
 - ernie-3.5-8k（默认）
 - ernie-4.0-turbo-8k
 - ERNIE-Speed-8K
@@ -45,22 +53,26 @@ print(resp.content)
 > 提示：模型名称需与 openai_compatible_base.py 中的 qianfan 映射保持一致。
 
 ### 定价与计费（pricing.json）
+
 - 已在 config/pricing.json 中新增 qianfan/ERNIE 系列占位价格，可在 Web 配置页调整。
 
 ## 🧰 可选：原生 AK/SK + Access Token（历史说明）
+
 - 如需对接历史脚本或某些特定 API，可使用 AK/SK 方式获取 Access Token。
 - 项目主路径已不再依赖 AK/SK，仅保留在脚本示例中（.env.example 注明为可选）。
 
 参考流程（仅示意，不再作为默认路径）：
+
 ```python
 import os, requests
 api_key = os.getenv("QIANFAN_API_KEY")
 secret_key = os.getenv("QIANFAN_SECRET_KEY")
-url = "https://aip.baidubce.com/oauth/2.0/token"
+url = "<https://aip.baidubce.com/oauth/2.0/token">
 params = {"grant_type":"client_credentials","client_id":api_key,"client_secret":secret_key}
 r = requests.post(url, params=params, timeout=30)
 print(r.json())
-```
+
+```bash
 
 ## 🧪 测试与验证
 
@@ -68,6 +80,7 @@ print(r.json())
 - 工具调用：通过 bind_tools 验证 function calling 在千帆上正常工作。
 
 示例：
+
 ```python
 from langchain_core.tools import tool
 from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
@@ -80,14 +93,17 @@ llm = create_openai_compatible_llm(provider="qianfan", model="ernie-3.5-8k")
 llm_tools = llm.bind_tools([get_stock_price])
 res = llm_tools.invoke("请查询 AAPL 的价格")
 print(res.content)
-```
+
+```bash
 
 ## 🔧 故障排查
+
 - QIANFAN_API_KEY 未设置或格式不正确（应以 bce-v3/ 开头）。
 - 网络或限流问题：稍后重试，或降低并发。
 - 模型名不在映射列表：参考 openai_compatible_base.py 的 qianfan 条目。
 
 ## 📚 相关文件
+
 - tradingagents/llm_adapters/openai_compatible_base.py（核心适配器与 provider 映射）
 - tradingagents/graph/trading_graph.py（运行时 provider 选择与校验）
 - config/pricing.json（定价配置，可在 Web 中调整）

@@ -2,7 +2,7 @@
 
 ## 📋 问题描述
 
-当 Tushare API 遇到限流错误时（"抱歉，您每分钟最多访问该接口800次"），系统会继续循环重试，生成大量错误日志，浪费资源。
+当 Tushare API 遇到限流错误时（"抱歉，您每分钟最多访问该接口 800 次"），系统会继续循环重试，生成大量错误日志，浪费资源。
 
 ## ✅ 解决方案
 
@@ -23,7 +23,8 @@ def _is_rate_limit_error(self, error_msg: str) -> bool:
     ]
     error_msg_lower = error_msg.lower()
     return any(keyword in error_msg_lower for keyword in rate_limit_keywords)
-```
+
+```bash
 
 ### 2. **在 Provider 层抛出限流异常**
 
@@ -33,16 +34,19 @@ def _is_rate_limit_error(self, error_msg: str) -> bool:
 async def get_stock_quotes(self, symbol: str) -> Optional[Dict[str, Any]]:
     """获取实时行情"""
     try:
-        # ... 获取数据的代码 ...
+
+# ... 获取数据的代码 ...
     except Exception as e:
-        # 检查是否为限流错误
+
+# 检查是否为限流错误
         if self._is_rate_limit_error(str(e)):
             self.logger.error(f"❌ 获取实时行情失败 symbol={symbol}: {e}")
             raise  # 抛出限流错误，让上层处理
-        
+
         self.logger.error(f"❌ 获取实时行情失败 symbol={symbol}: {e}")
         return None
-```
+
+```bash
 
 ### 3. **在 Worker 层传播限流异常**
 
@@ -53,16 +57,19 @@ async def _get_and_save_quotes(self, symbol: str) -> bool:
     """获取并保存单个股票行情"""
     try:
         quotes = await self.provider.get_stock_quotes(symbol)
-        # ... 保存数据的代码 ...
+
+# ... 保存数据的代码 ...
     except Exception as e:
         error_msg = str(e)
-        # 检测限流错误，直接抛出让上层处理
+
+# 检测限流错误，直接抛出让上层处理
         if self._is_rate_limit_error(error_msg):
             logger.error(f"❌ 获取 {symbol} 行情失败（限流）: {e}")
             raise  # 抛出限流错误
         logger.error(f"❌ 获取 {symbol} 行情失败: {e}")
         return False
-```
+
+```bash
 
 ### 4. **在批次处理中检测限流**
 
@@ -77,12 +84,12 @@ async def _process_quotes_batch(self, batch: List[str]) -> Dict[str, Any]:
         "errors": [],
         "rate_limit_hit": False  # 新增：限流标记
     }
-    
-    # 并发获取行情数据
+
+# 并发获取行情数据
     tasks = [self._get_and_save_quotes(symbol) for symbol in batch]
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    # 统计结果
+
+# 统计结果
     for i, result in enumerate(results):
         if isinstance(result, Exception):
             error_msg = str(result)
@@ -92,15 +99,17 @@ async def _process_quotes_batch(self, batch: List[str]) -> Dict[str, Any]:
                 "error": error_msg,
                 "context": "_process_quotes_batch"
             })
-            
-            # 检测 API 限流错误
+
+# 检测 API 限流错误
             if self._is_rate_limit_error(error_msg):
                 batch_stats["rate_limit_hit"] = True
                 logger.warning(f"⚠️ 检测到 API 限流错误: {error_msg}")
-        # ... 其他处理 ...
-    
+
+# ... 其他处理 ...
+
     return batch_stats
-```
+
+```bash
 
 ### 5. **在主同步方法中停止任务**
 
@@ -117,34 +126,35 @@ async def sync_realtime_quotes(self, symbols: List[str] = None) -> Dict[str, Any
         "errors": [],
         "stopped_by_rate_limit": False  # 新增：限流停止标记
     }
-    
+
     try:
-        # ... 获取股票列表 ...
-        
-        # 批量处理
+
+# ... 获取股票列表 ...
+
+# 批量处理
         for i in range(0, len(symbols), self.batch_size):
             batch = symbols[i:i + self.batch_size]
             batch_stats = await self._process_quotes_batch(batch)
-            
-            # 更新统计
+
+# 更新统计
             stats["success_count"] += batch_stats["success_count"]
             stats["error_count"] += batch_stats["error_count"]
             stats["errors"].extend(batch_stats["errors"])
-            
-            # 检查是否遇到 API 限流错误
+
+# 检查是否遇到 API 限流错误
             if batch_stats.get("rate_limit_hit"):
                 stats["stopped_by_rate_limit"] = True
                 logger.warning(f"⚠️ 检测到 API 限流，停止同步任务")
                 logger.warning(f"📊 已处理: {min(i + self.batch_size, len(symbols))}/{len(symbols)} "
                              f"(成功: {stats['success_count']}, 错误: {stats['error_count']})")
                 break  # 立即停止循环
-            
-            # ... 进度日志和延迟 ...
-        
-        # 完成统计
+
+# ... 进度日志和延迟 ...
+
+# 完成统计
         stats["end_time"] = datetime.utcnow()
         stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
-        
+
         if stats["stopped_by_rate_limit"]:
             logger.warning(f"⚠️ 实时行情同步因 API 限流而停止: "
                          f"总计 {stats['total_processed']} 只, "
@@ -153,30 +163,40 @@ async def sync_realtime_quotes(self, symbols: List[str] = None) -> Dict[str, Any
                          f"耗时 {stats['duration']:.2f} 秒")
         else:
             logger.info(f"✅ 实时行情同步完成: ...")
-        
+
         return stats
     except Exception as e:
         logger.error(f"❌ 实时行情同步失败: {e}")
         return stats
-```
+
+```bash
 
 ## 📊 测试结果
 
 ### 修改前
-```
-2025-10-03 11:55:52 | ERROR | ❌ 获取实时行情失败 symbol=301307: 抱歉，您每分钟最多访问该接口800次
-2025-10-03 11:55:52 | ERROR | ❌ 获取实时行情失败 symbol=301303: 抱歉，您每分钟最多访问该接口800次
+
+```bash
+2025-10-03 11:55:52 | ERROR | ❌ 获取实时行情失败 symbol=301307: 抱歉，您每分钟最多访问该接口 800 次
+
+2025-10-03 11:55:52 | ERROR | ❌ 获取实时行情失败 symbol=301303: 抱歉，您每分钟最多访问该接口 800 次
+
 ... (继续处理剩余 4636 只股票，生成大量错误日志)
 2025-10-03 11:55:52 | INFO | 📈 行情同步进度: 2600/5436 (成功: 0, 错误: 2600)
-```
+
+```bash
 
 ### 修改后
-```
-2025-10-03 12:10:27 | WARNING | ⚠️ 检测到 API 限流错误: 抱歉，您每分钟最多访问该接口800次
+
+```bash
+2025-10-03 12:10:27 | WARNING | ⚠️ 检测到 API 限流错误: 抱歉，您每分钟最多访问该接口 800 次
+
 2025-10-03 12:10:27 | WARNING | ⚠️ 检测到 API 限流，停止同步任务
+
 2025-10-03 12:10:27 | WARNING | 📊 已处理: 800/5436 (成功: 0, 错误: 800)
-2025-10-03 12:10:27 | WARNING | ⚠️ 实时行情同步因 API 限流而停止: 总计 5436 只, 成功 0 只, 错误 800 只, 耗时 27.60秒
-```
+
+2025-10-03 12:10:27 | WARNING | ⚠️ 实时行情同步因 API 限流而停止: 总计 5436 只, 成功 0 只, 错误 800 只, 耗时 27.60 秒
+
+```bash
 
 ## ✅ 优势
 
@@ -196,4 +216,3 @@ async def sync_realtime_quotes(self, symbols: List[str] = None) -> Dict[str, Any
 1. **限流关键词**：可以根据实际情况添加更多限流错误关键词
 2. **重试策略**：可以考虑在下次定时任务中自动重试
 3. **监控告警**：建议添加监控，当频繁遇到限流时发送告警
-

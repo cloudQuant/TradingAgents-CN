@@ -2,44 +2,44 @@
 
 All notable changes to TradingAgents-CN will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](<https://keepachangelog.com/en/1.0.0/),>
+and this project adheres to [Semantic Versioning](<https://semver.org/spec/v2.0.0.html).>
 
 ## [1.0.0-preview] - 2025-10-15
 
 ### 🎉 重大里程碑
 
-这是TradingAgents-CN的第一个预览版本，标志着项目从原型阶段进入生产就绪阶段。
+这是 TradingAgents-CN 的第一个预览版本，标志着项目从原型阶段进入生产就绪阶段。
 
 ### ✨ 新增功能
 
 #### 前后端分离架构
 
-- **Vue 3前端**: 全新的现代化Web界面
+- **Vue 3 前端**: 全新的现代化 Web 界面
   - 响应式设计，适配桌面和移动设备
-  - Element Plus UI组件库
-  - Pinia状态管理
-  - Vue Router路由管理
+  - Element Plus UI 组件库
+  - Pinia 状态管理
+  - Vue Router 路由管理
   - 实时数据更新
 
-- **FastAPI后端**: 高性能RESTful API
+- **FastAPI 后端**: 高性能 RESTful API
   - 异步处理，支持高并发
-  - 自动API文档（Swagger/ReDoc）
-  - JWT认证和权限管理
-  - SSE实时进度推送
-  - WebSocket支持
+  - 自动 API 文档（Swagger/ReDoc）
+  - JWT 认证和权限管理
+  - SSE 实时进度推送
+  - WebSocket 支持
 
-#### 实时PE/PB计算
+#### 实时 PE/PB 计算
 
-- **实时数据**: 基于300秒更新的实时行情计算PE/PB
-- **数据实时性提升**: 从"每日"提升到"30秒"，提升2880倍
+- **实时数据**: 基于 300 秒更新的实时行情计算 PE/PB
+- **数据实时性提升**: 从"每日"提升到"30 秒"，提升 2880 倍
 - **降级机制**: 实时计算失败时自动降级到静态数据
-- **数据验证**: PE范围[-100, 1000]，PB范围[0.1, 100]
+- **数据验证**: PE 范围[-100, 1000]，PB 范围[0.1, 100]
 - **前端标识**: 明确标注数据是否为实时
 
 #### 多智能体系统
 
-- **7个专业智能体**:
+- **7 个专业智能体**:
   - 基本面分析师 (Fundamentals Analyst)
   - 技术分析师 (Technical Analyst)
   - 估值分析师 (Valuation Analyst)
@@ -48,12 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 研究员 (Researcher)
   - 交易员 (Trader)
 
-- **5级分析深度**:
-  - Level 1: 快速概览（1-2分钟）
-  - Level 2: 标准分析（3-5分钟）
-  - Level 3: 深度分析（5-10分钟）
-  - Level 4: 专业研究（10-20分钟）
-  - Level 5: 完整报告（20-30分钟）
+- **5 级分析深度**:
+  - Level 1: 快速概览（1-2 分钟）
+  - Level 2: 标准分析（3-5 分钟）
+  - Level 3: 深度分析（5-10 分钟）
+  - Level 4: 专业研究（10-20 分钟）
+  - Level 5: 完整报告（20-30 分钟）
 
 - **智能协作机制**:
   - 辩论系统：多轮辩论确保分析质量
@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 报告系统
 
-- **9大报告模块**:
+- **9 大报告模块**:
   1. 执行摘要 (Executive Summary)
   2. 关键指标 (Key Metrics)
   3. 基本面分析 (Fundamental Analysis)
@@ -74,9 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   9. 风险管理决策 (Risk Management Decision)
 
 - **多格式导出**:
-  - JSON格式：完整数据结构
-  - Markdown格式：易读的文本格式
-  - PDF格式：专业报告格式（计划中）
+  - JSON 格式：完整数据结构
+  - Markdown 格式：易读的文本格式
+  - PDF 格式：专业报告格式（计划中）
 
 - **报告管理**:
   - 报告列表和搜索
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **多维度筛选**: 基本面、技术面、估值等
 - **预设策略**: 价值投资、成长投资等
 - **自定义条件**: 灵活组合筛选条件
-- **筛选结果**: 实时PE/PB标识
+- **筛选结果**: 实时 PE/PB 标识
 
 #### 数据同步
 
@@ -123,23 +123,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 用户体验
 
-- **实时进度**: SSE实时推送分析进度
+- **实时进度**: SSE 实时推送分析进度
 - **加载状态**: 明确的加载和错误状态
 - **错误提示**: 友好的错误提示和解决建议
 - **响应式设计**: 适配各种屏幕尺寸
 
 #### 代码质量
 
-- **类型注解**: 完整的Python类型注解
+- **类型注解**: 完整的 Python 类型注解
 - **文档字符串**: 详细的函数和类文档
-- **代码规范**: 遵循PEP 8和ESLint规范
+- **代码规范**: 遵循 PEP 8 和 ESLint 规范
 - **测试覆盖**: 单元测试和集成测试
 
 ### 🐛 修复
 
 #### 批量分析
 
-- 修复批量分析API响应格式问题
+- 修复批量分析 API 响应格式问题
 - 修复批量分析并发安全问题
 - 修复批量分析进度跟踪问题
 
@@ -151,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 数据处理
 
-- 修复PE/PB数据不实时问题
+- 修复 PE/PB 数据不实时问题
 - 修复港股代码识别问题
 - 修复数据同步失败问题
 
@@ -173,13 +173,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 文档分类
 
-1. **概览文档** (4个)
+1. **概览文档**(4 个)
    - 项目概述
    - 快速开始
    - 安装指南
    - 项目路线图
 
-2. **架构设计** (6个)
+2.**架构设计**(6 个)
+
    - 系统架构
    - 多智能体架构
    - 数据流架构
@@ -187,14 +188,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - 后端架构
    - 数据库设计
 
-3. **核心模块** (5个)
+3.**核心模块**(5 个)
+
    - 智能体系统
    - 数据流系统
-   - LLM适配器
+   - LLM 适配器
    - 工具系统
    - 配置管理
 
-4. **功能特性** (6个)
+4.**功能特性**(6 个)
+
    - 完整使用手册
    - 股票分析
    - 智能筛选
@@ -202,31 +205,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - 报告生成
    - 实时进度
 
-5. **API参考** (4个)
+5.**API 参考**(4 个)
+
    - REST API
    - WebSocket API
    - SSE API
    - Python SDK
 
-6. **开发指南** (5个)
+6.**开发指南**(5 个)
+
    - 开发指南
    - 代码规范
    - 测试指南
    - 贡献指南
    - 发布流程
 
-7. **部署运维** (5个)
-   - Docker部署
+7.**部署运维**(5 个)
+
+   - Docker 部署
    - 生产环境部署
    - 性能优化
    - 监控告警
    - 故障排除
 
-8. **使用案例** (2个)
+8.**使用案例**(2 个)
+
    - 价值投资案例
    - 技术分析案例
 
-9. **附录** (7个)
+9.**附录**(7 个)
+
    - 配置参考
    - 常见问题
    - 术语表
@@ -237,14 +245,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔐 安全
 
-- **JWT认证**: 安全的用户认证机制
-- **密码加密**: bcrypt密码哈希
-- **CORS配置**: 跨域请求安全控制
-- **API密钥管理**: 安全的API密钥存储
+- **JWT 认证**: 安全的用户认证机制
+- **密码加密**: bcrypt 密码哈希
+- **CORS 配置**: 跨域请求安全控制
+- **API 密钥管理**: 安全的 API 密钥存储
 
 ### 🚀 部署
 
-- **Docker支持**: 完整的Docker部署方案
+- **Docker 支持**: 完整的 Docker 部署方案
 - **前后端分离**: 支持独立部署
 - **环境变量**: 灵活的配置管理
 - **健康检查**: 服务健康状态监控
@@ -258,20 +266,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎯 已知问题
 
-1. **PDF导出**: PDF导出功能尚未完全实现
+1. **PDF 导出**: PDF 导出功能尚未完全实现
 2. **行业分析**: 行业对比分析功能待完善
 3. **投资组合**: 投资组合管理功能待开发
 4. **移动端**: 移动端适配需要进一步优化
 
 ### 🔮 下一步计划
 
-1. **完善PDF导出**: 实现专业的PDF报告导出
+1. **完善 PDF 导出**: 实现专业的 PDF 报告导出
 2. **行业分析**: 添加行业对比和龙头企业筛选
 3. **投资组合**: 实现投资组合构建和管理
 4. **移动应用**: 开发移动端应用
 5. **国际化**: 支持多语言界面
 
----
+- --
 
 ## 版本说明
 
@@ -279,18 +287,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **主版本号**: 重大架构变更或不兼容更新
 - **次版本号**: 新功能添加或重要改进
-- **修订版本号**: Bug修复和小优化
+- **修订版本号**: Bug 修复和小优化
 - **预览版**: `-preview` 后缀表示预览版本
 
 
 ### 反馈渠道
 
-- **GitHub Issues**: https://github.com/hsliuping/TradingAgents-CN/issues
-- **QQ群**: 782124367
+- **GitHub Issues**: <https://github.com/hsliuping/TradingAgents-CN/issues>
+- **QQ 群**: 782124367
 - **邮箱**: hsliup@163.com
 
----
+- --
 
-**发布日期**: 2025-10-15  
-**维护者**: TradingAgents-CN Team
-
+- *发布日期**: 2025-10-15
+- *维护者**: TradingAgents-CN Team

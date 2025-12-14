@@ -26,9 +26,9 @@
       "display_name": "Qwen Turbo - 快速经济",  // 显示名称
       "description": "快速经济的模型",
       "context_length": 8192,        // 上下文长度
-      "max_tokens": 2000,            // 最大输出token
-      "input_price_per_1k": 0.002,   // 输入价格(每1K tokens)
-      "output_price_per_1k": 0.006,  // 输出价格(每1K tokens)
+      "max_tokens": 2000,            // 最大输出 token
+      "input_price_per_1k": 0.002,   // 输入价格(每 1K tokens)
+      "output_price_per_1k": 0.006,  // 输出价格(每 1K tokens)
       "currency": "CNY",             // 货币单位
       "is_deprecated": false,        // 是否已废弃
       "release_date": "2024-01-01",  // 发布日期
@@ -38,23 +38,25 @@
   "created_at": ISODate("..."),
   "updated_at": ISODate("...")
 }
-```
+
+```bash
 
 ### 与用户配置的关系
 
-**模型目录** 和 **用户配置** 是两个独立的概念：
+- *模型目录**和**用户配置**是两个独立的概念：
 
-1. **模型目录**（`model_catalog` 集合）
+1.**模型目录**（`model_catalog` 集合）
+
    - 作用：提供可选的模型列表
    - 位置：独立的集合
    - 用途：在添加配置时作为参考
 
-2. **用户配置**（`system_configs.llm_configs` 字段）
+1. **用户配置**（`system_configs.llm_configs` 字段）
    - 作用：用户实际使用的模型配置
    - 位置：`system_configs` 集合的 `llm_configs` 数组
    - 用途：系统运行时使用的配置
 
-```
+```bash
 ┌─────────────────┐
 │  模型目录        │  ← 参考数据（可选模型列表）
 │  model_catalog  │
@@ -62,35 +64,41 @@
          │ 用户选择
          ↓
 ┌─────────────────┐
-│  用户配置        │  ← 实际配置（包含API密钥等）
+│  用户配置        │  ← 实际配置（包含 API 密钥等）
 │  llm_configs    │
 └─────────────────┘
-```
+
+```bash
 
 ## 🚀 初始化模型目录
 
 ### 方法 1：使用脚本初始化
 
 ```bash
+
 # 在项目根目录执行
+
 python scripts/init_model_catalog.py
-```
-
-这会初始化以下厂家的模型目录：
-- 通义千问 (dashscope) - 8个模型
-- OpenAI - 5个模型
-- Google Gemini - 4个模型
-- DeepSeek - 2个模型
-- Anthropic Claude - 5个模型
-- 百度千帆 (qianfan) - 4个模型
-- 智谱AI (zhipu) - 3个模型
-
-### 方法 2：通过API初始化
 
 ```bash
-curl -X POST http://localhost:8000/api/config/model-catalog/init \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+这会初始化以下厂家的模型目录：
+
+- 通义千问 (dashscope) - 8 个模型
+- OpenAI - 5 个模型
+- Google Gemini - 4 个模型
+- DeepSeek - 2 个模型
+- Anthropic Claude - 5 个模型
+- 百度千帆 (qianfan) - 4 个模型
+- 智谱 AI (zhipu) - 3 个模型
+
+### 方法 2：通过 API 初始化
+
+```bash
+curl -X POST <http://localhost:8000/api/config/model-catalog/init> \
+
+  - H "Authorization: Bearer YOUR_TOKEN"
+
+```bash
 
 ### 方法 3：通过前端界面
 
@@ -102,11 +110,11 @@ curl -X POST http://localhost:8000/api/config/model-catalog/init \
 
 ### 访问路径
 
-```
+```bash
 设置 → 系统配置 → 配置管理 → 模型目录
-```
 
-或直接访问：`http://localhost:3001/settings/config`，然后点击"模型目录"菜单
+```bash
+或直接访问：`<http://localhost:3001/settings/config`，然后点击"模型目录"菜单>
 
 ### 功能说明
 
@@ -125,7 +133,7 @@ curl -X POST http://localhost:8000/api/config/model-catalog/init \
 3. 添加模型：
    - 模型名称：如 `qwen-turbo`
    - 显示名称：如 `Qwen Turbo - 快速经济`
-4. 点击"保存"
+1. 点击"保存"
 
 #### 3. 编辑模型目录
 
@@ -146,9 +154,10 @@ curl -X POST http://localhost:8000/api/config/model-catalog/init \
 ```http
 GET /api/config/model-catalog
 Authorization: Bearer YOUR_TOKEN
-```
 
+```bash
 响应：
+
 ```json
 [
   {
@@ -157,14 +166,16 @@ Authorization: Bearer YOUR_TOKEN
     "models": [...]
   }
 ]
-```
+
+```bash
 
 ### 获取指定厂家的模型目录
 
 ```http
 GET /api/config/model-catalog/{provider}
 Authorization: Bearer YOUR_TOKEN
-```
+
+```bash
 
 ### 保存模型目录
 
@@ -184,14 +195,16 @@ Content-Type: application/json
     }
   ]
 }
-```
+
+```bash
 
 ### 删除模型目录
 
 ```http
 DELETE /api/config/model-catalog/{provider}
 Authorization: Bearer YOUR_TOKEN
-```
+
+```bash
 
 ## 📝 维护指南
 
@@ -206,12 +219,15 @@ Authorization: Bearer YOUR_TOKEN
    - 填写模型信息
    - 保存
 
-2. **通过API**：
+1. **通过 API**：
+
    ```bash
-   curl -X POST http://localhost:8000/api/config/model-catalog \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
+   curl -X POST <http://localhost:8000/api/config/model-catalog> \
+
+     - H "Authorization: Bearer YOUR_TOKEN" \
+     - H "Content-Type: application/json" \
+     - d '{
+
        "provider": "dashscope",
        "provider_name": "通义千问",
        "models": [
@@ -233,7 +249,8 @@ Authorization: Bearer YOUR_TOKEN
   "display_name": "Old Model (已废弃)",
   "is_deprecated": true
 }
-```
+
+```bash
 
 ### 更新模型信息
 
@@ -259,6 +276,7 @@ Authorization: Bearer YOUR_TOKEN
 ### 场景 2：查看模型信息
 
 用户可以在模型目录中查看：
+
 - 模型的显示名称
 - 模型的描述
 - 模型的价格信息
@@ -267,6 +285,7 @@ Authorization: Bearer YOUR_TOKEN
 ### 场景 3：批量更新模型
 
 当厂家更新模型列表时：
+
 - 管理员在模型目录中统一更新
 - 所有用户在添加配置时都能看到最新的模型列表
 
@@ -276,16 +295,16 @@ Authorization: Bearer YOUR_TOKEN
    - 修改模型目录不会影响已保存的用户配置
    - 用户配置独立存储在 `system_configs.llm_configs` 中
 
-2. **支持自定义模型**
+1. **支持自定义模型**
    - 即使模型不在目录中，用户仍可手动输入
    - 模型目录只是提供便利，不是强制约束
 
-3. **定期维护**
+1. **定期维护**
    - 建议定期检查厂家官网，更新模型信息
    - 及时标记废弃的模型
    - 添加新发布的模型
 
-4. **备份建议**
+1. **备份建议**
    - 在大规模修改前，建议导出配置备份
    - 可以通过 MongoDB 导出 `model_catalog` 集合
 
@@ -293,25 +312,27 @@ Authorization: Bearer YOUR_TOKEN
 
 ### 问题 1：模型目录为空
 
-**解决方案**：
+- *解决方案**：
+
 ```bash
 python scripts/init_model_catalog.py
-```
+
+```bash
 
 ### 问题 2：添加配置时看不到模型列表
 
-**可能原因**：
+- *可能原因**：
 1. 模型目录未初始化
 2. 前端缓存问题
 
-**解决方案**：
+- *解决方案**：
 1. 检查数据库中是否有 `model_catalog` 集合
 2. 刷新浏览器页面（Ctrl+F5）
 3. 检查浏览器控制台是否有错误
 
 ### 问题 3：修改模型目录后前端没有更新
 
-**解决方案**：
+- *解决方案**：
 1. 刷新浏览器页面
 2. 重新打开添加配置对话框
 
@@ -320,4 +341,3 @@ python scripts/init_model_catalog.py
 - [配置管理指南](./CONFIGURATION_GUIDE.md)
 - [大模型配置说明](./LLM_CONFIGURATION.md)
 - [API 文档](./API_DOCUMENTATION.md)
-

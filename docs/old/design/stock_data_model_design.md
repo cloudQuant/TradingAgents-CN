@@ -10,16 +10,17 @@
 
 ## 🏗️ 架构设计
 
-```
+```bash
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   数据获取服务   │    │   MongoDB数据库  │    │   数据使用服务   │
+│   数据获取服务   │    │   MongoDB 数据库  │    │   数据使用服务   │
 │                │    │                │    │                │
 │ • Tushare SDK  │───▶│ • 标准化数据模型 │◀───│ • 分析服务      │
-│ • AKShare SDK  │    │ • 统一数据接口  │    │ • API服务       │
-│ • Yahoo SDK    │    │ • 索引优化      │    │ • Web界面       │
-│ • Finnhub SDK  │    │ • 数据验证      │    │ • CLI工具       │
+│ • AKShare SDK  │    │ • 统一数据接口  │    │ • API 服务       │
+│ • Yahoo SDK    │    │ • 索引优化      │    │ • Web 界面       │
+│ • Finnhub SDK  │    │ • 数据验证      │    │ • CLI 工具       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+
+```bash
 
 ## 📊 数据模型设计
 
@@ -28,14 +29,14 @@
 ```javascript
 {
   "_id": ObjectId("..."),
-  "symbol": "000001",           // 原始股票代码 (A股6位/港股4位/美股字母)
+  "symbol": "000001",           // 原始股票代码 (A 股 6 位/港股 4 位/美股字母)
   "full_symbol": "000001.SZ",   // 完整标准化代码
   "name": "平安银行",            // 股票名称
   "name_en": "Ping An Bank",    // 英文名称
 
   // 市场信息 (统一市场区分设计)
   "market_info": {
-    "market": "CN",             // 市场标识 (CN-A股/HK-港股/US-美股)
+    "market": "CN",             // 市场标识 (CN-A 股/HK-港股/US-美股)
     "exchange": "SZSE",         // 交易所代码 (SZSE/SSE/SEHK/NYSE/NASDAQ)
     "exchange_name": "深圳证券交易所", // 交易所名称
     "currency": "CNY",          // 交易货币 (CNY/HKD/USD)
@@ -59,13 +60,14 @@
   "total_shares": 19405918198,  // 总股本
   "float_shares": 19405918198,  // 流通股本
   "status": "L",                // 上市状态 (L-上市 D-退市 P-暂停)
-  "is_hs": true,                // 是否沪深港通标的 (仅A股)
+  "is_hs": true,                // 是否沪深港通标的 (仅 A 股)
   "created_at": ISODate("2024-01-01T00:00:00Z"),
   "updated_at": ISODate("2024-01-01T00:00:00Z"),
   "data_source": "tushare",     // 数据来源
   "version": 1                  // 数据版本
 }
-```
+
+```bash
 
 ### 2. 历史行情数据 (stock_daily_quotes)
 
@@ -99,7 +101,8 @@
   "data_source": "tushare",
   "version": 1
 }
-```
+
+```bash
 
 ### 3. 实时行情数据 (stock_realtime_quotes)
 
@@ -120,16 +123,17 @@
   "volume": 125000000,          // 成交量
   "amount": 1580000000,         // 成交额 (基础货币)
   "turnover_rate": 0.64,        // 换手率
-  "bid_prices": [12.64, 12.63, 12.62, 12.61, 12.60], // 买1-5价
-  "bid_volumes": [100, 200, 300, 400, 500],           // 买1-5量
-  "ask_prices": [12.65, 12.66, 12.67, 12.68, 12.69], // 卖1-5价
-  "ask_volumes": [150, 250, 350, 450, 550],           // 卖1-5量
+  "bid_prices": [12.64, 12.63, 12.62, 12.61, 12.60], // 买 1-5 价
+  "bid_volumes": [100, 200, 300, 400, 500],           // 买 1-5 量
+  "ask_prices": [12.65, 12.66, 12.67, 12.68, 12.69], // 卖 1-5 价
+  "ask_volumes": [150, 250, 350, 450, 550],           // 卖 1-5 量
   "timestamp": ISODate("2024-01-15T14:30:00Z"),       // 行情时间 (市场时区)
   "created_at": ISODate("2024-01-15T14:30:05Z"),
   "data_source": "akshare",
   "version": 1
 }
-```
+
+```bash
 
 ### 4. 财务数据 (stock_financial_data)
 
@@ -143,7 +147,7 @@
   "report_type": "annual",      // 报告类型 (annual/quarterly)
   "ann_date": "2024-03-20",     // 公告日期
   "f_ann_date": "2024-03-20",   // 实际公告日期
-  
+
   // 资产负债表数据
   "balance_sheet": {
     "total_assets": 4500000000000,      // 资产总计
@@ -155,7 +159,7 @@
     "total_ncl": 400000000000,          // 非流动负债合计
     "cash_and_equivalents": 180000000000 // 货币资金
   },
-  
+
   // 利润表数据
   "income_statement": {
     "total_revenue": 180000000000,      // 营业总收入
@@ -169,7 +173,7 @@
     "basic_eps": 3.35,                  // 基本每股收益
     "diluted_eps": 3.35                 // 稀释每股收益
   },
-  
+
   // 现金流量表数据
   "cashflow_statement": {
     "n_cashflow_act": 120000000000,     // 经营活动现金流量净额
@@ -178,7 +182,7 @@
     "c_cash_equ_end_period": 180000000000, // 期末现金及现金等价物余额
     "c_cash_equ_beg_period": 100000000000  // 期初现金及现金等价物余额
   },
-  
+
   // 财务指标
   "financial_indicators": {
     "roe": 23.21,                       // 净资产收益率
@@ -194,13 +198,14 @@
     "pb": 0.88,                         // 市净率
     "dividend_yield": 4.73              // 股息率
   },
-  
+
   "created_at": ISODate("2024-03-20T00:00:00Z"),
   "updated_at": ISODate("2024-03-20T00:00:00Z"),
   "data_source": "tushare",
   "version": 1
 }
-```
+
+```bash
 
 ### 5. 新闻数据 (stock_news)
 
@@ -211,16 +216,16 @@
   "full_symbol": "000001.SZ",   // 完整标准化代码
   "market": "CN",               // 市场标识
   "symbols": ["000001", "000002"], // 相关股票列表
-  "title": "平安银行发布2023年年报",
-  "content": "平安银行股份有限公司今日发布2023年年度报告...",
-  "summary": "平安银行2023年净利润同比增长2.6%",
-  "url": "https://example.com/news/123",
+  "title": "平安银行发布 2023 年年报",
+  "content": "平安银行股份有限公司今日发布 2023 年年度报告...",
+  "summary": "平安银行 2023 年净利润同比增长 2.6%",
+  "url": "<https://example.com/news/123",>
   "source": "证券时报",
   "author": "张三",
   "publish_time": ISODate("2024-03-20T09:00:00Z"),
   "category": "company_announcement", // 新闻类别
   "sentiment": "positive",      // 情绪分析 (positive/negative/neutral)
-  "sentiment_score": 0.75,      // 情绪得分 (-1到1)
+  "sentiment_score": 0.75,      // 情绪得分 (-1 到 1)
   "keywords": ["年报", "净利润", "增长"],
   "importance": "high",         // 重要性 (high/medium/low)
   "language": "zh-CN",
@@ -228,7 +233,8 @@
   "data_source": "finnhub",
   "version": 1
 }
-```
+
+```bash
 
 ### 6. 社媒消息数据 (social_media_messages)
 
@@ -241,11 +247,11 @@
   "symbols": ["000001", "000002"], // 相关股票列表
 
   // 消息基本信息
-  "message_id": "weibo_123456789",  // 原始消息ID
+  "message_id": "weibo_123456789",  // 原始消息 ID
   "platform": "weibo",         // 平台类型 (weibo/wechat/douyin/xiaohongshu/zhihu/twitter/reddit)
   "message_type": "post",      // 消息类型 (post/comment/repost/reply)
   "content": "平安银行今天涨停了，基本面确实不错...",
-  "media_urls": ["https://example.com/image1.jpg"], // 媒体文件URL
+  "media_urls": ["<https://example.com/image1.jpg"],> // 媒体文件 URL
   "hashtags": ["#平安银行", "#涨停"],
 
   // 作者信息
@@ -273,7 +279,7 @@
 
   // 分析结果
   "sentiment": "positive",      // 情绪分析 (positive/negative/neutral)
-  "sentiment_score": 0.8,       // 情绪得分 (-1到1)
+  "sentiment_score": 0.8,       // 情绪得分 (-1 到 1)
   "confidence": 0.85,           // 分析置信度
   "keywords": ["涨停", "基本面", "不错"],
   "topics": ["股价表现", "基本面分析"],
@@ -295,7 +301,8 @@
   "crawler_version": "1.0",
   "version": 1
 }
-```
+
+```bash
 
 ### 7. 内部消息数据 (internal_messages)
 
@@ -310,9 +317,9 @@
   // 消息基本信息
   "message_id": "internal_20240320_001",
   "message_type": "research_report", // 消息类型 (research_report/insider_info/analyst_note/meeting_minutes/internal_analysis)
-  "title": "平安银行Q1业绩预期分析",
-  "content": "根据内部分析，平安银行Q1业绩预期...",
-  "summary": "Q1净利润预期增长5-8%",
+  "title": "平安银行 Q1 业绩预期分析",
+  "content": "根据内部分析，平安银行 Q1 业绩预期...",
+  "summary": "Q1 净利润预期增长 5-8%",
 
   // 来源信息
   "source": {
@@ -364,7 +371,8 @@
   "data_source": "internal_system",
   "version": 1
 }
-```
+
+```bash
 
 ### 8. 技术指标数据 (stock_technical_indicators)
 
@@ -392,29 +400,29 @@
     // 趋势指标
     "trend": {
       "macd": 0.15,             // MACD
-      "macd_signal": 0.12,      // MACD信号线
-      "macd_hist": 0.03,        // MACD柱状图
-      "ema12": 12.55,           // 12日指数移动平均
-      "ema26": 12.35,           // 26日指数移动平均
-      "dmi_pdi": 25.8,          // DMI正向指标
-      "dmi_mdi": 18.2,          // DMI负向指标
-      "dmi_adx": 32.5,          // DMI平均趋向指标
+      "macd_signal": 0.12,      // MACD 信号线
+      "macd_hist": 0.03,        // MACD 柱状图
+      "ema12": 12.55,           // 12 日指数移动平均
+      "ema26": 12.35,           // 26 日指数移动平均
+      "dmi_pdi": 25.8,          // DMI 正向指标
+      "dmi_mdi": 18.2,          // DMI 负向指标
+      "dmi_adx": 32.5,          // DMI 平均趋向指标
       "aroon_up": 75.0,         // 阿隆上线
       "aroon_down": 25.0        // 阿隆下线
     },
 
     // 震荡指标
     "oscillator": {
-      "rsi": 65.5,              // RSI相对强弱指标
-      "rsi_6": 68.2,            // 6日RSI
-      "rsi_14": 65.5,           // 14日RSI
-      "kdj_k": 75.2,            // KDJ-K值
-      "kdj_d": 68.8,            // KDJ-D值
-      "kdj_j": 88.0,            // KDJ-J值
+      "rsi": 65.5,              // RSI 相对强弱指标
+      "rsi_6": 68.2,            // 6 日 RSI
+      "rsi_14": 65.5,           // 14 日 RSI
+      "kdj_k": 75.2,            // KDJ-K 值
+      "kdj_d": 68.8,            // KDJ-D 值
+      "kdj_j": 88.0,            // KDJ-J 值
       "williams_r": -25.8,      // 威廉指标
-      "cci": 120.5,             // CCI顺势指标
-      "stoch_k": 78.5,          // 随机指标K值
-      "stoch_d": 72.3,          // 随机指标D值
+      "cci": 120.5,             // CCI 顺势指标
+      "stoch_k": 78.5,          // 随机指标 K 值
+      "stoch_d": 72.3,          // 随机指标 D 值
       "roc": 1.8,               // 变动率指标
       "momentum": 0.25          // 动量指标
     },
@@ -429,7 +437,7 @@
       "donchian_lower": 12.00,  // 唐奇安通道下轨
       "keltner_upper": 13.15,   // 肯特纳通道上轨
       "keltner_lower": 12.15,   // 肯特纳通道下轨
-      "sar": 12.35              // 抛物线SAR
+      "sar": 12.35              // 抛物线 SAR
     },
 
     // 成交量指标
@@ -447,7 +455,7 @@
     // 波动率指标
     "volatility": {
       "atr": 0.45,              // 真实波动幅度
-      "natr": 3.56,             // 标准化ATR
+      "natr": 3.56,             // 标准化 ATR
       "trange": 0.50,           // 真实范围
       "stddev": 0.38,           // 标准差
       "variance": 0.14          // 方差
@@ -488,7 +496,8 @@
   "data_source": "calculated",
   "version": 1
 }
-```
+
+```bash
 
 ### 7. 数据源配置 (data_source_config)
 
@@ -500,7 +509,7 @@
   "priority": 1,                // 优先级 (数字越小优先级越高)
   "status": "active",           // active/inactive/maintenance
   "config": {
-    "api_url": "http://api.tushare.pro",
+    "api_url": "<http://api.tushare.pro",>
     "token": "your_token_here",
     "rate_limit": 200,          // 每分钟请求限制
     "timeout": 30,              // 超时时间(秒)
@@ -508,7 +517,7 @@
   },
   "supported_data_types": [
     "stock_basic_info",
-    "stock_daily_quotes", 
+    "stock_daily_quotes",
     "stock_financial_data"
   ],
   "supported_markets": ["CN"],  // CN/US/HK
@@ -516,7 +525,8 @@
   "created_at": ISODate("2024-01-01T00:00:00Z"),
   "updated_at": ISODate("2024-01-15T16:00:00Z")
 }
-```
+
+```bash
 
 ### 8. 数据同步日志 (data_sync_logs)
 
@@ -544,7 +554,8 @@
   "created_at": ISODate("2024-01-15T16:00:00Z"),
   "updated_at": ISODate("2024-01-15T16:05:30Z")
 }
-```
+
+```bash
 
 ## 📚 索引设计
 
@@ -592,27 +603,28 @@ db.stock_technical_indicators.createIndex({ "symbol": 1, "market": 1, "trade_dat
 db.stock_technical_indicators.createIndex({ "full_symbol": 1, "trade_date": -1, "period": 1 })
 db.stock_technical_indicators.createIndex({ "market": 1, "trade_date": -1 })
 db.stock_technical_indicators.createIndex({ "trade_date": -1 })
-```
+
+```bash
 
 ## 🔧 技术指标扩展机制
 
 ### 1. 分类扩展设计
 
-技术指标按功能分为5大类，每类可独立扩展：
+技术指标按功能分为 5 大类，每类可独立扩展：
 
 ```javascript
 "indicators": {
   "trend": {        // 趋势指标 - 判断价格趋势方向
-    // MACD, EMA, DMI, Aroon等
+    // MACD, EMA, DMI, Aroon 等
   },
   "oscillator": {   // 震荡指标 - 判断超买超卖
-    // RSI, KDJ, Williams%R, CCI等
+    // RSI, KDJ, Williams%R, CCI 等
   },
   "channel": {      // 通道指标 - 判断支撑阻力
     // 布林带, 唐奇安通道, 肯特纳通道等
   },
   "volume": {       // 成交量指标 - 分析量价关系
-    // OBV, VWAP, MFI, CMF等
+    // OBV, VWAP, MFI, CMF 等
   },
   "volatility": {   // 波动率指标 - 衡量价格波动
     // ATR, 标准差, 方差等
@@ -621,38 +633,44 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
     // 策略信号, 风险评分等
   }
 }
-```
+
+```bash
 
 ### 2. 新增指标的标准流程
 
-**步骤1: 确定指标分类**
-```javascript
-// 例如：新增TRIX指标 (趋势指标)
-"trend": {
-  "trix": 0.0025,           // TRIX值
-  "trix_signal": 0.0020,    // TRIX信号线
-  "trix_hist": 0.0005       // TRIX柱状图
-}
-```
+- *步骤 1: 确定指标分类**
 
-**步骤2: 更新指标元数据**
+```javascript
+// 例如：新增 TRIX 指标 (趋势指标)
+"trend": {
+  "trix": 0.0025,           // TRIX 值
+  "trix_signal": 0.0020,    // TRIX 信号线
+  "trix_hist": 0.0005       // TRIX 柱状图
+}
+
+```bash
+
+- *步骤 2: 更新指标元数据**
+
 ```javascript
 "indicator_metadata": {
   "parameters": {
-    "trix_period": 14,      // TRIX周期参数
+    "trix_period": 14,      // TRIX 周期参数
     "trix_signal_period": 9 // 信号线周期参数
   }
 }
-```
 
-**步骤3: 创建指标配置 (可选)**
+```bash
+
+- *步骤 3: 创建指标配置 (可选)**
+
 ```javascript
 // 在 technical_indicator_configs 集合中添加
 {
   "indicator_name": "trix",
   "indicator_category": "trend",
-  "display_name": "TRIX三重指数平滑移动平均",
-  "description": "TRIX指标用于判断长期趋势",
+  "display_name": "TRIX 三重指数平滑移动平均",
+  "description": "TRIX 指标用于判断长期趋势",
   "parameters": {
     "period": 14,
     "signal_period": 9
@@ -661,14 +679,15 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
   "data_type": "float",
   "enabled": true
 }
-```
+
+```bash
 
 ### 3. 市场差异化支持
 
 不同市场可能有特定的技术指标：
 
 ```javascript
-// A股特有指标
+// A 股特有指标
 "indicators": {
   "custom": {
     "a_share_specific": {
@@ -689,7 +708,8 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
     }
   }
 }
-```
+
+```bash
 
 ### 4. 动态指标计算配置
 
@@ -724,7 +744,8 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
   "created_at": ISODate("2024-01-01T00:00:00Z"),
   "updated_at": ISODate("2024-01-01T00:00:00Z")
 }
-```
+
+```bash
 
 ### 5. 指标版本管理
 
@@ -734,35 +755,40 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
   "version_history": [
     {
       "version": "v2.0",
-      "changes": "优化MACD计算精度",
+      "changes": "优化 MACD 计算精度",
       "date": "2024-01-01"
     },
     {
       "version": "v2.1",
-      "changes": "新增TRIX指标支持",
+      "changes": "新增 TRIX 指标支持",
       "date": "2024-01-15"
     }
   ],
   "deprecated_indicators": ["old_rsi", "legacy_macd"]
 }
-```
+
+```bash
 
 ## 🌍 多市场支持设计
 
 ### 1. 市场标识统一
 
 | 市场代码 | 市场名称 | 交易所代码 | 货币 | 时区 |
+
 |---------|----------|-----------|------|------|
-| CN | 中国A股 | SZSE/SSE | CNY | Asia/Shanghai |
+
+| CN | 中国 A 股 | SZSE/SSE | CNY | Asia/Shanghai |
+
 | HK | 港股 | SEHK | HKD | Asia/Hong_Kong |
+
 | US | 美股 | NYSE/NASDAQ | USD | America/New_York |
 
 ### 2. 股票代码标准化
 
 ```javascript
-// A股示例
+// A 股示例
 {
-  "symbol": "000001",           // 6位原始代码
+  "symbol": "000001",           // 6 位原始代码
   "full_symbol": "000001.SZ",   // 标准化完整代码
   "market_info": {
     "market": "CN",
@@ -772,7 +798,7 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
 
 // 港股示例
 {
-  "symbol": "0700",             // 4位原始代码
+  "symbol": "0700",             // 4 位原始代码
   "full_symbol": "0700.HK",     // 标准化完整代码
   "market_info": {
     "market": "HK",
@@ -789,7 +815,8 @@ db.stock_technical_indicators.createIndex({ "trade_date": -1 })
     "exchange": "NASDAQ"
   }
 }
-```
+
+```bash
 
 ### 3. 查询优化策略
 
@@ -810,8 +837,9 @@ db.stock_daily_quotes.find({
 db.stock_daily_quotes.find({
   "full_symbol": "000001.SZ"
 })
-```
 
----
+```bash
 
-*数据模型设计 - 最后更新: 2025-09-28*
+- --
+
+- 数据模型设计 - 最后更新: 2025-09-28*

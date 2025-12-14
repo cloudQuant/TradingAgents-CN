@@ -1,6 +1,6 @@
 # AKShare 数据字典本地镜像与离线索引
 
-本目录用于保存 AKShare 官方文档“数据字典”（https://akshare.akfamily.xyz/data/index.html）的本地快照与结构化索引，按资产种类与接口划分，便于后续离线查阅与调用映射。
+本目录用于保存 AKShare 官方文档“数据字典”（<https://akshare.akfamily.xyz/data/index.html）的本地快照与结构化索引，按资产种类与接口划分，便于后续离线查阅与调用映射。>
 
 ## 目录结构
 
@@ -12,11 +12,14 @@
   - 文档页面原始 HTML 快照（以 slug 命名）
 - assets/
   - equity_cn/ | equity_hk/ | equity_us/
+
   - fund_cn/
   - index_cn/ | index_global/
+
   - futures_cn/
   - bond_cn/
   - macro/ | forex/ | crypto/ | options_cn/ | others/
+
   - 每个资产类目录下：
     - endpoints/<function_name>.json  按函数维度保存结构化信息
     - endpoints/<function_name>.md    可选的 Markdown 摘要（后续扩展）
@@ -26,6 +29,7 @@
 ## endpoint JSON 字段约定
 
 参见 schema.endpoint.json，核心字段：
+
 - asset_class: 资产类（如 equity_cn/fund_cn/index_cn/index_global/futures_cn/bond_cn 等）
 - source: 固定为 "akshare"
 - endpoint_name: 函数名（如 stock_zh_a_hist）
@@ -50,22 +54,26 @@
 
 ```bash
 pip install requests beautifulsoup4
-```
+
+```bash
 
 ### 用法示例（Windows PowerShell）
 
 ```powershell
 python scripts/sync_akshare_catalog.py `
-  --base-url https://akshare.akfamily.xyz/data/index.html `
-  --out docs/akshare_catalog `
-  --max-workers 8 `
-  --max-pages 2000 `
-  --overwrite
-```
 
+  - -base-url <https://akshare.akfamily.xyz/data/index.html> `
+  - -out docs/akshare_catalog `
+  - -max-workers 8 `
+  - -max-pages 2000 `
+  - -overwrite
+
+```bash
 可选参数：
+
 - --asset-classes equity_cn,fund_cn,index_cn,index_global,futures_cn,bond_cn
 - --include-raw-html true|false
+
 - 代理：通过环境变量 HTTP_PROXY/HTTPS_PROXY 配置。
 
 ## 离线读取示例
@@ -77,7 +85,8 @@ index = json.loads((root/'endpoints_flat.json').read_text(encoding='utf-8'))
 fn = 'stock_zh_a_hist'
 meta = index.get(fn)
 print(meta['asset_class'], meta['doc_url'])
-```
+
+```bash
 
 ## 解析策略说明
 

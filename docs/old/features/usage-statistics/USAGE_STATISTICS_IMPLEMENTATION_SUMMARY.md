@@ -4,16 +4,18 @@
 
 本次实现了完整的使用统计和定价配置功能，包括：
 
-1. **模型定价配置** - 为每个大模型配置输入/输出 token 价格
-2. **使用统计界面** - 查看模型使用情况和成本统计
-3. **计费分析** - 按供应商、模型、日期分析成本
-4. **前端路由集成** - 完整的导航和页面访问
+1. **模型定价配置**- 为每个大模型配置输入/输出 token 价格
+
+2.**使用统计界面**- 查看模型使用情况和成本统计
+3.**计费分析**- 按供应商、模型、日期分析成本
+4.**前端路由集成**- 完整的导航和页面访问
 
 ## ✅ 已完成的工作
 
 ### 1. 后端实现
 
 #### 数据模型扩展
+
 - ✅ `LLMConfig` 添加定价字段
   - `input_price_per_1k`: 输入 token 价格
   - `output_price_per_1k`: 输出 token 价格
@@ -22,6 +24,7 @@
 - ✅ `UsageStatistics` 使用统计模型
 
 #### 服务层
+
 - ✅ `UsageStatisticsService` - 使用统计服务
   - `add_usage_record()` - 添加使用记录
   - `get_usage_records()` - 获取使用记录
@@ -32,6 +35,7 @@
   - `delete_old_records()` - 删除旧记录
 
 #### API 路由
+
 - ✅ `GET /api/usage/records` - 获取使用记录
 - ✅ `GET /api/usage/statistics` - 获取使用统计
 - ✅ `GET /api/usage/cost/by-provider` - 按供应商统计
@@ -42,6 +46,7 @@
 ### 2. 前端实现
 
 #### 页面组件
+
 - ✅ `UsageStatistics.vue` - 使用统计主页面
   - 统计概览卡片（4 个关键指标）
   - 按供应商统计饼图
@@ -52,6 +57,7 @@
   - 清理旧记录功能
 
 #### 配置管理增强
+
 - ✅ `ConfigManagement.vue` - 显示定价信息
   - 模型卡片显示定价
   - 定价信息样式美化
@@ -61,12 +67,14 @@
   - 货币单位选择
 
 #### 路由和导航
+
 - ✅ 添加 `/settings/usage` 路由
 - ✅ 在设置页面添加"使用统计"菜单项
 - ✅ 添加导航函数 `goToUsageStatistics()`
 - ✅ 导入 `DataAnalysis` 图标
 
 #### API 调用
+
 - ✅ `frontend/src/api/usage.ts` - 使用统计 API
   - `getUsageRecords()` - 获取使用记录
   - `getUsageStatistics()` - 获取使用统计
@@ -86,29 +94,34 @@
 ### 新增文件
 
 #### 后端
+
 1. `app/services/usage_statistics_service.py` - 使用统计服务
 2. `app/routers/usage_statistics.py` - API 路由
 
 #### 前端
-3. `frontend/src/api/usage.ts` - API 调用
-4. `frontend/src/views/Settings/UsageStatistics.vue` - 统计页面
+
+1. `frontend/src/api/usage.ts` - API 调用
+2. `frontend/src/views/Settings/UsageStatistics.vue` - 统计页面
 
 #### 文档
-5. `docs/USAGE_STATISTICS_AND_PRICING.md` - 功能文档
-6. `docs/USAGE_STATISTICS_FRONTEND_GUIDE.md` - 前端指南
-7. `docs/USAGE_STATISTICS_IMPLEMENTATION_SUMMARY.md` - 实现总结
+
+1. `docs/USAGE_STATISTICS_AND_PRICING.md` - 功能文档
+2. `docs/USAGE_STATISTICS_FRONTEND_GUIDE.md` - 前端指南
+3. `docs/USAGE_STATISTICS_IMPLEMENTATION_SUMMARY.md` - 实现总结
 
 ### 修改文件
 
 #### 后端
+
 1. `app/models/config.py` - 添加定价字段和统计模型
 2. `app/main.py` - 注册使用统计路由
 
 #### 前端
-3. `frontend/src/views/Settings/ConfigManagement.vue` - 显示定价信息
-4. `frontend/src/views/Settings/components/LLMConfigDialog.vue` - 定价配置表单
-5. `frontend/src/views/Settings/index.vue` - 添加使用统计菜单
-6. `frontend/src/router/index.ts` - 添加使用统计路由
+
+1. `frontend/src/views/Settings/ConfigManagement.vue` - 显示定价信息
+2. `frontend/src/views/Settings/components/LLMConfigDialog.vue` - 定价配置表单
+3. `frontend/src/views/Settings/index.vue` - 添加使用统计菜单
+4. `frontend/src/router/index.ts` - 添加使用统计路由
 
 ## 🎯 功能特性
 
@@ -143,21 +156,23 @@
 ## 🔧 技术栈
 
 ### 后端
-- **FastAPI** - Web 框架
-- **MongoDB** - 数据存储
-- **Pydantic** - 数据验证
-- **Python 3.10+** - 编程语言
+
+- **FastAPI**- Web 框架
+- **MongoDB**- 数据存储
+- **Pydantic**- 数据验证
+- **Python 3.10+**- 编程语言
 
 ### 前端
-- **Vue 3** - 前端框架
-- **TypeScript** - 类型安全
-- **Element Plus** - UI 组件库
-- **ECharts** - 图表库
+
+- **Vue 3**- 前端框架
+- **TypeScript**- 类型安全
+- **Element Plus**- UI 组件库
+- **ECharts**- 图表库
 - **Vue Router** - 路由管理
 
 ## 📊 数据流
 
-```
+```bash
 用户操作
   ↓
 前端页面 (UsageStatistics.vue)
@@ -173,13 +188,14 @@ MongoDB 数据库
 返回数据
   ↓
 前端渲染（图表/表格）
-```
+
+```bash
 
 ## 🎨 界面设计
 
 ### 布局结构
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
 │ 📊 使用统计与计费                    [时间范围▼] [刷新]  │
 ├─────────────────────────────────────────────────────────┤
@@ -199,17 +215,20 @@ MongoDB 数据库
 ├─────────────────────────────────────────────────────────┤
 │ 使用记录                              [清理旧记录]       │
 │ ┌─────────────────────────────────────────────────────┐ │
-│ │ 时间 | 供应商 | 模型 | Token | 成本 | 会话ID        │ │
+│ │ 时间 | 供应商 | 模型 | Token | 成本 | 会话 ID        │ │
+
 │ ├─────────────────────────────────────────────────────┤ │
 │ │ ...                                                 │ │
 │ └─────────────────────────────────────────────────────┘ │
 │ [分页控件]                                              │
 └─────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 ## 🚀 访问方式
 
 ### 方式 1：通过导航菜单
+
 1. 登录系统
 2. 点击"设置"
 3. 选择"系统配置"
@@ -217,28 +236,34 @@ MongoDB 数据库
 5. 点击"查看使用统计"
 
 ### 方式 2：直接访问
-```
-http://localhost:5173/settings/usage
-```
+
+```bash
+<http://localhost:5173/settings/usage>
+
+```bash
 
 ## 💡 使用场景
 
 ### 场景 1：成本监控
+
 - 每周查看总成本
 - 对比不同时间段的成本
 - 识别成本异常
 
 ### 场景 2：模型优化
+
 - 对比不同模型的成本
 - 根据成本选择合适的模型
 - 平衡成本和效果
 
 ### 场景 3：供应商分析
+
 - 了解各供应商的使用情况
 - 优化供应商选择
 - 控制单一供应商依赖
 
 ### 场景 4：数据管理
+
 - 定期清理旧数据
 - 查看详细使用记录
 - 导出统计报表（未来功能）
@@ -276,6 +301,7 @@ http://localhost:5173/settings/usage
 ## 📝 测试建议
 
 ### 1. 功能测试
+
 - [ ] 测试定价配置保存
 - [ ] 测试使用统计查询
 - [ ] 测试图表渲染
@@ -283,11 +309,13 @@ http://localhost:5173/settings/usage
 - [ ] 测试清理旧记录
 
 ### 2. 性能测试
+
 - [ ] 测试大量数据加载
 - [ ] 测试图表渲染性能
 - [ ] 测试分页性能
 
 ### 3. 兼容性测试
+
 - [ ] 测试不同浏览器
 - [ ] 测试不同屏幕尺寸
 - [ ] 测试移动端显示
@@ -307,8 +335,8 @@ http://localhost:5173/settings/usage
 ## 📅 更新日志
 
 ### 2025-10-07
+
 - ✅ 完成后端 API 实现
 - ✅ 完成前端页面开发
 - ✅ 完成路由和导航集成
 - ✅ 完成文档编写
-

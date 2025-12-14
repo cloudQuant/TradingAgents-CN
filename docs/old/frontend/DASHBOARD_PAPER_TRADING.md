@@ -7,6 +7,7 @@
 ### 用户需求
 
 用户希望在仪表板页面能够快速查看模拟交易账户的关键信息，包括：
+
 - 现金余额
 - 持仓市值
 - 总资产
@@ -59,7 +60,8 @@
     </el-button>
   </div>
 </el-card>
-```
+
+```bash
 
 ### 2. 添加数据加载逻辑
 
@@ -88,7 +90,8 @@ onMounted(async () => {
   // ... 其他加载逻辑
   await loadPaperAccount()
 })
-```
+
+```bash
 
 ### 3. 添加辅助函数
 
@@ -109,7 +112,8 @@ const getPnlClass = (pnl: number) => {
   if (pnl < 0) return 'price-down'
   return 'price-neutral'
 }
-```
+
+```bash
 
 ### 4. 添加样式
 
@@ -180,13 +184,14 @@ const getPnlClass = (pnl: number) => {
     }
   }
 }
-```
+
+```bash
 
 ## 📊 功能展示
 
 ### 仪表板布局
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 欢迎使用 TradingAgents-CN                                            │
 │ 现代化的多智能体股票分析平台，助您做出更明智的投资决策                │
@@ -212,11 +217,12 @@ const getPnlClass = (pnl: number) => {
 │                              │ 多数据源同步                          │
 │                              │ 市场快讯                              │
 └──────────────────────────────┴──────────────────────────────────────┘
-```
+
+```bash
 
 ### 账户信息卡片
 
-```
+```bash
 ┌─────────────────────────────────────┐
 │ 模拟交易账户          [查看详情 →]  │
 ├─────────────────────────────────────┤
@@ -238,11 +244,12 @@ const getPnlClass = (pnl: number) => {
 │ └─────────────────────────────────┘ │
 │                                      │
 └─────────────────────────────────────┘
-```
+
+```bash
 
 ### 空状态
 
-```
+```bash
 ┌─────────────────────────────────────┐
 │ 模拟交易账户          [查看详情 →]  │
 ├─────────────────────────────────────┤
@@ -254,7 +261,8 @@ const getPnlClass = (pnl: number) => {
 │      [查看模拟交易]                  │
 │                                      │
 └─────────────────────────────────────┘
-```
+
+```bash
 
 ## 🎯 功能特点
 
@@ -288,14 +296,22 @@ const getPnlClass = (pnl: number) => {
 
 ### 数据流
 
-```
+```bash
+
 1. 页面加载
+
    ↓
-2. onMounted() 调用 loadPaperAccount()
+
+1. onMounted() 调用 loadPaperAccount()
+
    ↓
-3. 调用 paperApi.getAccount()
+
+1. 调用 paperApi.getAccount()
+
    ↓
-4. 获取账户信息
+
+1. 获取账户信息
+
    {
      account: {
        cash: 2329863.00,
@@ -305,10 +321,14 @@ const getPnlClass = (pnl: number) => {
      }
    }
    ↓
-5. 更新 paperAccount.value
+
+1. 更新 paperAccount.value
+
    ↓
-6. 渲染账户信息卡片
-```
+
+1. 渲染账户信息卡片
+
+```bash
 
 ### 金额格式化
 
@@ -319,7 +339,8 @@ const getPnlClass = (pnl: number) => {
 const formatMoney = (value: number) => {
   return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
-```
+
+```bash
 
 ### 盈亏颜色
 
@@ -333,15 +354,16 @@ const getPnlClass = (pnl: number) => {
   if (pnl < 0) return 'price-down'    // 绿色
   return 'price-neutral'              // 灰色
 }
-```
+
+```bash
 
 ## 📝 修改的文件
 
 ### 前端
 
-**文件**：`frontend/src/views/Dashboard/index.vue`
+- *文件**：`frontend/src/views/Dashboard/index.vue`
 
-**修改内容**：
+- *修改内容**：
 1. ✅ 增加模拟交易账户卡片
 2. ✅ 导入 `paperApi` 和类型定义
 3. ✅ 新增 `paperAccount` 数据
@@ -352,13 +374,13 @@ const getPnlClass = (pnl: number) => {
 8. ✅ 在 `onMounted()` 中调用加载函数
 9. ✅ 添加样式
 
-**代码行数**：约 100 行
+- *代码行数**：约 100 行
 
 ## 🧪 测试步骤
 
-### 测试1：正常显示
+### 测试 1：正常显示
 
-1. 打开仪表板页面：`http://localhost:5173/dashboard`
+1. 打开仪表板页面：`<http://localhost:5173/dashboard`>
 2. 验证自选股卡片下方显示"模拟交易账户"卡片
 3. 验证显示以下信息：
    - 现金（带千分位分隔符）
@@ -366,35 +388,35 @@ const getPnlClass = (pnl: number) => {
    - 总资产（蓝色高亮，带千分位分隔符）
    - 已实现盈亏（带颜色标识）
 
-### 测试2：金额格式化
+### 测试 2：金额格式化
 
 1. 验证金额显示格式：
    - `2329863.00` → `¥2,329,863.00`
    - `1002160.00` → `¥1,002,160.00`
    - `7691970.00` → `¥7,691,970.00`
 
-### 测试3：盈亏颜色
+### 测试 3：盈亏颜色
 
 1. 验证盈亏颜色：
    - 盈利（> 0）：红色
    - 亏损（< 0）：绿色
    - 持平（= 0）：灰色
 
-### 测试4：跳转功能
+### 测试 4：跳转功能
 
 1. 点击"查看详情"按钮
 2. 验证跳转到模拟交易页面：`/paper`
 
-### 测试5：空状态
+### 测试 5：空状态
 
 1. 模拟账户信息加载失败
 2. 验证显示空状态：
    - 图标
    - "暂无账户信息"文字
    - "查看模拟交易"按钮
-3. 点击按钮验证跳转
+1. 点击按钮验证跳转
 
-### 测试6：响应式
+### 测试 6：响应式
 
 1. 调整浏览器窗口大小
 2. 验证卡片布局正常
@@ -404,24 +426,28 @@ const getPnlClass = (pnl: number) => {
 
 ### 修改前
 
-```
+```bash
 仪表板右侧：
+
 - 我的自选股
 - 多数据源同步
 - 市场快讯
 - 使用提示
-```
+
+```bash
 
 ### 修改后
 
-```
+```bash
 仪表板右侧：
+
 - 我的自选股
 - 模拟交易账户 ✨ (新增)
 - 多数据源同步
 - 市场快讯
 - 使用提示
-```
+
+```bash
 
 ### 用户体验提升
 
@@ -437,11 +463,12 @@ const getPnlClass = (pnl: number) => {
 支持自动刷新账户信息：
 
 ```typescript
-// 每30秒自动刷新
+// 每 30 秒自动刷新
 setInterval(async () => {
   await loadPaperAccount()
 }, 30000)
-```
+
+```bash
 
 ### 2. 持仓概览
 
@@ -458,7 +485,8 @@ setInterval(async () => {
     {{ unrealized_pnl >= 0 ? '+' : '' }}¥{{ formatMoney(unrealized_pnl) }}
   </div>
 </div>
-```
+
+```bash
 
 ### 3. 收益率
 
@@ -471,7 +499,8 @@ setInterval(async () => {
     {{ return_rate >= 0 ? '+' : '' }}{{ return_rate.toFixed(2) }}%
   </div>
 </div>
-```
+
+```bash
 
 ### 4. 图表展示
 
@@ -480,15 +509,15 @@ setInterval(async () => {
 ```vue
 <div class="asset-chart">
   <el-progress
-    :percentage="(positions_value / equity * 100)"
-    :format="() => `持仓 ${(positions_value / equity * 100).toFixed(1)}%`"
+    :percentage="(positions_value / equity *100)"
+    :format="() => `持仓 ${(positions_value / equity* 100).toFixed(1)}%`"
   />
 </div>
-```
+
+```bash
 
 ## 📚 相关文档
 
-- [模拟交易API](../app/routers/paper.py)
+- [模拟交易 API](../app/routers/paper.py)
 - [仪表板页面](../frontend/src/views/Dashboard/index.vue)
-- [Element Plus Card](https://element-plus.org/zh-CN/component/card.html)
-
+- [Element Plus Card](<https://element-plus.org/zh-CN/component/card.html)>

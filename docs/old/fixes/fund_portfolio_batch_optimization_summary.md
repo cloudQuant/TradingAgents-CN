@@ -7,10 +7,15 @@
 ## 优化集合清单
 
 | 集合名称 | 状态 | 批次大小 | 说明 |
+
 |---------|------|---------|------|
+
 | `fund_portfolio_hold_em` | ✅ 已优化 | 100 | 基金持仓-东财 |
+
 | `fund_portfolio_bond_hold_em` | ✅ 已优化 | 100 | 基金债券持仓-东财 |
+
 | `fund_portfolio_industry_allocation_em` | ✅ 已优化 | 100 | 基金行业配置-东财 |
+
 | `fund_portfolio_change_em` | ✅ 无需优化 | 50 | 已使用分批处理 |
 
 ## 问题分析
@@ -22,24 +27,29 @@
 ### 根本原因
 
 ```python
+
 # 问题代码：一次性创建所有协程
+
 tasks = []
 for code, y in combinations_to_update:  # 可能有数万个组合
     tasks.append(update_one(code, y))
 
 await asyncio.gather(*tasks)  # ❌ 内存溢出，事件循环崩溃
-```
 
-**问题点：**
-1. **内存溢出** - 创建数万个协程对象占用大量内存
-2. **事件循环压力** - asyncio 无法有效管理数万个协程
-3. **任务调度失败** - 即使有 Semaphore 限制，协程创建不受控
+```bash
+
+- *问题点：**
+1. **内存溢出**- 创建数万个协程对象占用大量内存
+
+2.**事件循环压力**- asyncio 无法有效管理数万个协程
+3.**任务调度失败**- 即使有 Semaphore 限制，协程创建不受控
 
 ### 规模估算
 
 以 `fund_portfolio_hold_em` 为例：
+
 - 基金数量：~10,000 只
-- 年份范围：2010-2024（15年）
+- 年份范围：2010-2024（15 年）
 - **总组合数：150,000+**
 
 ## 优化方案
@@ -49,42 +59,47 @@ await asyncio.gather(*tasks)  # ❌ 内存溢出，事件循环崩溃
 采用**分批处理**模式，将大任务拆分为多个小批次：
 
 ```python
+
 # 优化后：分批处理
-BATCH_SIZE = 100  # 每批处理100个任务
+
+BATCH_SIZE = 100  # 每批处理 100 个任务
 
 try:
     for batch_start in range(0, len(combinations_to_update), BATCH_SIZE):
         batch_end = min(batch_start + BATCH_SIZE, len(combinations_to_update))
         batch_combinations = combinations_to_update[batch_start:batch_end]
-        
-        # 创建当前批次的任务
+
+# 创建当前批次的任务
         batch_tasks = []
         for code, y in batch_combinations:
             batch_tasks.append(update_one(code, y))
-        
-        # 执行当前批次（添加 return_exceptions=True 隔离错误）
+
+# 执行当前批次（添加 return_exceptions=True 隔离错误）
         await asyncio.gather(*batch_tasks, return_exceptions=True)
 finally:
     pbar.close()
-```
+
+```bash
 
 ### 优化优势
 
-1. ✅ **内存可控** - 每次只创建100个协程，避免内存溢出
-2. ✅ **事件循环稳定** - 分批执行，压力分散
-3. ✅ **错误隔离** - `return_exceptions=True` 确保单个失败不影响整批
-4. ✅ **进度可控** - 分批处理便于监控和调试
+1. ✅ **内存可控**- 每次只创建 100 个协程，避免内存溢出
+2. ✅**事件循环稳定**- 分批执行，压力分散
+3. ✅**错误隔离**- `return_exceptions=True` 确保单个失败不影响整批
+4. ✅**进度可控** - 分批处理便于监控和调试
 
 ## 修改详情
 
 ### 1. fund_portfolio_hold_em
 
-**文件：** `app/services/fund_refresh_service.py`  
-**修改位置：** 第 5800-5815 行  
-**方法：** `_refresh_fund_portfolio_hold_em`
+- *文件：** `app/services/fund_refresh_service.py`
+- *修改位置：** 第 5800-5815 行
+- *方法：** `_refresh_fund_portfolio_hold_em`
 
 ```python
+
 # 修改前（第 5800-5809 行）
+
 tasks = []
 for code, y in combinations_to_update:
     tasks.append(update_one(code, y))
@@ -95,51 +110,57 @@ finally:
     pbar.close()
 
 # 修改后（第 5800-5815 行）
+
 BATCH_SIZE = 100
 try:
     for batch_start in range(0, len(combinations_to_update), BATCH_SIZE):
         batch_end = min(batch_start + BATCH_SIZE, len(combinations_to_update))
         batch_combinations = combinations_to_update[batch_start:batch_end]
-        
+
         batch_tasks = []
         for code, y in batch_combinations:
             batch_tasks.append(update_one(code, y))
-        
+
         await asyncio.gather(*batch_tasks, return_exceptions=True)
 finally:
     pbar.close()
-```
+
+```bash
 
 ### 2. fund_portfolio_bond_hold_em
 
-**文件：** `app/services/fund_refresh_service.py`  
-**修改位置：** 第 6026-6041 行  
-**方法：** `_refresh_fund_portfolio_bond_hold_em`
+- *文件：** `app/services/fund_refresh_service.py`
+- *修改位置：** 第 6026-6041 行
+- *方法：** `_refresh_fund_portfolio_bond_hold_em`
 
 相同的分批处理逻辑，应用于债券持仓批量更新。
 
 ### 3. fund_portfolio_industry_allocation_em
 
-**文件：** `app/services/fund_refresh_service.py`  
-**修改位置：** 第 6265-6280 行  
-**方法：** `_refresh_fund_portfolio_industry_allocation_em`
+- *文件：** `app/services/fund_refresh_service.py`
+- *修改位置：** 第 6265-6280 行
+- *方法：** `_refresh_fund_portfolio_industry_allocation_em`
 
 相同的分批处理逻辑，应用于行业配置批量更新。
 
 ### 4. fund_portfolio_change_em
 
-**状态：** ✅ 无需修改  
-**原因：** 已经使用分批处理模式（chunk_size=50）
+- *状态：** ✅ 无需修改
+- *原因：** 已经使用分批处理模式（chunk_size=50）
 
 代码位置：第 6482-6488 行
+
 ```python
+
 # 已经是分批处理
+
 chunk_size = 50
 for i in range(0, total_funds, chunk_size):
     chunk = fund_codes[i:i + chunk_size]
     tasks = [fetch_and_save(code) for code in chunk]
     results = await asyncio.gather(*tasks)
-```
+
+```bash
 
 ## 参数配置
 
@@ -147,9 +168,12 @@ for i in range(0, total_funds, chunk_size):
 
 ```python
 BATCH_SIZE = 100        # 每批任务数（可调整为 50-200）
+
 concurrency = 3         # 并发数（Semaphore 限制）
+
 await asyncio.sleep(0.3)  # API 调用延迟（避免限流）
-```
+
+```bash
 
 ### 配置说明
 
@@ -163,37 +187,38 @@ await asyncio.sleep(0.3)  # API 调用延迟（避免限流）
   - 影响：并发越高，API 压力越大，可能触发限流
 
 - **延迟（sleep）**
-  - 默认：0.3秒
+  - 默认：0.3 秒
   - 作用：避免 API 调用过快触发东方财富网限流
 
 ## 性能对比
 
 ### 优化前
 
-- ❌ **任务全部失败** - 创建协程时内存溢出
-- ❌ **无法处理大规模** - 数万个任务无法执行
-- ❌ **事件循环崩溃** - asyncio 无法响应
+- ❌ **任务全部失败**- 创建协程时内存溢出
+- ❌**无法处理大规模**- 数万个任务无法执行
+- ❌**事件循环崩溃**- asyncio 无法响应
 
 ### 优化后
 
-- ✅ **任务稳定运行** - 分批处理避免内存问题
-- ✅ **支持大规模** - 可处理 10 万+ 任务
-- ✅ **进度实时监控** - 终端进度条和前端轮询
+- ✅**任务稳定运行**- 分批处理避免内存问题
+- ✅**支持大规模**- 可处理 10 万+ 任务
+- ✅**进度实时监控** - 终端进度条和前端轮询
 
 ### 性能预估
 
 假设条件：
-- 总任务数：150,000（10,000基金 × 15年）
+
+- 总任务数：150,000（10,000 基金 × 15 年）
 - 批次大小：100
 - 并发数：3
-- 每次API调用：0.5秒（含延迟）
+- 每次 API 调用：0.5 秒（含延迟）
 
-**预计时间：**
-- 每批次耗时：100 ÷ 3 × 0.5 = 16.7秒
-- 总批次数：150,000 ÷ 100 = 1,500批
+- *预计时间：**
+- 每批次耗时：100 ÷ 3 × 0.5 = 16.7 秒
+- 总批次数：150,000 ÷ 100 = 1,500 批
 - **总耗时：约 7 小时**
 
-**实际优化：**
+- *实际优化：**
 - 增量更新：只更新缺失数据，大幅减少任务数
 - 指定年份：限制年份范围，减少到原来的 1/15
 
@@ -206,16 +231,16 @@ await asyncio.sleep(0.3)  # API 调用延迟（避免限流）
    - `fund_portfolio_bond_hold_em`: `/funds/collections/fund_portfolio_bond_hold_em`
    - `fund_portfolio_industry_allocation_em`: `/funds/collections/fund_portfolio_industry_allocation_em`
 
-2. 点击"更新数据" → "API更新"
+1. 点击"更新数据" → "API 更新"
 
-3. 选择"批量更新"选项卡
+2. 选择"批量更新"选项卡
 
-4. 配置参数：
+3. 配置参数：
    - **年份**（可选）：指定特定年份或留空更新所有年份
    - **并发数**：建议 3-5
    - **日期**（行业配置专用）：格式 YYYY-MM-DD
 
-5. 点击"批量更新"按钮
+1. 点击"批量更新"按钮
 
 ### 监控任务进度
 
@@ -229,16 +254,20 @@ await asyncio.sleep(0.3)  # API 调用延迟（避免限流）
 ### 测试脚本
 
 ```bash
+
 # 进入项目目录
+
 cd f:\source_code\TradingAgents-CN
 
 # 运行测试脚本
+
 python tests/funds/test_fund_portfolio_batch_fix.py
-```
+
+```bash
 
 ### 预期结果
 
-```
+```bash
 ✅ 测试通过：批量更新成功，没有失败任务！
 
 测试结果:
@@ -247,7 +276,8 @@ python tests/funds/test_fund_portfolio_batch_fix.py
 ✓ 成功任务数: XXX
 ✓ 失败任务数: 0
 ✓ 跳过任务数: XXX
-```
+
+```bash
 
 ## 后续优化建议
 
@@ -257,7 +287,8 @@ python tests/funds/test_fund_portfolio_batch_fix.py
 
 ```python
 BATCH_SIZE = int(os.getenv('FUND_BATCH_SIZE', 100))
-```
+
+```bash
 
 ### 2. 动态调整
 
@@ -267,20 +298,25 @@ BATCH_SIZE = int(os.getenv('FUND_BATCH_SIZE', 100))
 import psutil
 
 available_memory = psutil.virtual_memory().available
-BATCH_SIZE = min(200, max(50, available_memory // (1024 * 1024 * 100)))
-```
+BATCH_SIZE = min(200, max(50, available_memory // (1024 *1024* 100)))
+
+```bash
 
 ### 3. 进度持久化
 
 支持断点续传，任务中断后可继续：
 
 ```python
-# 保存进度到Redis或文件
+
+# 保存进度到 Redis 或文件
+
 await save_progress(task_id, completed_tasks)
 
 # 恢复进度
+
 completed_tasks = await load_progress(task_id)
-```
+
+```bash
 
 ### 4. 失败重试
 
@@ -295,7 +331,8 @@ for retry in range(MAX_RETRIES):
     except Exception as e:
         if retry == MAX_RETRIES - 1:
             logger.error(f"重试{MAX_RETRIES}次失败: {e}")
-```
+
+```bash
 
 ## 检查清单
 
@@ -316,14 +353,14 @@ for retry in range(MAX_RETRIES):
 
 ## 版本信息
 
-- **优化日期：** 2024-11-25
-- **修改文件：** `app/services/fund_refresh_service.py`
+- **优化日期：**2024-11-25
+- **修改文件：**`app/services/fund_refresh_service.py`
 - **涉及方法：**
   - `_refresh_fund_portfolio_hold_em` (行 5800-5815)
   - `_refresh_fund_portfolio_bond_hold_em` (行 6026-6041)
   - `_refresh_fund_portfolio_industry_allocation_em` (行 6265-6280)
 - **优化策略：** 分批处理模式（BATCH_SIZE = 100）
 
----
+- --
 
-**总结：** 通过分批处理模式，成功解决了三个基金持仓集合的批量更新失败问题。优化后的代码可以稳定处理数万级别的任务，支持大规模数据更新。
+- *总结：** 通过分批处理模式，成功解决了三个基金持仓集合的批量更新失败问题。优化后的代码可以稳定处理数万级别的任务，支持大规模数据更新。

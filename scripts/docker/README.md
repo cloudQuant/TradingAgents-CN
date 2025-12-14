@@ -2,24 +2,28 @@
 
 ## 目录说明
 
-Docker容器管理脚本
+Docker 容器管理脚本
 
 ## 脚本列表
 
-- `docker-compose-start.bat - 启动Docker Compose`
-- `start_docker_services.* - 启动Docker服务`
-- `stop_docker_services.* - 停止Docker服务`
-- `mongo-init.js - MongoDB初始化脚本`
+- `docker-compose-start.bat - 启动 Docker Compose`
+- `start_docker_services.* - 启动 Docker 服务`
+- `stop_docker_services.* - 停止 Docker 服务`
+- `mongo-init.js - MongoDB 初始化脚本`
 
 ## 使用方法
 
 ```bash
+
 # 进入项目根目录
+
 cd C:\code\TradingAgentsCN
 
 # 运行脚本
+
 python scripts/docker/script_name.py
-```
+
+```bash
 
 ## 注意事项
 

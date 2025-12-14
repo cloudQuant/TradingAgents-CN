@@ -15,9 +15,9 @@
 
 #### 1.1 响应拦截器优化
 
-**文件**: `frontend/src/api/request.ts`
+- *文件**: `frontend/src/api/request.ts`
 
-**优化内容**：
+- *优化内容**：
 - 在成功响应中检查业务错误码（401, 40101, 40102, 40103）
 - 优先处理认证错误，不依赖 `skipErrorHandler` 配置
 - 统一跳转登录页逻辑
@@ -33,17 +33,21 @@ instance.interceptors.response.use(
         // 检查是否是认证错误（优先处理，不依赖 skipErrorHandler）
         const code = data.code
         if (code === 401 || code === 40101 || code === 40102 || code === 40103) {
+
           console.log('🔒 业务错误：认证失败 (HTTP 200)，跳转登录页')
           authStore.clearAuthInfo()
           router.push('/login')
           ElMessage.error(data.message || '登录已过期，请重新登录')
+
           return Promise.reject(new Error(data.message || '认证失败'))
+
         }
-        
+
         // 其他业务错误
         if (!config.skipErrorHandler) {
           handleBusinessError(data)
           return Promise.reject(new Error(data.message || '请求失败'))
+
         }
       }
     }
@@ -52,13 +56,14 @@ instance.interceptors.response.use(
   },
   // ... 错误响应处理
 )
-```
+
+```bash
 
 #### 1.2 业务错误处理优化
 
-**文件**: `frontend/src/api/request.ts`
+- *文件**: `frontend/src/api/request.ts`
 
-**优化内容**：
+- *优化内容**：
 - 在 `handleBusinessError` 函数中添加认证错误码处理
 - 统一认证错误的处理逻辑
 
@@ -76,32 +81,38 @@ const handleBusinessError = (data: ApiResponse) => {
       authStore.clearAuthInfo()
       router.push('/login')
       ElMessage.error(message || '登录已过期，请重新登录')
+
       break
     // ... 其他错误码处理
   }
 }
-```
+
+```bash
 
 ### 2. 全局错误处理
 
-**文件**: `frontend/src/main.ts`
+- *文件**: `frontend/src/main.ts`
 
-**优化内容**：
+- *优化内容**：
 - 在全局错误处理器中捕获未处理的认证错误
 - 确保所有认证错误都能跳转到登录页
 
 ```typescript
 app.config.errorHandler = (err, vm, info) => {
   console.error('全局错误:', err, info)
-  
+
   // 检查是否是认证错误
   if (err && typeof err === 'object') {
     const error = err as any
     if (
       error.message?.includes('认证失败') ||
+
       error.message?.includes('登录已过期') ||
+
       error.message?.includes('Token') ||
+
       error.response?.status === 401 ||
+
       error.code === 401
     ) {
       console.log('🔒 全局错误处理：检测到认证错误，跳转登录页')
@@ -111,13 +122,14 @@ app.config.errorHandler = (err, vm, info) => {
     }
   }
 }
-```
+
+```bash
 
 ### 3. Token 自动刷新机制
 
-**文件**: `frontend/src/utils/auth.ts`
+- *文件**: `frontend/src/utils/auth.ts`
 
-**新增功能**：
+- *新增功能**：
 - `isTokenValid()`: 检查 token 是否有效
 - `parseToken()`: 解析 token 获取 payload
 - `getTokenRemainingTime()`: 获取 token 剩余有效时间
@@ -125,7 +137,7 @@ app.config.errorHandler = (err, vm, info) => {
 - `autoRefreshToken()`: 自动刷新即将过期的 token
 - `setupTokenRefreshTimer()`: 设置定时器，每分钟检查并刷新 token
 
-**使用方式**：
+- *使用方式**：
 
 ```typescript
 // 在应用初始化时启动定时器
@@ -135,18 +147,19 @@ import { setupTokenRefreshTimer } from '@/utils/auth'
 if (authStore.isAuthenticated) {
   setupTokenRefreshTimer()
 }
-```
+
+```bash
 
 ### 4. 认证工具函数
 
-**文件**: `frontend/src/utils/auth.ts`
+- *文件**: `frontend/src/utils/auth.ts`
 
-**新增功能**：
+- *新增功能**：
 - `isAuthError()`: 检查是否是认证错误
 - `handleAuthError()`: 统一处理认证错误
 - Token 相关工具函数
 
-**使用示例**：
+- *使用示例**：
 
 ```typescript
 import { isAuthError, handleAuthError } from '@/utils/auth'
@@ -160,14 +173,17 @@ try {
     // 处理其他错误
   }
 }
-```
+
+```bash
 
 ## 认证错误码规范
 
 ### HTTP 状态码
+
 - `401`: 未授权（Unauthorized）
 
 ### 业务错误码
+
 - `401`: 认证失败（通用）
 - `40101`: 未授权（未登录）
 - `40102`: Token 无效
@@ -177,7 +193,7 @@ try {
 
 ### 1. 登录流程
 
-```
+```bash
 用户输入账号密码
     ↓
 调用登录 API
@@ -191,11 +207,12 @@ try {
 启动 token 自动刷新定时器
     ↓
 跳转到目标页面
-```
+
+```bash
 
 ### 2. Token 刷新流程
 
-```
+```bash
 定时器每分钟检查 token
     ↓
 检查 token 是否即将过期（< 5 分钟）
@@ -207,11 +224,12 @@ try {
 更新 localStorage 和 Pinia store
     ↓
 更新 axios 请求头
-```
+
+```bash
 
 ### 3. 认证失败处理流程
 
-```
+```bash
 API 请求返回 401 或认证错误码
     ↓
 响应拦截器捕获错误
@@ -227,15 +245,16 @@ API 请求返回 401 或认证错误码
 跳转到登录页
     ↓
 显示错误提示
-```
+
+```bash
 
 ## 测试场景
 
 ### 1. Token 过期测试
 
-**场景**: 用户长时间未操作，token 过期
+- *场景**: 用户长时间未操作，token 过期
 
-**预期行为**:
+- *预期行为**:
 1. 用户操作时，API 返回 401
 2. 前端自动尝试刷新 token
 3. 如果刷新成功，继续原操作
@@ -243,9 +262,9 @@ API 请求返回 401 或认证错误码
 
 ### 2. Refresh Token 过期测试
 
-**场景**: refresh_token 也过期了
+- *场景**: refresh_token 也过期了
 
-**预期行为**:
+- *预期行为**:
 1. 用户操作时，API 返回 401
 2. 前端尝试刷新 token，但 refresh_token 也无效
 3. 清除认证信息
@@ -254,9 +273,9 @@ API 请求返回 401 或认证错误码
 
 ### 3. 业务错误码测试
 
-**场景**: 后端返回 HTTP 200，但 `{success: false, code: 401}`
+- *场景**: 后端返回 HTTP 200，但 `{success: false, code: 401}`
 
-**预期行为**:
+- *预期行为**:
 1. 响应拦截器检测到业务错误码 401
 2. 清除认证信息
 3. 跳转到登录页
@@ -264,9 +283,9 @@ API 请求返回 401 或认证错误码
 
 ### 4. Token 自动刷新测试
 
-**场景**: Token 即将过期（剩余 < 5 分钟）
+- *场景**: Token 即将过期（剩余 < 5 分钟）
 
-**预期行为**:
+- *预期行为**:
 1. 定时器检测到 token 即将过期
 2. 自动调用刷新 API
 3. 更新 token
@@ -296,4 +315,3 @@ API 请求返回 401 或认证错误码
 3. **多标签页同步**: 使用 BroadcastChannel 或 localStorage 事件同步多标签页的认证状态
 4. **安全增强**: 实现 CSRF 保护、XSS 防护等安全措施
 5. **监控和日志**: 集成前端监控服务，记录认证相关的错误和异常
-

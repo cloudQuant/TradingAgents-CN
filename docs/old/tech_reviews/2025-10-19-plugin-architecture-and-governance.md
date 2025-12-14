@@ -1,10 +1,11 @@
 # 插件体系技术指南与治理
 
-日期：2025-10-19  
-项目：TradingAgents-CN  
+日期：2025-10-19
+项目：TradingAgents-CN
 用途：统一插件架构、接口规范、打包分发、安全治理与许可合规指南
 
 ## 1. 目标与原则
+
 - 解耦：数据、策略、内核（回测/模拟）、执行、风控、报告等模块以插件形式按需装配。
 - 稳定：明确 `apiVersion` 与兼容矩阵，采用语义化版本与弃用策略。
 - 合规：遵循开源许可边界（GPLv3/Commons Clause/Apache-2.0），避免主平台被传染；强化审计与 NOTICE。
@@ -13,6 +14,7 @@
 - 可测：提供一致的测试夹具（fixtures）与合规测试覆盖；黄金样本集回放。
 
 ## 2. 插件分类与扩展点（Extension Points）
+
 - DataSource 插件：行情、基本面、企业事件、交易日历、公司行为；统一输出 Canonical Schema。
 - Feature/Indicator 插件：因子工程、指标计算（向量化/流式）；支持版本冻结与 PIT。
 - Strategy 插件：
@@ -25,6 +27,7 @@
 - UI/CLI 扩展：前端视图扩展点与命令行子命令（非核心）。
 
 ## 3. 统一接口规范（Core Interfaces）
+
 - 基类：`PluginBase`
   - 元数据：`name/type/version/apiVersion/capabilities`。
   - 生命周期：`init(config) -> Ready`、`start()`、`stop()`、`dispose()`。
@@ -44,10 +47,12 @@
   - `submit_order(order)`、`cancel_order(id)`、`get_portfolio()`、`get_positions()`、`stream_events()`。
 - Risk：
   - `pre_trade_check(ctx, order)` → `allow|reject|modify` + `reasons`；事中与事后钩子可选。
+
 - Report：
   - `build_report(ctx, artifacts)` → 指标集与导出文件。
 
 ## 4. 远程插件（Microservice Plugins）
+
 - 传输：REST/gRPC/Arrow Flight（历史/批量）；SSE/WebSocket（实时/回放）；消息队列（可选）。
 - 边界：与主平台保持“臂长关系”；仅以标准协议通信，避免静态链接/代码嵌入，符合 GPLv3 合规。
 - 典型端点：
@@ -56,6 +61,7 @@
   - `GET /data/candles`、`GET /data/industry`、`GET /meta/symbol/resolve`
 
 ## 5. 打包与元数据（Packaging & Manifest）
+
 - 结构：
   - `plugins/<type>/<name>/`
   - `plugin.yaml`（清单）与 `pyproject.toml`（Python 包）或容器镜像描述。
@@ -70,11 +76,13 @@
 - 容器插件：标注镜像与端点，采用健康检查与限额（CPU/Mem/FD/I/O）。
 
 ## 6. 版本与兼容策略
+
 - 语义化版本：`MAJOR.MINOR.PATCH`；`apiVersion` 仅在破坏性变更时提升 MAJOR。
 - 兼容矩阵：`core_version` 与 `plugin.compatibilityRange`；在文档发布弃用窗口与迁移指南。
 - 配置冻结：策略/数据/规则版本字段在报告中固化，确保复现。
 
 ## 7. 安全与沙箱
+
 - 进程隔离：插件默认独立进程/容器；主平台通过 IPC/HTTP 交互。
 - 权限与密钥：最小权限；密钥由主平台注入，插件只读临时凭据；访问审计。
 - 资源限额：CPU/内存/并发/速率限制；防止资源劫持。
@@ -82,6 +90,7 @@
 - 日志与观测：结构化日志、指标、健康探针；异常上报与熔断策略。
 
 ## 8. 分发与安装
+
 - 本地注册表：`plugins/registry.json` 记录可用插件与兼容范围。
 - 安装方式：
   - Python 包：`pip install tradingagents-plugin-<name>`。
@@ -90,17 +99,20 @@
 - 管理：`pluginctl add/list/enable/disable/remove`；校验签名与兼容性。
 
 ## 9. 许可与合规（关键）
+
 - Backtrader（GPLv3）：作为独立服务（容器/进程），以 HTTP/SSE 调用；若对外分发该服务，需附 GPLv3 与对应源代码；主平台保持“臂长关系”，不嵌入 GPL 代码。
 - vectorbt（Apache-2.0 + Commons Clause）：允许集成与分发插件；禁止销售“主要价值源自其功能”的产品/服务（含托管/支持若主要价值即其功能）。
 - Lean（Apache-2.0）：商业友好，适合作为 EngineAdapter 插件；注意与主平台的接口边界与 NOTICE。
 - 合规流程：插件清单记录 `license`；发布前进行许可证扫描与 NOTICE 汇总；商业售卖前进行“主要价值”评估与法务确认。
 
 ## 10. 测试与观测
+
 - 夹具：统一黄金样本（CN/HK/US 各 50–100 标的），覆盖符号/行业/单位/时区差异。
 - 合规测试：接口契约测试（schema 校验）、负载与稳定性、错误注入与恢复。
 - 观测：插件级别的指标（吞吐/延迟/错误率）、事件日志与审计报告。
 
 ## 11. 实施路径（Phased Plan）
+
 - Phase 0：定义 `PluginBase`、类型接口与 `plugin.yaml` 清单；发布兼容矩阵草案。
 - Phase 1：实现插件管理器（注册/加载/生命周期/健康探针/签名校验）。
 - Phase 2：产出参考插件：
@@ -111,6 +123,7 @@
 - Phase 4：风险/报告插件、插件商店与发布流程；完善许可合规自动化。
 
 ## 12. 示例：plugin.yaml（片段）
+
 ```yaml
 name: engine.backtrader
 type: engine.adapter
@@ -121,22 +134,29 @@ compatibility:
   core: ">=0.1.16 <0.2.0"
   schema: "v1"
 capabilities:
+
   - backtest
   - paper
+
 permissions:
   network: true
   filesystem: read
 dependencies:
+
   - backtrader>=1.9
+
 license: GPL-3.0-only
 author: Example Team
-```
+
+```bash
 
 ## 13. 路由与事件模型（对齐）
+
 - 控制面：`POST /paper/session/start`、`POST /paper/order`、`GET /paper/portfolio`、`GET /paper/stream`。
 - 事件主题：`order.created`、`order.updated`、`trade.filled`、`portfolio.updated`、`risk.alert`；消息格式遵循统一数据标准（UTC、`full_symbol` 等）。
 
 ## 14. 落地检查清单（Checklist）
+
 - 发布 `PluginBase` 与类型接口文档；冻结 `apiVersion v1`。
 - 完成 `plugin.yaml` 规范与示例；实现签名与校验流程。
 - 打通插件管理器基本能力（注册/加载/健康/卸载）。

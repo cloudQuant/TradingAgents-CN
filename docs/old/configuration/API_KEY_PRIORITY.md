@@ -14,7 +14,7 @@
    - 所有用户共享
    - 支持在线编辑和更新
 
-2. **环境变量**（`.env` 文件）
+1. **环境变量**（`.env` 文件）
    - 系统启动时加载
    - CLI 客户端使用
    - 作为兜底配置
@@ -22,9 +22,10 @@
 
 ## 🔄 优先级规则
 
-```
+```bash
 有效的数据库配置 > 环境变量配置 > 无配置（报错）
-```
+
+```bash
 
 ### 什么是"有效的配置"？
 
@@ -46,18 +47,22 @@ else:
         来源标记为 "environment"
     else:
         报错：未配置有效的 API Key
-```
+
+```bash
 
 ## 📊 使用场景
 
 ### 场景 1：只配置环境变量
 
 ```bash
-# .env 文件
-DEEPSEEK_API_KEY=sk-real-key-from-env-12345678
-```
 
-**结果**：使用环境变量的 Key
+# .env 文件
+
+DEEPSEEK_API_KEY=sk-real-key-from-env-12345678
+
+```bash
+
+- *结果**：使用环境变量的 Key
 
 ### 场景 2：只配置数据库
 
@@ -67,16 +72,20 @@ DEEPSEEK_API_KEY=sk-real-key-from-env-12345678
   "name": "deepseek",
   "api_key": "sk-real-key-from-db-87654321"
 }
-```
 
-**结果**：使用数据库的 Key
+```bash
+
+- *结果**：使用数据库的 Key
 
 ### 场景 3：两者都配置（数据库有效）
 
 ```bash
+
 # .env 文件
+
 DEEPSEEK_API_KEY=sk-env-key-12345678
-```
+
+```bash
 
 ```javascript
 // MongoDB
@@ -84,16 +93,20 @@ DEEPSEEK_API_KEY=sk-env-key-12345678
   "name": "deepseek",
   "api_key": "sk-db-key-87654321"  // 有效的 Key
 }
-```
 
-**结果**：使用数据库的 Key（优先级更高）
+```bash
+
+- *结果**：使用数据库的 Key（优先级更高）
 
 ### 场景 4：两者都配置（数据库无效）
 
 ```bash
+
 # .env 文件
+
 DEEPSEEK_API_KEY=sk-env-key-12345678
-```
+
+```bash
 
 ```javascript
 // MongoDB
@@ -101,16 +114,20 @@ DEEPSEEK_API_KEY=sk-env-key-12345678
   "name": "deepseek",
   "api_key": "your_deepseek_api_key_here"  // 占位符，无效
 }
-```
 
-**结果**：使用环境变量的 Key（数据库配置无效，降级到环境变量）
+```bash
+
+- *结果**：使用环境变量的 Key（数据库配置无效，降级到环境变量）
 
 ### 场景 5：两者都未配置
 
 ```bash
+
 # .env 文件
+
 DEEPSEEK_API_KEY=  # 空
-```
+
+```bash
 
 ```javascript
 // MongoDB
@@ -118,45 +135,58 @@ DEEPSEEK_API_KEY=  # 空
   "name": "deepseek",
   "api_key": ""  // 空
 }
-```
 
-**结果**：报错，提示未配置有效的 API Key
+```bash
+
+- *结果**：报错，提示未配置有效的 API Key
 
 ## 🔍 验证逻辑
 
 ### 无效的 API Key 示例
 
 ```python
+
 # ❌ 空字符串
+
 api_key = ""
 
 # ❌ None
+
 api_key = None
 
 # ❌ 占位符（以 your_ 开头）
+
 api_key = "your_api_key_here"
 api_key = "your_deepseek_api_key"
 
 # ❌ 占位符（以 your- 开头）
+
 api_key = "your-api-key-here"
 
 # ❌ 长度不够（≤ 10 个字符）
+
 api_key = "short"
 api_key = "1234567890"
-```
+
+```bash
 
 ### 有效的 API Key 示例
 
 ```python
+
 # ✅ 标准格式
+
 api_key = "sk-1234567890abcdef"
 
 # ✅ 长格式
+
 api_key = "sk-proj-1234567890abcdefghijklmnopqrstuvwxyz"
 
 # ✅ 其他格式（只要长度 > 10）
+
 api_key = "AIzaSyD1234567890"
-```
+
+```bash
 
 ## 🛠️ 实现细节
 
@@ -170,20 +200,21 @@ api_key = "AIzaSyD1234567890"
 def _is_valid_api_key(self, api_key: Optional[str]) -> bool:
     if not api_key:
         return False
-    
+
     api_key = api_key.strip()
-    
+
     if not api_key:
         return False
-    
+
     if api_key.startswith('your_') or api_key.startswith('your-'):
         return False
-    
+
     if len(api_key) <= 10:
         return False
-    
+
     return True
-```
+
+```bash
 
 #### 2. `_get_env_api_key(provider_name: str) -> Optional[str]`
 
@@ -195,17 +226,19 @@ def _get_env_api_key(self, provider_name: str) -> Optional[str]:
         "openai": "OPENAI_API_KEY",
         "deepseek": "DEEPSEEK_API_KEY",
         "dashscope": "DASHSCOPE_API_KEY",
-        # ...
+
+# ...
     }
-    
+
     env_var = env_key_mapping.get(provider_name)
     if env_var:
         api_key = os.getenv(env_var)
         if self._is_valid_api_key(api_key):
             return api_key
-    
+
     return None
-```
+
+```bash
 
 #### 3. `get_llm_providers() -> List[LLMProvider]`
 
@@ -215,26 +248,28 @@ def _get_env_api_key(self, provider_name: str) -> Optional[str]:
 async def get_llm_providers(self) -> List[LLMProvider]:
     providers_data = await providers_collection.find().to_list(length=None)
     providers = []
-    
+
     for provider_data in providers_data:
         provider = LLMProvider(**provider_data)
-        
-        # 判断数据库中的 Key 是否有效
+
+# 判断数据库中的 Key 是否有效
         db_key_valid = self._is_valid_api_key(provider.api_key)
-        
+
         if not db_key_valid:
-            # 尝试从环境变量获取
+
+# 尝试从环境变量获取
             env_key = self._get_env_api_key(provider.name)
             if env_key:
                 provider.api_key = env_key
                 provider.extra_config["source"] = "environment"
         else:
             provider.extra_config["source"] = "database"
-        
+
         providers.append(provider)
-    
+
     return providers
-```
+
+```bash
 
 ## 🧪 测试
 
@@ -242,9 +277,10 @@ async def get_llm_providers(self) -> List[LLMProvider]:
 
 ```bash
 python scripts/test_api_key_priority.py
-```
 
+```bash
 测试内容：
+
 1. API Key 验证逻辑测试
 2. 厂家配置优先级测试
 3. 配置来源标识测试
@@ -257,25 +293,25 @@ python scripts/test_api_key_priority.py
    - 方便快速切换
    - 不需要数据库操作
 
-2. **生产环境**：✅ **使用 Web 界面配置到数据库**（推荐）
+1. **生产环境**：✅ **使用 Web 界面配置到数据库**（推荐）
    - 集中管理
    - 可以在线修改
    - 支持审计日志
    - 无需重启服务
 
-3. **混合模式**：数据库配置 + 环境变量兜底
+1. **混合模式**：数据库配置 + 环境变量兜底
    - 数据库配置主要的 Key
    - 环境变量作为备用
    - 系统自动选择有效的配置
 
 ### 如何在 Web 界面配置 API Key
 
-1. **登录系统** → **设置** → **厂家管理**
+1. **登录系统**→**设置**→**厂家管理**
 2. **点击"编辑"按钮**，打开厂家信息编辑对话框
 3. **在"API Key"输入框中输入你的 API Key**
 4. **点击"更新"按钮**保存
 
-**注意事项**：
+- *注意事项**：
 - API Key 会被加密存储在数据库中
 - 如果留空，系统会自动使用 `.env` 文件中的配置
 - 如果输入无效的 Key（占位符或长度不够），系统会忽略并使用环境变量
@@ -284,36 +320,38 @@ python scripts/test_api_key_priority.py
 
 如果你要使用的大模型厂家不在预设列表中：
 
-1. **登录系统** → **设置** → **厂家管理**
+1. **登录系统**→**设置**→**厂家管理**
 2. **点击"添加厂家"按钮**
 3. **填写厂家信息**：
-   - **厂家ID**：小写英文标识符（如 `custom_provider`）
+   - **厂家 ID**：小写英文标识符（如 `custom_provider`）
    - **显示名称**：中文名称（如 `自定义厂家`）
    - **API Key**：你的 API Key
-   - **默认API地址**：厂家的 API 基础地址
-4. **点击"添加"按钮**保存
+   - **默认 API 地址**：厂家的 API 基础地址
+1. **点击"添加"按钮**保存
 
-**示例**：添加一个自定义的 OpenAI 兼容 API
+- *示例**：添加一个自定义的 OpenAI 兼容 API
 
-```
-厂家ID: custom_openai
+```bash
+厂家 ID: custom_openai
 显示名称: 自定义 OpenAI
 描述: 自定义的 OpenAI 兼容 API
-官网: https://custom.com
-API文档: https://custom.com/docs
-默认API地址: https://api.custom.com/v1
+官网: <https://custom.com>
+API 文档: <https://custom.com/docs>
+默认 API 地址: <https://api.custom.com/v1>
 API Key: sk-custom-key-1234567890abcdef
-```
+
+```bash
 
 ### 配置检查
 
 在系统启动时，会自动检查所有厂家的配置状态：
 
-```
-✅ 使用数据库配置的 DeepSeek API密钥
-✅ 数据库配置无效，从环境变量为厂家 OpenAI 获取API密钥
-⚠️ 厂家 Anthropic 的数据库配置和环境变量都未配置有效的API密钥
-```
+```bash
+✅ 使用数据库配置的 DeepSeek API 密钥
+✅ 数据库配置无效，从环境变量为厂家 OpenAI 获取 API 密钥
+⚠️ 厂家 Anthropic 的数据库配置和环境变量都未配置有效的 API 密钥
+
+```bash
 
 ## 🔒 安全建议
 
@@ -328,4 +366,3 @@ API Key: sk-custom-key-1234567890abcdef
 - [配置管理系统](./CONFIG_MIGRATION_PLAN.md)
 - [厂家配置管理](../fixes/data-source/PROVIDER_ID_FIX.md)
 - [环境变量配置](.env.example)
-

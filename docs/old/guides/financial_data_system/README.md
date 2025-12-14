@@ -2,13 +2,13 @@
 
 ## 🎯 概述
 
-TradingAgents-CN财务数据系统提供了完整的股票财务数据管理功能，支持多数据源同步、统一存储、高效查询和数据对比分析。
+TradingAgents-CN 财务数据系统提供了完整的股票财务数据管理功能，支持多数据源同步、统一存储、高效查询和数据对比分析。
 
 ### ✨ 核心特性
 
-- **多数据源支持**: Tushare、AKShare、BaoStock三大数据源
+- **多数据源支持**: Tushare、AKShare、BaoStock 三大数据源
 - **统一数据模型**: 标准化的财务数据存储格式
-- **高效查询**: 10个优化索引，毫秒级响应
+- **高效查询**: 10 个优化索引，毫秒级响应
 - **批量同步**: 支持大规模财务数据同步
 - **数据对比**: 跨数据源数据质量验证
 - **RESTful API**: 完整的查询和管理接口
@@ -17,7 +17,7 @@ TradingAgents-CN财务数据系统提供了完整的股票财务数据管理功�
 
 ### 核心组件
 
-```
+```bash
 财务数据系统
 ├── 数据服务层 (FinancialDataService)
 │   ├── 数据存储管理
@@ -27,7 +27,7 @@ TradingAgents-CN财务数据系统提供了完整的股票财务数据管理功�
 │   ├── 多数据源同步
 │   ├── 批量处理
 │   └── 错误处理
-├── API接口层 (financial_data.router)
+├── API 接口层 (financial_data.router)
 │   ├── 查询接口
 │   ├── 同步管理
 │   └── 统计接口
@@ -35,20 +35,22 @@ TradingAgents-CN财务数据系统提供了完整的股票财务数据管理功�
     ├── TushareProvider
     ├── AKShareProvider
     └── BaoStockProvider
-```
+
+```bash
 
 ### 数据流程
 
 ```mermaid
 graph TD
-    A[数据源APIs] --> B[数据提供者]
+    A[数据源 APIs] --> B[数据提供者]
     B --> C[同步服务]
     C --> D[数据标准化]
     D --> E[财务数据服务]
-    E --> F[MongoDB存储]
+    E --> F[MongoDB 存储]
     F --> G[查询接口]
     G --> H[客户端应用]
-```
+
+```bash
 
 ## 📊 数据模型
 
@@ -63,7 +65,7 @@ graph TD
   "report_period": "20231231",  // 报告期 (YYYYMMDD)
   "report_type": "quarterly",   // 报告类型 (quarterly/annual)
   "ann_date": "2024-03-20",     // 公告日期
-  
+
   // 核心财务指标
   "revenue": 500000000000.0,        // 营业收入
   "net_income": 50000000000.0,      // 净利润
@@ -71,25 +73,26 @@ graph TD
   "total_equity": 280000000000.0,   // 股东权益
   "total_liab": 4200000000000.0,    // 总负债
   "cash_and_equivalents": 180000000000.0, // 现金及现金等价物
-  
+
   // 财务比率
   "roe": 23.21,          // 净资产收益率
   "roa": 1.44,           // 总资产收益率
   "gross_margin": 75.0,  // 毛利率
   "net_margin": 36.11,   // 净利率
   "debt_to_assets": 93.33, // 资产负债率
-  
+
   // 元数据
   "data_source": "tushare",     // 数据源
   "created_at": ISODate("..."), // 创建时间
   "updated_at": ISODate("..."), // 更新时间
   "version": 1                  // 数据版本
 }
-```
+
+```bash
 
 ### 优化索引
 
-系统创建了10个优化索引以支持高效查询：
+系统创建了 10 个优化索引以支持高效查询：
 
 1. **symbol_period_source_unique**: 唯一索引，防止重复数据
 2. **full_symbol_period**: 支持完整代码查询
@@ -107,38 +110,51 @@ graph TD
 ### 1. 系统初始化
 
 ```bash
+
 # 创建财务数据集合和索引
+
 python scripts/setup/create_financial_data_collection.py
 
 # 运行系统测试
-python test_financial_data_system.py
-```
 
-### 2. API接口使用
+python test_financial_data_system.py
+
+```bash
+
+### 2. API 接口使用
 
 #### 查询财务数据
 
 ```bash
+
 # 查询股票财务数据
+
 GET /api/financial-data/query/000001?limit=10
 
 # 获取最新财务数据
+
 GET /api/financial-data/latest/000001
 
 # 按数据源筛选
+
 GET /api/financial-data/query/000001?data_source=tushare
 
 # 按报告期筛选
+
 GET /api/financial-data/query/000001?report_period=20231231
 
 # 按报告类型筛选
+
 GET /api/financial-data/query/000001?report_type=annual
-```
+
+```bash
 
 #### 同步管理
 
 ```bash
+
 # 启动财务数据同步
+
 POST /api/financial-data/sync/start
 {
   "symbols": ["000001", "000002"],
@@ -149,6 +165,7 @@ POST /api/financial-data/sync/start
 }
 
 # 同步单只股票
+
 POST /api/financial-data/sync/single
 {
   "symbol": "000001",
@@ -156,14 +173,18 @@ POST /api/financial-data/sync/single
 }
 
 # 获取同步统计
+
 GET /api/financial-data/sync/statistics
 
 # 获取财务数据统计
+
 GET /api/financial-data/statistics
 
 # 健康检查
+
 GET /api/financial-data/health
-```
+
+```bash
 
 ### 3. 程序化使用
 
@@ -173,9 +194,11 @@ GET /api/financial-data/health
 from app.services.financial_data_service import get_financial_data_service
 
 # 获取服务实例
+
 service = await get_financial_data_service()
 
 # 保存财务数据
+
 saved_count = await service.save_financial_data(
     symbol="000001",
     financial_data=financial_data,
@@ -186,20 +209,24 @@ saved_count = await service.save_financial_data(
 )
 
 # 查询财务数据
+
 results = await service.get_financial_data(
     symbol="000001",
     limit=10
 )
 
 # 获取最新财务数据
+
 latest = await service.get_latest_financial_data(
     symbol="000001",
     data_source="tushare"
 )
 
 # 获取统计信息
+
 stats = await service.get_financial_statistics()
-```
+
+```bash
 
 #### 同步服务
 
@@ -207,9 +234,11 @@ stats = await service.get_financial_statistics()
 from app.worker.financial_data_sync_service import get_financial_sync_service
 
 # 获取同步服务
+
 sync_service = await get_financial_sync_service()
 
 # 批量同步
+
 results = await sync_service.sync_financial_data(
     symbols=["000001", "000002"],
     data_sources=["tushare", "akshare"],
@@ -217,11 +246,13 @@ results = await sync_service.sync_financial_data(
 )
 
 # 单股票同步
+
 result = await sync_service.sync_single_stock(
     symbol="000001",
     data_sources=["tushare"]
 )
-```
+
+```bash
 
 ### 4. 数据库查询
 
@@ -259,7 +290,8 @@ db.stock_financial_data.aggregate([
     "avg_roe": {"$avg": "$roe"}
   }}
 ])
-```
+
+```bash
 
 ## 📈 数据源特性
 
@@ -289,71 +321,81 @@ db.stock_financial_data.aggregate([
 ### 1. 数据质量验证
 
 ```python
+
 # 跨数据源数据对比
+
 async def compare_financial_data(symbol: str, report_period: str):
     service = await get_financial_data_service()
-    
-    # 获取不同数据源的数据
+
+# 获取不同数据源的数据
     tushare_data = await service.get_financial_data(
         symbol=symbol,
         report_period=report_period,
         data_source="tushare"
     )
-    
+
     akshare_data = await service.get_financial_data(
         symbol=symbol,
         report_period=report_period,
         data_source="akshare"
     )
-    
-    # 对比关键指标
+
+# 对比关键指标
     return compare_indicators(tushare_data, akshare_data)
-```
+
+```bash
 
 ### 2. 批量数据分析
 
 ```python
+
 # 行业财务指标分析
+
 async def analyze_industry_financials(industry: str):
-    # 获取行业股票列表
+
+# 获取行业股票列表
     stocks = await get_industry_stocks(industry)
-    
-    # 批量获取财务数据
+
+# 批量获取财务数据
     financial_data = []
     for symbol in stocks:
         data = await service.get_latest_financial_data(symbol)
         if data:
             financial_data.append(data)
-    
-    # 计算行业平均指标
+
+# 计算行业平均指标
     return calculate_industry_metrics(financial_data)
-```
+
+```bash
 
 ### 3. 自动化同步
 
 ```python
+
 # 定时同步任务
+
 async def scheduled_financial_sync():
     sync_service = await get_financial_sync_service()
-    
-    # 同步主要股票的财务数据
+
+# 同步主要股票的财务数据
     results = await sync_service.sync_financial_data(
         symbols=get_major_stocks(),
         data_sources=["tushare", "akshare"],
         batch_size=100,
         delay_seconds=0.5
     )
-    
-    # 记录同步结果
+
+# 记录同步结果
     log_sync_results(results)
-```
+
+```bash
 
 ## 📊 性能优化
 
 ### 查询优化
 
-- **索引使用**: 充分利用10个优化索引
-- **分页查询**: 使用limit参数控制返回数量
+- **索引使用**: 充分利用 10 个优化索引
+- **分页查询**: 使用 limit 参数控制返回数量
 - **字段筛选**: 只查询需要的字段
 - **缓存策略**: 对频繁查询的数据进行缓存
 
@@ -369,39 +411,40 @@ async def scheduled_financial_sync():
 ### 常见问题
 
 1. **数据源连接失败**
-   - 检查API配置和网络连接
-   - 验证API密钥和权限
+   - 检查 API 配置和网络连接
+   - 验证 API 密钥和权限
 
-2. **数据保存失败**
-   - 检查MongoDB连接状态
+1. **数据保存失败**
+   - 检查 MongoDB 连接状态
    - 验证数据格式和索引
 
-3. **查询性能慢**
+1. **查询性能慢**
    - 检查索引使用情况
    - 优化查询条件
 
-4. **同步任务失败**
+1. **同步任务失败**
    - 查看错误日志
-   - 检查API调用频率限制
+   - 检查 API 调用频率限制
 
 ### 监控指标
 
 - 数据同步成功率
 - 查询响应时间
 - 数据库存储使用量
-- API调用频率
+- API 调用频率
 
 ## 📝 总结
 
-财务数据系统为TradingAgents-CN提供了强大的财务数据管理能力：
+财务数据系统为 TradingAgents-CN 提供了强大的财务数据管理能力：
 
 - ✅ **完整性**: 支持三大数据源的财务数据
-- ✅ **统一性**: 标准化的数据模型和API接口
+- ✅ **统一性**: 标准化的数据模型和 API 接口
 - ✅ **高性能**: 优化的索引和查询性能
 - ✅ **可扩展**: 灵活的架构支持未来扩展
 - ✅ **可靠性**: 完善的错误处理和监控
 
 该系统特别适合：
+
 - 📊 **基本面分析**: 完整的财务指标支持深度分析
 - 🔍 **投资研究**: 多数据源验证提高数据可靠性
 - 🤖 **量化策略**: 标准化数据支持策略开发

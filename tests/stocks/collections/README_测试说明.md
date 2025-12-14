@@ -41,40 +41,51 @@
 ### 运行 Playwright 测试
 
 ```bash
+
 # 安装 Playwright
+
 pip install playwright
 playwright install chromium
 
 # 运行所有 Playwright 测试
+
 pytest -m playwright -v
 
 # 运行单个文件的 Playwright 测试
+
 pytest 007_stock_sse_summary_collection.py::TestStockSSESummaryCollection::test_ui_update_data_flow -v
 
 # 设置前端地址
-export FRONTEND_BASE_URL="http://localhost:3000"
-```
+
+export FRONTEND_BASE_URL="<http://localhost:3000">
+
+```bash
 
 ### 环境变量
 
 ```bash
-# 前端地址（默认 http://localhost:3000）
-export FRONTEND_BASE_URL="http://localhost:3000"
-```
+
+# 前端地址（默认 <http://localhost:3000）>
+
+export FRONTEND_BASE_URL="<http://localhost:3000">
+
+```bash
 
 ## test_collections_requirements_coverage.py
 
 ### 功能
+
 验证 stocks/collections 页面与需求文档的一致性：
-1. 从 `tests/stocks/requirements/*.md` 解析需求文档中声明的集合（约365个）
+
+1. 从 `tests/stocks/requirements/*.md` 解析需求文档中声明的集合（约 365 个）
 2. 校验后端 API `/api/stocks/collections` 是否返回这些集合
 3. 测试前端页面 `/stocks/collections/{name}` 是否可以正常打开
 4. 生成详细的测试报告日志文件
 
-**重要说明：**
-- 需求文档中可能声明了365个集合，但 API 可能只实现了其中一部分（如91个）
+- *重要说明：**
+- 需求文档中可能声明了 365 个集合，但 API 可能只实现了其中一部分（如 91 个）
 - **第一个测试**会验证 API 是否返回了需求文档中声明的所有集合，如果有缺失会显示详细列表
-- **第二个测试**只会测试那些**既在需求文档中声明又在 API 中实现**的集合（如91个）
+- **第二个测试**只会测试那些**既在需求文档中声明又在 API 中实现**的集合（如 91 个）
 - 不会测试那些尚未在 API 中实现的集合，因为前端无法访问不存在的数据
 
 ### 快速检查（推荐先运行）
@@ -85,10 +96,12 @@ export FRONTEND_BASE_URL="http://localhost:3000"
 cd f:\source_code\云子量化\tests\stocks
 
 # 快速检查当前覆盖率
-python quick_check.py
-```
 
+python quick_check.py
+
+```bash
 这会快速显示：
+
 - 需求文档中声明了多少个集合
 - API 实际返回了多少个集合
 - 缺少了多少个集合
@@ -97,39 +110,53 @@ python quick_check.py
 ### 运行完整测试
 
 ```powershell
+
 # 在 tests/stocks 目录下运行
+
 cd f:\source_code\云子量化\tests\stocks
 
-# 方式1：显示详细输出（推荐）
+# 方式 1：显示详细输出（推荐）
+
 pytest .\collections\test_collections_requirements_coverage.py -v -s
 
-# 方式2：静默运行
+# 方式 2：静默运行
+
 pytest .\collections\test_collections_requirements_coverage.py
 
-# 方式3：只运行 API 覆盖测试
+# 方式 3：只运行 API 覆盖测试
+
 pytest .\collections\test_collections_requirements_coverage.py::TestStocksCollectionsRequirementsCoverage::test_requirements_collections_covered_by_api -v -s
 
-# 方式4：只运行前端页面测试
+# 方式 4：只运行前端页面测试
+
 pytest .\collections\test_collections_requirements_coverage.py::TestStocksCollectionsRequirementsCoverage::test_requirements_collections_frontend_openable -v -s
-```
+
+```bash
 
 ### 环境变量（可选）
 
 ```powershell
-# 设置后端 API 地址（默认 http://localhost:8000）
-$env:API_BASE_URL="http://localhost:8000"
 
-# 设置前端地址（默认 http://localhost:3000）
-$env:FRONTEND_BASE_URL="http://localhost:3000"
+# 设置后端 API 地址（默认 <http://localhost:8000）>
+
+$env:API_BASE_URL="<http://localhost:8000">
+
+# 设置前端地址（默认 <http://localhost:3000）>
+
+$env:FRONTEND_BASE_URL="<http://localhost:3000">
 
 # 设置认证 Token（可选，如果后端需要认证）
+
 $env:TEST_AUTH_TOKEN="your_token_here"
-```
+
+```bash
 
 ### 测试输出
 
 #### 控制台输出
+
 显示实时测试进度和摘要统计：
+
 - 需求文档中声明的集合数量
 - API 返回的集合数量
 - 已实现/缺失的集合列表
@@ -137,19 +164,22 @@ $env:TEST_AUTH_TOKEN="your_token_here"
 - 成功/失败的统计
 
 #### 日志文件
-详细的测试日志会自动保存到：
-```
-tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
-```
 
+详细的测试日志会自动保存到：
+
+```bash
+tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
+
+```bash
 日志文件包含：
+
 - 完整的集合列表（已实现和缺失）
 - 每个集合的测试结果
 - 失败集合的详细信息（状态码、错误信息、对应需求文档）
 
 ### 输出示例
 
-```
+```bash
 ================================================================================
 【需求文档扫描结果】
   从需求文档中解析到 300 个数据集合需要验证
@@ -158,7 +188,7 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
 
 【API 接口返回结果】
   API 接口 /api/stocks/collections 返回 90 个数据集合
-  API 地址: http://localhost:8000/api/stocks/collections
+  API 地址: <http://localhost:8000/api/stocks/collections>
 ================================================================================
 
 【验证结果统计】
@@ -167,22 +197,29 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
   覆盖率: 90/300 (30%)
 ================================================================================
 
-【已实现的集合列表】(90个)
+【已实现的集合列表】(90 个)
+
     1. ✓ market_quotes
     2. ✓ stock_basic_info
     3. ✓ stock_daily
+
     ...
 
-【缺失的集合详情】(210个)
+【缺失的集合详情】(210 个)
+
     1. ✗ stock_zh_a_hist
-         文档: 05_A股历史行情-东财.md
-    2. ✗ stock_individual_info_em
+
+         文档: 05_A 股历史行情-东财.md
+
+    1. ✗ stock_individual_info_em
+
          文档: 12_个股信息查询-东财-完成.md
     ...
 ================================================================================
 
 ✓ 详细日志已保存到: f:\source_code\云子量化\tests\stocks\test_coverage_report_20241123_195530.log
-```
+
+```bash
 
 ### 如何使用测试结果
 
@@ -191,12 +228,12 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
    - 每个缺失集合会标注对应的需求文档
    - 按照需求文档实现对应的后端接口和前端页面
 
-2. **查看失败的页面**
+1. **查看失败的页面**
    - 日志会显示哪些集合详情页打开失败
    - 包含 HTTP 状态码和最终跳转路径
    - 根据对应的需求文档修复前端路由或页面
 
-3. **追踪进度**
+1. **追踪进度**
    - 运行测试可以看到当前实现的覆盖率
    - 每次实现新集合后重新运行测试验证
 
@@ -206,14 +243,14 @@ tests/stocks/test_coverage_report_YYYYMMDD_HHMMSS.log
    - 使用 `-s` 参数：`pytest ... -s`
    - 查看日志文件获取完整信息
 
-2. **后端未启动**
+1. **后端未启动**
    - 测试会自动跳过并提示
    - 启动后端后重新运行
 
-3. **前端未启动**
+1. **前端未启动**
    - 前端页面测试会跳过
    - 启动前端后重新运行
 
-4. **需要认证**
+1. **需要认证**
    - 设置 `TEST_AUTH_TOKEN` 环境变量
    - 或者在测试时跳过认证测试

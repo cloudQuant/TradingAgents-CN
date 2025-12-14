@@ -2,196 +2,236 @@
 
 ## 🎯 概述
 
-本文档提供了TradingAgents-CN导出功能常见问题的详细解决方案，包括Word、PDF、Markdown导出的各种故障排除方法。
+本文档提供了 TradingAgents-CN 导出功能常见问题的详细解决方案，包括 Word、PDF、Markdown 导出的各种故障排除方法。
 
-## 📄 Word导出问题
+## 📄 Word 导出问题
 
-### 问题1: YAML解析错误
+### 问题 1: YAML 解析错误
 
-**错误信息**:
+- *错误信息**:
 
-```
-Pandoc died with exitcode "64" during conversion: 
+```bash
+Pandoc died with exitcode "64" during conversion:
 YAML parse exception at line 1, column 1,
 while scanning an alias:
 did not find expected alphabetic or numeric character
-```
 
-**原因分析**:
+```bash
 
-- Markdown内容中的表格分隔符 `|------|------| ` 被pandoc误认为YAML文档分隔符
-- 特殊字符导致YAML解析冲突
+- *原因分析**:
 
-**解决方案**:
+- Markdown 内容中的表格分隔符 `|------|------| ` 被 pandoc 误认为 YAML 文档分隔符
+
+- 特殊字符导致 YAML 解析冲突
+
+- *解决方案**:
 
 ```python
-# 已在代码中自动修复
-extra_args = ['--from=markdown-yaml_metadata_block']  # 禁用YAML解析
-```
 
-**验证方法**:
+# 已在代码中自动修复
+
+extra_args = ['--from=markdown-yaml_metadata_block']  # 禁用 YAML 解析
 
 ```bash
-# 测试Word导出
+
+- *验证方法**:
+
+```bash
+
+# 测试 Word 导出
+
 docker exec TradingAgents-web python test_conversion.py
-```
 
-### 问题2: 中文字符显示异常
+```bash
 
-**错误现象**:
+### 问题 2: 中文字符显示异常
 
-- Word文档中中文显示为方块或乱码
+- *错误现象**:
+
+- Word 文档中中文显示为方块或乱码
 - 特殊符号（¥、%等）显示异常
 
-**解决方案**:
+- *解决方案**:
 
-1. **Docker环境**（推荐）:
+1. **Docker 环境**（推荐）:
 
    ```bash
-   # Docker已预配置中文字体，无需额外设置
+
+# Docker 已预配置中文字体，无需额外设置
    docker-compose up -d
    ```
-2. **本地环境**:
+
+1. **本地环境**:
 
    ```bash
-   # Windows
-   # 确保系统已安装中文字体
 
-   # Linux
+# Windows
+
+# 确保系统已安装中文字体
+
+# Linux
    sudo apt-get install fonts-noto-cjk
 
-   # macOS
-   # 系统自带中文字体支持
+# macOS
+
+# 系统自带中文字体支持
    ```
 
-### 问题3: Word文件损坏或无法打开
+### 问题 3: Word 文件损坏或无法打开
 
-**错误现象**:
+- *错误现象**:
 
-- 生成的.docx文件无法用Word打开
-- 文件大小为0或异常小
+- 生成的.docx 文件无法用 Word 打开
+- 文件大小为 0 或异常小
 
-**诊断步骤**:
+- *诊断步骤**:
 
 ```bash
+
 # 1. 检查生成的文件
+
 docker exec TradingAgents-web ls -la /app/test_*.docx
 
-# 2. 验证pandoc安装
+# 2. 验证 pandoc 安装
+
 docker exec TradingAgents-web pandoc --version
 
 # 3. 测试基础转换
-docker exec TradingAgents-web python test_conversion.py
-```
 
-**解决方案**:
+docker exec TradingAgents-web python test_conversion.py
 
 ```bash
-# 重新构建Docker镜像
+
+- *解决方案**:
+
+```bash
+
+# 重新构建 Docker 镜像
+
 docker-compose down
 docker build -t tradingagents-cn:latest . --no-cache
 docker-compose up -d
-```
 
-## 📊 PDF导出问题
+```bash
 
-### 问题1: PDF引擎不可用
+## 📊 PDF 导出问题
 
-**错误信息**:
+### 问题 1: PDF 引擎不可用
 
-```
-PDF生成失败，最后错误: wkhtmltopdf not found
-```
+- *错误信息**:
 
-**解决方案**:
+```bash
+PDF 生成失败，最后错误: wkhtmltopdf not found
 
-1. **Docker环境**（推荐）:
+```bash
+
+- *解决方案**:
+
+1. **Docker 环境**（推荐）:
 
    ```bash
-   # 检查PDF引擎安装
+
+# 检查 PDF 引擎安装
    docker exec TradingAgents-web wkhtmltopdf --version
    docker exec TradingAgents-web weasyprint --version
    ```
-2. **本地环境安装**:
+
+1. **本地环境安装**:
 
    ```bash
-   # Windows
+
+# Windows
    choco install wkhtmltopdf
 
-   # macOS
+# macOS
    brew install wkhtmltopdf
 
-   # Linux
+# Linux
    sudo apt-get install wkhtmltopdf
    ```
 
-### 问题2: PDF生成超时
+### 问题 2: PDF 生成超时
 
-**错误现象**:
+- *错误现象**:
 
-- PDF生成过程卡住不动
+- PDF 生成过程卡住不动
 - 长时间无响应
 
-**解决方案**:
+- *解决方案**:
 
 ```python
-# 增加超时设置（已在代码中配置）
-max_execution_time = 180  # 3分钟超时
-```
 
-**临时解决**:
+# 增加超时设置（已在代码中配置）
+
+max_execution_time = 180  # 3 分钟超时
 
 ```bash
-# 重启Web服务
+
+- *临时解决**:
+
+```bash
+
+# 重启 Web 服务
+
 docker-compose restart web
-```
 
-### 问题3: PDF中文显示问题
+```bash
 
-**错误现象**:
+### 问题 3: PDF 中文显示问题
 
-- PDF中中文字符显示为空白或方块
+- *错误现象**:
+
+- PDF 中中文字符显示为空白或方块
 - 布局错乱
 
-**解决方案**:
+- *解决方案**:
 
 ```bash
-# Docker环境已预配置，如有问题请重新构建
+
+# Docker 环境已预配置，如有问题请重新构建
+
 docker build -t tradingagents-cn:latest . --no-cache
-```
 
-## 📝 Markdown导出问题
+```bash
 
-### 问题1: 特殊字符转义
+## 📝 Markdown 导出问题
 
-**错误现象**:
+### 问题 1: 特殊字符转义
+
+- *错误现象**:
 
 - 特殊字符（&、<、>等）显示异常
 - 表格格式错乱
 
-**解决方案**:
+- *解决方案**:
 
 ```python
+
 # 自动字符转义（已实现）
+
 text = text.replace('&', '&')
 text = text.replace('<', '<')
 text = text.replace('>', '>')
-```
 
-### 问题2: 文件编码问题
+```bash
 
-**错误现象**:
+### 问题 2: 文件编码问题
 
-- 下载的Markdown文件乱码
+- *错误现象**:
+
+- 下载的 Markdown 文件乱码
 - 中文字符显示异常
 
-**解决方案**:
+- *解决方案**:
 
 ```python
-# 确保UTF-8编码（已配置）
+
+# 确保 UTF-8 编码（已配置）
+
 with open(file_path, 'w', encoding='utf-8') as f:
     f.write(content)
-```
+
+```bash
 
 ## 🔧 通用故障排除
 
@@ -200,34 +240,39 @@ with open(file_path, 'w', encoding='utf-8') as f:
 1. **测试转换功能**:
 
    ```bash
-   # 基础转换测试
+
+# 基础转换测试
    docker exec TradingAgents-web python test_conversion.py
 
-   # 实际数据转换测试
+# 实际数据转换测试
    docker exec TradingAgents-web python test_real_conversion.py
 
-   # 现有报告转换测试
+# 现有报告转换测试
    docker exec TradingAgents-web python test_existing_reports.py
    ```
-2. **检查系统状态**:
+
+1. **检查系统状态**:
 
    ```bash
-   # 查看容器状态
+
+# 查看容器状态
    docker-compose ps
 
-   # 查看日志
+# 查看日志
    docker logs TradingAgents-web --tail 50
 
-   # 检查磁盘空间
+# 检查磁盘空间
    docker exec TradingAgents-web df -h
    ```
-3. **验证依赖**:
+
+1. **验证依赖**:
 
    ```bash
-   # 检查Python包
+
+# 检查 Python 包
    docker exec TradingAgents-web pip list | grep -E "(pandoc|docx|pypandoc)"
 
-   # 检查系统工具
+# 检查系统工具
    docker exec TradingAgents-web which pandoc
    docker exec TradingAgents-web which wkhtmltopdf
    ```
@@ -237,28 +282,36 @@ with open(file_path, 'w', encoding='utf-8') as f:
 如果问题持续存在，可以尝试完全重置环境：
 
 ```bash
+
 # 1. 停止所有服务
+
 docker-compose down
 
-# 2. 清理Docker资源
+# 2. 清理 Docker 资源
+
 docker system prune -f
 
 # 3. 重新构建镜像
+
 docker build -t tradingagents-cn:latest . --no-cache
 
 # 4. 重新启动服务
+
 docker-compose up -d
 
 # 5. 验证功能
+
 docker exec TradingAgents-web python test_conversion.py
-```
+
+```bash
 
 ### 性能优化
 
 1. **内存不足**:
 
    ```yaml
-   # docker-compose.yml
+
+# docker-compose.yml
    services:
      web:
        deploy:
@@ -266,10 +319,12 @@ docker exec TradingAgents-web python test_conversion.py
            limits:
              memory: 2G  # 增加内存限制
    ```
-2. **磁盘空间**:
+
+1. **磁盘空间**:
 
    ```bash
-   # 清理临时文件
+
+# 清理临时文件
    docker exec TradingAgents-web find /tmp -name "*.docx" -delete
    docker exec TradingAgents-web find /tmp -name "*.pdf" -delete
    ```
@@ -285,7 +340,8 @@ docker exec TradingAgents-web python test_conversion.py
    ```bash
    docker logs TradingAgents-web --tail 100 > error.log
    ```
-2. **系统信息**:
+
+1. **系统信息**:
 
    ```bash
    docker exec TradingAgents-web python --version
@@ -293,7 +349,8 @@ docker exec TradingAgents-web python test_conversion.py
    docker --version
    docker-compose --version
    ```
-3. **测试结果**:
+
+1. **测试结果**:
 
    ```bash
    docker exec TradingAgents-web python test_conversion.py > test_result.log 2>&1
@@ -303,12 +360,19 @@ docker exec TradingAgents-web python test_conversion.py
 
 
 | 问题类型     | 快速解决方案   | 详细方案       |
+
 | ------------ | -------------- | -------------- |
-| YAML解析错误 | 重启Web服务    | 检查代码修复   |
-| PDF引擎缺失  | 使用Docker环境 | 手动安装引擎   |
-| 中文显示问题 | 使用Docker环境 | 安装中文字体   |
-| 文件损坏     | 重新生成       | 重建Docker镜像 |
+
+| YAML 解析错误 | 重启 Web 服务    | 检查代码修复   |
+
+| PDF 引擎缺失  | 使用 Docker 环境 | 手动安装引擎   |
+
+| 中文显示问题 | 使用 Docker 环境 | 安装中文字体   |
+
+| 文件损坏     | 重新生成       | 重建 Docker 镜像 |
+
 | 内存不足     | 重启容器       | 增加内存限制   |
+
 | 网络超时     | 检查网络       | 增加超时设置   |
 
 ### 预防措施
@@ -319,18 +383,20 @@ docker exec TradingAgents-web python test_conversion.py
    git pull origin develop
    docker-compose pull
    ```
-2. **监控资源**:
+
+1. **监控资源**:
 
    ```bash
    docker stats TradingAgents-web
    ```
-3. **备份配置**:
+
+1. **备份配置**:
 
    ```bash
    cp .env .env.backup
    ```
 
----
+- --
 
-*最后更新: 2025-07-13*
-*版本: v0.1.7*
+- 最后更新: 2025-07-13*
+- 版本: v0.1.7*

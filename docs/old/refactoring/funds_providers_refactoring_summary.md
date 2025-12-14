@@ -8,11 +8,11 @@
 
 ### 重构模式分类
 
-#### 1. SimpleProvider（简单Provider）- 约60+个
+#### 1. SimpleProvider（简单 Provider）- 约 60+个
 
-**特点**：无参数或直接传递所有参数，无需复杂的参数映射或验证
+- *特点**：无参数或直接传递所有参数，无需复杂的参数映射或验证
 
-**已重构示例**：
+- *已重构示例**：
 - `fund_aum_em_provider.py`
 - `fund_basic_info_provider.py`
 - `fund_fee_em_provider.py`
@@ -76,7 +76,8 @@
 - `fund_name_em_provider.py`
 - 等等...
 
-**重构后代码结构**：
+- *重构后代码结构**：
+
 ```python
 from app.services.data_sources.base_provider import SimpleProvider
 
@@ -85,21 +86,23 @@ class XxxProvider(SimpleProvider):
     display_name = "xxx"
     akshare_func = "xxx"
     unique_keys = []
-```
 
-#### 2. BaseProvider（单参数Provider）- 6个
+```bash
 
-**特点**：需要单个参数（fund_code或year），需要参数映射和验证
+#### 2. BaseProvider（单参数 Provider）- 6 个
 
-**已重构**：
-- `fund_cf_em_provider.py` - 需要year参数，自动添加年份字段
-- `fund_fh_em_provider.py` - 需要year参数，自动添加年份字段
-- `fund_financial_fund_info_em_provider.py` - 需要fund_code参数
-- `fund_etf_fund_info_em_provider.py` - 需要fund_code参数，支持可选start_date/end_date
-- `fund_open_fund_info_em_provider.py` - 需要fund_code参数，支持可选indicator
-- `fund_money_fund_info_em_provider.py` - 需要fund_code参数
+- *特点**：需要单个参数（fund_code 或 year），需要参数映射和验证
 
-**重构后代码结构**：
+- *已重构**：
+- `fund_cf_em_provider.py` - 需要 year 参数，自动添加年份字段
+- `fund_fh_em_provider.py` - 需要 year 参数，自动添加年份字段
+- `fund_financial_fund_info_em_provider.py` - 需要 fund_code 参数
+- `fund_etf_fund_info_em_provider.py` - 需要 fund_code 参数，支持可选 start_date/end_date
+- `fund_open_fund_info_em_provider.py` - 需要 fund_code 参数，支持可选 indicator
+- `fund_money_fund_info_em_provider.py` - 需要 fund_code 参数
+
+- *重构后代码结构**：
+
 ```python
 from app.services.data_sources.base_provider import BaseProvider
 
@@ -108,29 +111,31 @@ class XxxProvider(BaseProvider):
     display_name = "xxx"
     akshare_func = "xxx"
     unique_keys = [...]
-    
+
     param_mapping = {
         "fund_code": "fund",
         "fund": "fund",
         "code": "fund",
     }
     required_params = ["fund"]
-    
+
     add_param_columns = {
         "fund": "基金代码",
     }
-```
 
-#### 3. BaseProvider（多参数Provider）- 3个
+```bash
 
-**特点**：需要多个参数（fund_code和year），需要参数映射和验证
+#### 3. BaseProvider（多参数 Provider）- 3 个
 
-**已重构**：
-- `fund_portfolio_hold_em_provider.py` - 需要fund_code和year参数，自定义时间戳字段
-- `fund_portfolio_bond_hold_em_provider.py` - 需要fund_code和year参数，自定义时间戳字段
-- `fund_portfolio_change_em_provider.py` - 需要fund_code和year参数，indicator有默认值
+- *特点**：需要多个参数（fund_code 和 year），需要参数映射和验证
 
-**重构后代码结构**：
+- *已重构**：
+- `fund_portfolio_hold_em_provider.py` - 需要 fund_code 和 year 参数，自定义时间戳字段
+- `fund_portfolio_bond_hold_em_provider.py` - 需要 fund_code 和 year 参数，自定义时间戳字段
+- `fund_portfolio_change_em_provider.py` - 需要 fund_code 和 year 参数，indicator 有默认值
+
+- *重构后代码结构**：
+
 ```python
 from app.services.data_sources.base_provider import BaseProvider
 
@@ -139,7 +144,7 @@ class XxxProvider(BaseProvider):
     display_name = "xxx"
     akshare_func = "xxx"
     unique_keys = [...]
-    
+
     param_mapping = {
         "fund_code": "symbol",
         "symbol": "symbol",
@@ -148,55 +153,64 @@ class XxxProvider(BaseProvider):
         "date": "date",
     }
     required_params = ["symbol", "date"]
-    
+
     add_param_columns = {
         "symbol": "基金代码",
     }
-    
+
     timestamp_field = "更新时间"
-```
+
+```bash
 
 ## 重构效果
 
 ### 代码量对比
 
-| Provider类型 | 重构前平均行数 | 重构后平均行数 | 减少比例 |
+| Provider 类型 | 重构前平均行数 | 重构后平均行数 | 减少比例 |
+
 |-------------|--------------|--------------|----------|
-| SimpleProvider | ~50行 | ~10行 | **-80%** |
-| 单参数BaseProvider | ~68行 | ~30行 | **-56%** |
-| 多参数BaseProvider | ~73行 | ~40行 | **-45%** |
+
+| SimpleProvider | ~50 行 | ~10 行 | **-80%**|
+
+| 单参数 BaseProvider | ~68 行 | ~30 行 |**-56%**|
+
+| 多参数 BaseProvider | ~73 行 | ~40 行 |**-45%**|
 
 ### 总体统计
 
-- **总Provider数**：约70个
-- **已重构数量**：70个（100%）
-- **总代码减少量**：约3000+行
-- **平均代码减少**：约60-80%
+- **总 Provider 数**：约 70 个
+- **已重构数量**：70 个（100%）
+- **总代码减少量**：约 3000+行
+- **平均代码减少**：约 60-80%
 
 ## BaseProvider 优化特性
 
 ### 1. 灵活的参数映射
-- 支持多个前端参数映射到一个akshare参数
+
+- 支持多个前端参数映射到一个 akshare 参数
 - 例如：`fund_code/symbol/code` 都映射到 `symbol`
 - 自动处理参数优先级
 
 ### 2. 自动添加参数列
-- 通过 `add_param_columns` 配置自动将参数值写入DataFrame列
+
+- 通过 `add_param_columns` 配置自动将参数值写入 DataFrame 列
 - 例如：将 `fund` 参数值写入 `"基金代码"` 列
 
 ### 3. 自定义时间戳字段名
+
 - 支持通过 `timestamp_field` 自定义时间戳字段名
 - 默认使用 `"scraped_at"`，可改为 `"更新时间"` 等
 
 ### 4. 参数验证
+
 - 通过 `required_params` 配置必填参数
 - 自动验证并抛出清晰的错误信息
 
 ## 重构优势
 
 1. **代码复用**：所有通用逻辑都在基类中实现
-2. **易于维护**：修改基类即可影响所有providers
-3. **统一接口**：所有providers遵循相同的接口规范
+2. **易于维护**：修改基类即可影响所有 providers
+3. **统一接口**：所有 providers 遵循相同的接口规范
 4. **自动处理**：参数映射、验证、字段添加都自动完成
 5. **向后兼容**：支持旧代码和新代码混合使用
 6. **代码简洁**：大幅减少重复代码，提高可读性
@@ -204,29 +218,35 @@ class XxxProvider(BaseProvider):
 ## 技术亮点
 
 ### 1. 智能参数映射
+
 ```python
 param_mapping = {
-    "fund_code": "fund",  # 前端参数 -> akshare参数
+    "fund_code": "fund",  # 前端参数 -> akshare 参数
     "fund": "fund",
     "code": "fund",
 }
-```
+
+```bash
 
 ### 2. 自动字段添加
+
 ```python
 add_param_columns = {
-    "fund": "基金代码",  # 将fund参数值写入"基金代码"列
+    "fund": "基金代码",  # 将 fund 参数值写入"基金代码"列
+
 }
-```
+
+```bash
 
 ### 3. 自定义时间戳
+
 ```python
 timestamp_field = "更新时间"  # 自定义时间戳字段名
-```
+
+```bash
 
 ## 总结
 
-所有 `funds/providers` 目录下的 providers 已成功重构完成，代码量大幅减少，可维护性和可扩展性显著提升。所有providers现在都遵循统一的接口规范，便于后续维护和扩展。
+所有 `funds/providers` 目录下的 providers 已成功重构完成，代码量大幅减少，可维护性和可扩展性显著提升。所有 providers 现在都遵循统一的接口规范，便于后续维护和扩展。
 
 重构工作已完成 ✅
-

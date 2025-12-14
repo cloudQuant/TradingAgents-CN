@@ -13,8 +13,9 @@
 
 ✅ **已确认**：配置确实保存到 MongoDB 数据库
 
-**保存流程**：
-```
+- *保存流程**：
+
+```bash
 前端修改配置
   ↓
 PUT /api/config/settings
@@ -24,9 +25,10 @@ config_service.update_system_settings()
 config_service.save_system_config()
   ↓
 MongoDB (system_configs 集合)
-```
 
-**相关代码**：
+```bash
+
+- *相关代码**：
 - `app/routers/config.py` - 第 1268-1290 行：`update_system_settings` 端点
 - `app/services/config_service.py` - 第 550-563 行：`update_system_settings` 方法
 - `app/services/config_service.py` - 第 415-460 行：`save_system_config` 方法
@@ -35,32 +37,35 @@ MongoDB (system_configs 集合)
 
 ❌ **发现问题**：tradingagents 无法从数据库读取配置
 
-**根本原因**：
+- *根本原因**：
 - `tradingagents/config/runtime_settings.py` 中的 `_get_system_settings_sync()` 函数**总是返回空字典** `{}`
 - 这是为了避免事件循环冲突的临时解决方案
 - 导致 tradingagents 只能依赖环境变量和代码默认值
 
-**问题代码**：
+- *问题代码**：
+
 ```python
 def _get_system_settings_sync() -> dict:
     """最佳努力获取后端动态 system_settings。
     注意：为了避免事件循环冲突，当前实现总是返回空字典，
     依赖环境变量和默认值进行配置。
     """
-    # 临时解决方案：完全禁用动态配置获取，避免事件循环冲突
+
+# 临时解决方案：完全禁用动态配置获取，避免事件循环冲突
     _logger.debug("动态配置获取已禁用，使用环境变量和默认值")
     return {}
-```
+
+```bash
 
 ## ✅ 解决方案
 
 ### 修复配置桥接机制
 
-**核心思路**：使用 `config_bridge.py` 在应用启动时将数据库配置同步到环境变量
+- *核心思路**：使用 `config_bridge.py` 在应用启动时将数据库配置同步到环境变量
 
-**修改文件**：`app/core/config_bridge.py`
+- *修改文件**：`app/core/config_bridge.py`
 
-**关键修复**：
+- *关键修复**：
 
 1. **修复数据库读取逻辑**（第 152-187 行）：
    - 从 `db.system_settings` 改为 `db.system_configs.find_one({"is_active": True})`
@@ -71,11 +76,12 @@ def _get_system_settings_sync() -> dict:
 def _bridge_system_settings() -> int:
     """桥接系统运行时配置到环境变量"""
     try:
-        # 使用同步的 MongoDB 客户端
+
+# 使用同步的 MongoDB 客户端
         from pymongo import MongoClient
         from app.core.config import settings
 
-        # 创建同步客户端
+# 创建同步客户端
         client = MongoClient(
             settings.MONGO_URI,
             serverSelectionTimeoutMS=5000,
@@ -84,7 +90,8 @@ def _bridge_system_settings() -> int:
 
         try:
             db = client[settings.MONGO_DB]
-            # 从 system_configs 集合中读取激活的配置
+
+# 从 system_configs 集合中读取激活的配置
             config_doc = db.system_configs.find_one({"is_active": True})
 
             if not config_doc or 'system_settings' not in config_doc:
@@ -98,7 +105,7 @@ def _bridge_system_settings() -> int:
         finally:
             client.close()
 
-        # 桥接 TradingAgents 配置到环境变量
+# 桥接 TradingAgents 配置到环境变量
         ta_settings = {
             'ta_hk_min_request_interval_seconds': 'TA_HK_MIN_REQUEST_INTERVAL_SECONDS',
             'ta_hk_timeout_seconds': 'TA_HK_TIMEOUT_SECONDS',
@@ -119,9 +126,10 @@ def _bridge_system_settings() -> int:
     except Exception as e:
         logger.warning(f"  ⚠️  桥接系统设置失败: {e}")
         return 0
-```
 
-2. **修复 .env 文件冲突**（`.env` 第 304 行）：
+```bash
+
+1. **修复 .env 文件冲突**（`.env` 第 304 行）：
    - 注释掉 `TA_USE_APP_CACHE=true`
    - 避免环境变量覆盖数据库配置
 
@@ -130,6 +138,7 @@ def _bridge_system_settings() -> int:
 ### 测试脚本
 
 创建了两个测试脚本：
+
 1. `scripts/test_config_bridge.py` - 完整的配置桥接测试
 2. `scripts/test_bridge_system_settings.py` - 专门测试 `_bridge_system_settings` 函数
 
@@ -137,7 +146,7 @@ def _bridge_system_settings() -> int:
 
 ✅ **所有测试通过！**
 
-```
+```bash
 ============================================================
 🧪 测试配置桥接功能
 ============================================================
@@ -184,13 +193,14 @@ def _bridge_system_settings() -> int:
 ============================================================
 🎉 所有测试通过！配置桥接工作正常
 ============================================================
-```
+
+```bash
 
 ## 📊 配置流程图
 
 ### 完整的配置生效流程
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────────┐
 │                     前端修改配置                              │
 │              (ConfigManagement.vue)                          │
@@ -245,7 +255,8 @@ def _bridge_system_settings() -> int:
 │    - MongoDBCacheAdapter (缓存适配器)                        │
 │    - OptimizedChinaData (中国数据优化)                        │
 └─────────────────────────────────────────────────────────────┘
-```
+
+```bash
 
 ## 🎯 配置使用示例
 
@@ -257,26 +268,32 @@ from tradingagents.config.runtime_settings import (
 )
 
 # 获取港股请求间隔（从环境变量读取，环境变量由 config_bridge 从数据库同步）
+
 min_interval = get_float(
     "TA_HK_MIN_REQUEST_INTERVAL_SECONDS",
     "ta_hk_min_request_interval_seconds",
     2.0  # 默认值
+
 )
 
 # 获取是否启用 App 缓存
+
 use_cache = use_app_cache_enabled(False)
 
 # 获取超时时间
+
 timeout = get_int(
     "TA_HK_TIMEOUT_SECONDS",
     "ta_hk_timeout_seconds",
     60
 )
-```
+
+```bash
 
 ### 实际使用场景
 
-**港股数据提供器** (`tradingagents/dataflows/providers/hk/hk_stock.py`):
+- *港股数据提供器** (`tradingagents/dataflows/providers/hk/hk_stock.py`):
+
 ```python
 class HKStockProvider:
     def __init__(self):
@@ -295,26 +312,30 @@ class HKStockProvider:
             "ta_hk_max_retries",
             3
         )
-```
 
-**MongoDB 缓存适配器** (`tradingagents/dataflows/cache/mongodb_cache_adapter.py`):
+```bash
+
+- *MongoDB 缓存适配器**(`tradingagents/dataflows/cache/mongodb_cache_adapter.py`):
+
 ```python
 class MongoDBCacheAdapter:
     def __init__(self):
         self.use_app_cache = use_app_cache_enabled(False)
         if self.use_app_cache:
             self._init_mongodb_connection()
-            logger.info("🔄 MongoDB缓存适配器已启用 - 优先使用MongoDB数据")
-```
+            logger.info("🔄 MongoDB 缓存适配器已启用 - 优先使用 MongoDB 数据")
+
+```bash
 
 ## 📝 总结
 
 ### ✅ 已解决的问题
 
-1. **配置保存**：✅ 配置正确保存到 MongoDB 数据库
-2. **配置桥接**：✅ 应用启动时将数据库配置同步到环境变量
-3. **配置读取**：✅ tradingagents 通过环境变量正确读取配置
-4. **配置生效**：✅ 所有 TradingAgents 模块都能使用最新配置
+1.**配置保存**：✅ 配置正确保存到 MongoDB 数据库
+
+1. **配置桥接**：✅ 应用启动时将数据库配置同步到环境变量
+2. **配置读取**：✅ tradingagents 通过环境变量正确读取配置
+3. **配置生效**：✅ 所有 TradingAgents 模块都能使用最新配置
 
 ### 🔑 关键要点
 
@@ -335,4 +356,3 @@ class MongoDBCacheAdapter:
 - [配置桥接详细说明](./CONFIG_BRIDGE_DETAILS.md)
 - [配置迁移总结](./CONFIG_MIGRATION_SUMMARY.md)
 - [配置桥接测试结果](./CONFIG_BRIDGE_TEST_RESULTS.md)
-
